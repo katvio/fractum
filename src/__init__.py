@@ -162,7 +162,7 @@ class ShareManager:
             label (str): Label to identify the shares
             
         Returns:
-            List[Tuple[int, bytes]]: List of shares (index, share)
+            List[Tuple[int, bytes]]: List of shares (share_index, share)
             
         Raises:
             ValueError: If the secret is invalid
@@ -187,7 +187,7 @@ class ShareManager:
             idx1, share1 = shares1[i]
             idx2, share2 = shares2[i]
             if idx1 != idx2:
-                raise ValueError("Share index inconsistency")
+                raise ValueError("Share share_index inconsistency")
             combined_shares.append((idx1, share1 + share2))
             
         return combined_shares
@@ -209,7 +209,7 @@ class ShareManager:
         if len(shares) < self.threshold:
             raise ValueError(f"Insufficient number of shares: {len(shares)} < {self.threshold}")
             
-        # Index verification
+        # share_index verification
         indices = set(idx for idx, _ in shares)
         if len(indices) != len(shares):
             raise ValueError("Duplicate indices detected")
@@ -243,7 +243,7 @@ class ShareManager:
             return False
             
         try:
-            # Index verification
+            # share_index verification
             indices = set(idx for idx, _ in shares)
             if len(indices) != len(shares):
                 return False
@@ -279,7 +279,7 @@ class ShareManager:
                         raise ValueError(f"Incompatible total shares in {share_file}")
                 
                 shares.append((
-                    share_info['index'],
+                    share_info['share_index'],
                     base64.b64decode(share_info['share'])
                 ))
         
@@ -300,7 +300,7 @@ class ShareManager:
         
         share_info = {
             **metadata.to_dict(),
-            'index': idx,
+            'share_index': idx,
             'share': base64.b64encode(share_data).decode(),
             'hash': hashlib.sha256(share_data).hexdigest()
         }
@@ -412,20 +412,20 @@ class ShareArchiver:
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(exist_ok=True)
         
-    def create_share_archive(self, share_file: str, encrypted_file: str, share_index: int, label: str) -> str:
+    def create_share_archive(self, share_file: str, encrypted_file: str, share_share_index: int, label: str) -> str:
         """Creates a ZIP archive for a share.
         
         Args:
             share_file (str): Path to share file
             encrypted_file (str): Path to encrypted file
-            share_index (int): Share index
+            share_share_index (int): Share share_index
             label (str): Share label
             
         Returns:
             str: Path to created ZIP archive
         """
         # Create temporary directory for archive
-        temp_dir = self.base_dir / f"temp_share_{share_index}"
+        temp_dir = self.base_dir / f"temp_share_{share_share_index}"
         temp_dir.mkdir(exist_ok=True)
         
         try:
@@ -462,7 +462,7 @@ class ShareArchiver:
                     shutil.copy(package_file, packages_dir)
             
             # Create ZIP archive
-            archive_path = self.base_dir / f"share_{share_index}.zip"
+            archive_path = self.base_dir / f"share_{share_share_index}.zip"
             with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for root, _, files in os.walk(temp_dir):
                     for file in files:
@@ -613,7 +613,7 @@ def interactive_mode():
             except Exception as e:
                 click.echo(f"\nError: {str(e)}", err=True)
                 
-            if not click.confirm("\nWould you like to perform another operation?", default=True):
+            if not click.confirm("\nWould you like to perform another operation?", default=None):
                 click.echo("\nGoodbye!")
                 break
                 
@@ -628,7 +628,7 @@ def interactive_encrypt():
         input_file = click.prompt("Full path of the file to encrypt", type=click.Path(exists=True, dir_okay=False, file_okay=True))
         
         # Ask if using existing shares
-        use_existing = click.confirm("Do you want to use existing shares?", default=False)
+        use_existing = click.confirm("Do you want to use existing shares?", default=None)
         existing_shares = None
         if use_existing:
             existing_shares = click.prompt("Full path of the directory containing existing shares", type=click.Path(exists=True, dir_okay=True, file_okay=False))
@@ -676,7 +676,7 @@ def interactive_encrypt():
                 return False
         
         # Ask for verbose mode
-        verbose = click.confirm("Do you want to enable verbose mode?", default=False)
+        verbose = click.confirm("Do you want to enable verbose mode?", default=None)
         
         # Confirm parameters
         click.echo("\nEncryption parameters:")
@@ -689,7 +689,7 @@ def interactive_encrypt():
             click.echo(f"Shares directory: {existing_shares}")
         click.echo(f"Verbose mode: {'Enabled' if verbose else 'Disabled'}")
         
-        if not click.confirm("\nDo you want to continue with these parameters?", default=True):
+        if not click.confirm("\nDo you want to continue with these parameters?", default=None):
             click.echo("Operation cancelled")
             return False
         
@@ -718,7 +718,7 @@ def interactive_decrypt():
         shares_dir = click.prompt("Full path of the directory containing shares", type=click.Path(exists=True, dir_okay=True, file_okay=False))
         
         # Ask for verbose mode
-        verbose = click.confirm("Do you want to enable verbose mode?", default=False)
+        verbose = click.confirm("Do you want to enable verbose mode?", default=None)
         
         # Confirm parameters
         click.echo("\nDecryption parameters:")
@@ -726,7 +726,7 @@ def interactive_decrypt():
         click.echo(f"Shares directory: {shares_dir}")
         click.echo(f"Verbose mode: {'Enabled' if verbose else 'Disabled'}")
         
-        if not click.confirm("\nDo you want to continue with these parameters?", default=True):
+        if not click.confirm("\nDo you want to continue with these parameters?", default=None):
             click.echo("Operation cancelled")
             return False
         
@@ -752,7 +752,7 @@ def interactive_verify():
         click.echo("\nVerification parameters:")
         click.echo(f"Shares directory: {shares_dir}")
         
-        if not click.confirm("\nDo you want to continue with these parameters?", default=True):
+        if not click.confirm("\nDo you want to continue with these parameters?", default=None):
             click.echo("Operation cancelled")
             return False
         
@@ -850,7 +850,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
                 share_file = f"share_{idx}.txt"
                 with open(share_file, 'w') as f:
                     json.dump({
-                        'index': idx,
+                        'share_index': idx,
                         'share': base64.b64encode(share).decode(),
                         'label': label,
                         'share_integrity_hash': hashlib.sha256(share).hexdigest(),
@@ -946,13 +946,35 @@ def decrypt(input_file: str, shares_dir: str, verbose: bool):
         shares_by_label = {}
         
         # Look for share files in directory
-        share_files = list(shares_path.glob("*.zip"))
-        if not share_files:
-            # Look for share files directly
-            share_files = list(shares_path.glob("share_*_*.txt"))
+        share_files = []
+        
+        # First try to find ZIP archives
+        zip_files = list(shares_path.glob("*.zip"))
+        if zip_files:
+            share_files.extend(zip_files)
+            if verbose:
+                click.echo(f"Found {len(zip_files)} ZIP archives")
+        
+        # Then look for share files directly
+        txt_files = list(shares_path.glob("share_*.txt"))
+        if txt_files:
+            share_files.extend(txt_files)
+            if verbose:
+                click.echo(f"Found {len(txt_files)} share files")
         
         if not share_files:
-            raise ValueError(f"No shares found in directory {shares_dir}")
+            # Try to find any file that might be a share
+            all_files = list(shares_path.glob("*"))
+            potential_shares = [f for f in all_files if f.is_file()]
+            if not potential_shares:
+                raise ValueError(f"No files found in directory {shares_dir}")
+            else:
+                click.echo(f"Found {len(potential_shares)} files in directory, but none match the expected share format (share_*.txt or *.zip)")
+                click.echo("Please ensure you're pointing to a directory containing valid share files or archives")
+                return
+        
+        if verbose:
+            click.echo(f"Processing {len(share_files)} share files/archives")
         
         # Process each file and group by set_id and label
         for share_file in share_files:
@@ -968,21 +990,54 @@ def decrypt(input_file: str, shares_dir: str, verbose: bool):
                     # Look for share file
                     share_files_in_zip = list(temp_dir.glob("share_*.txt"))
                     if not share_files_in_zip:
-                        raise ValueError(f"No share file found in archive {share_file}")
+                        if verbose:
+                            click.echo(f"No share file found in archive {share_file}")
+                        continue
                     
                     share_file = share_files_in_zip[0]
                 except Exception as e:
                     shutil.rmtree(temp_dir, ignore_errors=True)
-                    raise ValueError(f"Error extracting archive {share_file}: {str(e)}")
+                    if verbose:
+                        click.echo(f"Error extracting archive {share_file}: {str(e)}")
+                    continue
             
-            with open(share_file, 'r') as f:
-                share_info = json.load(f)
-                label = share_info['label']
-                share_set_id = share_info.get('share_set_id', None)
-                
-                # If share has a set_id, store by set_id
-                if share_set_id:
-                    if share_set_id not in shares_by_set_id:
+            try:
+                with open(share_file, 'r') as f:
+                    share_info = json.load(f)
+                    label = share_info['label']
+                    share_set_id = share_info.get('share_set_id', None)
+                    
+                    # If share has a set_id, store by set_id
+                    if share_set_id:
+                        if share_set_id not in shares_by_set_id:
+                            # Look for version in different places to maintain compatibility with old files
+                            version = None
+                            if 'tool_integrity' in share_info and 'shares_tool_version' in share_info['tool_integrity']:
+                                version = share_info['tool_integrity']['shares_tool_version']
+                            elif 'shares_tool_version' in share_info:
+                                version = share_info['shares_tool_version']
+                            elif 'version' in share_info:
+                                version = share_info['version']
+                            else:
+                                version = VERSION
+                                
+                            shares_by_set_id[share_set_id] = {
+                                'shares': [],
+                                'metadata': {
+                                    'version': version,
+                                    'label': label,
+                                    'threshold': share_info.get('threshold', 3),
+                                    'total_shares': share_info.get('total_shares', 5)
+                                }
+                            }
+                        
+                        shares_by_set_id[share_set_id]['shares'].append((
+                            share_info['share_index'],
+                            base64.b64decode(share_info['share'])
+                        ))
+                    
+                    # Also store by label for backward compatibility
+                    if label not in shares_by_label:
                         # Look for version in different places to maintain compatibility with old files
                         version = None
                         if 'tool_integrity' in share_info and 'shares_tool_version' in share_info['tool_integrity']:
@@ -994,7 +1049,7 @@ def decrypt(input_file: str, shares_dir: str, verbose: bool):
                         else:
                             version = VERSION
                             
-                        shares_by_set_id[share_set_id] = {
+                        shares_by_label[label] = {
                             'shares': [],
                             'metadata': {
                                 'version': version,
@@ -1004,42 +1059,25 @@ def decrypt(input_file: str, shares_dir: str, verbose: bool):
                             }
                         }
                     
-                    shares_by_set_id[share_set_id]['shares'].append((
-                        share_info['index'],
+                    shares_by_label[label]['shares'].append((
+                        share_info['share_index'],
                         base64.b64decode(share_info['share'])
                     ))
-                
-                # Also store by label for backward compatibility
-                if label not in shares_by_label:
-                    # Look for version in different places to maintain compatibility with old files
-                    version = None
-                    if 'tool_integrity' in share_info and 'shares_tool_version' in share_info['tool_integrity']:
-                        version = share_info['tool_integrity']['shares_tool_version']
-                    elif 'shares_tool_version' in share_info:
-                        version = share_info['shares_tool_version']
-                    elif 'version' in share_info:
-                        version = share_info['version']
-                    else:
-                        version = VERSION
-                        
-                    shares_by_label[label] = {
-                        'shares': [],
-                        'metadata': {
-                            'version': version,
-                            'label': label,
-                            'threshold': share_info.get('threshold', 3),
-                            'total_shares': share_info.get('total_shares', 5)
-                        }
-                    }
-                
-                shares_by_label[label]['shares'].append((
-                    share_info['index'],
-                    base64.b64decode(share_info['share'])
-                ))
+            except Exception as e:
+                if verbose:
+                    click.echo(f"Error processing {share_file}: {str(e)}")
+                continue
             
             # Clean up temporary directory if it was an archive
             if str(share_file).endswith('.zip'):
                 shutil.rmtree(temp_dir, ignore_errors=True)
+        
+        if verbose:
+            if shares_by_set_id:
+                click.echo(f"\nFound shares with set IDs: {', '.join(shares_by_set_id.keys())}")
+            click.echo(f"Found shares for {len(shares_by_label)} different labels")
+            for label in shares_by_label:
+                click.echo(f"  - {label}: {len(shares_by_label[label]['shares'])} shares (threshold: {shares_by_label[label]['metadata']['threshold']})")
         
         # First attempt to find shares by share_set_id extracted from metadata
         if extracted_share_set_id and extracted_share_set_id in shares_by_set_id:
@@ -1053,8 +1091,8 @@ def decrypt(input_file: str, shares_dir: str, verbose: bool):
                 if shares_by_set_id:
                     click.echo(f"Found shares with set IDs: {', '.join(shares_by_set_id.keys())}")
                 click.echo(f"Found shares for {len(shares_by_label)} different labels")
-                for label, data in shares_by_label.items():
-                    click.echo(f"  - {label}: {len(data['shares'])} shares (threshold: {data['metadata']['threshold']})")
+                for label in shares_by_label:
+                    click.echo(f"  - {label}: {len(shares_by_label[label]['shares'])} shares (threshold: {shares_by_label[label]['metadata']['threshold']})")
             
             # Try to find matching shares for the input file by label
             input_label = None
@@ -1160,16 +1198,24 @@ def verify(shares_dir: str):
         
         # Check if it's an archive directory
         if shares_path.is_dir():
+            # First look for ZIP archives
             share_files = list(shares_path.glob("*.zip"))
             if not share_files:
-                # Look for share files directly
-                share_files = list(shares_path.glob("share_*_*.txt"))
+                # Then look for share files directly
+                share_files = list(shares_path.glob("share_*.txt"))
+                if not share_files:
+                    # Try to find any file that might be a share
+                    all_files = list(shares_path.glob("*"))
+                    share_files = [f for f in all_files if f.is_file()]
+                    if not share_files:
+                        raise ValueError(f"No files found in directory {shares_dir}")
+                    else:
+                        click.echo(f"Found {len(share_files)} files in directory, but none match the expected share format (share_*.txt or *.zip)")
+                        click.echo("Please ensure you're pointing to a directory containing valid share files or archives")
+                        return
         else:
             # It's a single file (archive or share)
             share_files = [shares_path]
-        
-        if not share_files:
-            raise ValueError(f"No shares found in {shares_dir}")
         
         # Process each file
         for share_file in share_files:
@@ -1194,15 +1240,22 @@ def verify(shares_dir: str):
                     click.echo(f"Error extracting archive {share_file}: {str(e)}", err=True)
                     continue
             
-            with open(share_file, 'r') as f:
-                share_info = json.load(f)
-                share_data = base64.b64decode(share_info['share'])
-                computed_hash = hashlib.sha256(share_data).hexdigest()
-                
-                if computed_hash != share_info['share_integrity_hash']:
-                    click.echo(f"Verification error for {share_file}", err=True)
-                else:
-                    click.echo(f"Share {share_file} successfully verified")
+            try:
+                with open(share_file, 'r') as f:
+                    share_info = json.load(f)
+                    share_data = base64.b64decode(share_info['share'])
+                    computed_hash = hashlib.sha256(share_data).hexdigest()
+                    
+                    if computed_hash != share_info['share_integrity_hash']:
+                        click.echo(f"Verification error for {share_file}", err=True)
+                    else:
+                        click.echo(f"Share {share_file} successfully verified")
+            except json.JSONDecodeError:
+                click.echo(f"Invalid JSON format in {share_file}", err=True)
+            except KeyError as e:
+                click.echo(f"Missing required field in {share_file}: {str(e)}", err=True)
+            except Exception as e:
+                click.echo(f"Error processing {share_file}: {str(e)}", err=True)
             
             # Clean up temporary directory if it was an archive
             if str(share_file).endswith('.zip'):
