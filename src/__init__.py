@@ -1225,11 +1225,38 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
             continue
             
         # Get share value
-        share_value = click.prompt("Share value (Base64 encoded)", type=str)
+        share_value = click.prompt("Share value (Base64 or Hex encoded)", type=str)
+        
+        # Try to detect the format and decode accordingly
         try:
-            share_data = base64.b64decode(share_value)
-        except Exception:
-            click.echo("Invalid Base64 encoding. Please check the share value.")
+            # Try Base64 first
+            try:
+                share_data = base64.b64decode(share_value)
+                
+                # Verify this is actually valid Base64 by checking the length
+                # The decoded data should be 32 bytes for our shares
+                if len(share_data) != 32:
+                    # Maybe it's hex encoded
+                    raise ValueError("Incorrect data length for Base64")
+                    
+            except (ValueError, base64.binascii.Error):
+                # If Base64 fails, try hex
+                # Remove any whitespace or colons that might be in the hex string
+                hex_value = share_value.replace(":", "").replace(" ", "")
+                
+                # Check if it looks like a hex string (only hex chars)
+                if all(c in '0123456789abcdefABCDEF' for c in hex_value):
+                    # Convert from hex to bytes
+                    share_data = bytes.fromhex(hex_value)
+                    
+                    # Check length - should be 32 bytes
+                    if len(share_data) != 32:
+                        raise ValueError(f"Incorrect length for Hex data: {len(share_data)} bytes (expected 32)")
+                else:
+                    raise ValueError("Share value must be valid Base64 or Hex")
+                
+        except Exception as e:
+            click.echo(f"Invalid share value: {str(e)}. Please try again.")
             continue
             
         # First share determines metadata
