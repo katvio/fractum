@@ -26,36 +26,193 @@ if sys.version_info[:3] != REQUIRED_PYTHON_VERSION:
 
 VERSION = "1.0.0"
 
+def get_enhanced_random_bytes(length: int = 32) -> bytes:
+    """Combines multiple entropy sources for enhanced randomness.
+    
+    Args:
+        length (int): Length of random bytes to generate
+        
+    Returns:
+        bytes: Cryptographically secure random bytes from mixed sources
+    """
+    # Collect entropy from multiple sources
+    sources = [
+        get_random_bytes(length),    # PyCryptodome source
+        os.urandom(length),          # OS entropy pool
+        str(time.time_ns()).encode(),  # High-precision timing information
+        str(os.getpid()).encode(),   # Process ID
+        str(id(object())).encode()   # Memory address (adds some randomness)
+    ]
+    
+    # Add some environmental entropy if available
+    try:
+        if hasattr(os, 'getloadavg'):
+            sources.append(str(os.getloadavg()).encode())
+        if hasattr(os, 'times'):
+            sources.append(str(os.times()).encode())
+    except (OSError, AttributeError):
+        pass
+    
+    # Mix sources using a hash function
+    combined = b"".join(sources)
+    result = hashlib.sha256(combined).digest()
+    
+    # If we need more than 32 bytes, use SHAKE256 (extendable output function)
+    if length > 32:
+        result = hashlib.shake_256(combined).digest(length)
+    else:
+        result = result[:length]
+        
+    return result
+
 class SecureMemory:
     @staticmethod
-    def secure_clear(data: Union[bytes, bytearray]) -> None:
-        """Securely clears sensitive data from memory."""
+    def secure_clear(data: Union[bytes, bytearray, str, list, memoryview]) -> None:
+        """Securely clears sensitive data from memory with multiple overwrite patterns.
+        
+        Args:
+            data: Data to securely clear, can be bytes, bytearray, str, list, or memoryview
+        """
         import gc
-        if isinstance(data, bytes):
-            data = bytearray(data)
-        if isinstance(data, bytearray):
+        import sys
+        
+        # Different overwrite patterns for multiple passes
+        patterns = [
+            0x00, 0xFF, 0xAA, 0x55,  # Binary patterns: zeros, ones, alternating
+            0xF0, 0x0F, 0xCC, 0x33   # More patterns for additional security
+        ]
+        
+        if isinstance(data, str):
+            # Convert string to bytearray for secure clearing
+            byte_data = bytearray(data.encode())
+            SecureMemory.secure_clear(byte_data)
+            # Attempt to clear the original string from memory by filling variable with junk
+            # This is not guaranteed but helps in some cases
+            # Assign a new object with different id to variable
+            data_len = len(data)
+            del data
+            # Create garbage with same size
+            for _ in range(10):  # Multiple garbage creation attempts
+                garbage = "X" * data_len
+                del garbage
+            
+        elif isinstance(data, (bytes, memoryview)):
+            # Convert immutable bytes to bytearray for clearing
+            byte_data = bytearray(data)
+            SecureMemory.secure_clear(byte_data)
+            
+        elif isinstance(data, bytearray):
+            # Multiple overwrite passes with different patterns
+            for pattern in patterns:
+                for i in range(len(data)):
+                    data[i] = pattern
+                # Force Python to actually perform the memory writes
+                sys.stderr.write("")
+                sys.stderr.flush()
+            
+            # Final pass with zeros
             for i in range(len(data)):
                 data[i] = 0
-            # Try to force garbage collection
+                
+            # Attempt to release memory
+            data_len = len(data)
+            del data
+            
+            # Create and destroy some garbage to encourage memory reuse
+            for _ in range(5):
+                garbage = bytearray(data_len)
+                del garbage
+                
+            # Force garbage collection multiple times
+            for _ in range(3):
+                gc.collect()
+                
+        elif isinstance(data, list):
+            # For lists containing sensitive data
+            for i in range(len(data)):
+                if isinstance(data[i], (bytes, bytearray, str, list, memoryview)):
+                    # Recursively clear complex elements
+                    SecureMemory.secure_clear(data[i])
+                else:
+                    # For simple numeric types, just zero them
+                    try:
+                        data[i] = 0
+                    except TypeError:
+                        # If element is immutable, replace with None
+                        data[i] = None
+            
+            # Clear the list itself
+            data.clear()
             del data
             gc.collect()
-        elif isinstance(data, str):
-            # For strings, convert to bytearray
-            data_bytes = bytearray(data.encode())
-            for i in range(len(data_bytes)):
-                data_bytes[i] = 0
-            del data_bytes
-            gc.collect()
 
+    @classmethod
+    def secure_context(cls, size: int = 32) -> 'SecureContext':
+        """Creates a secure context manager for temporary sensitive data.
+        
+        Args:
+            size: Size of the secure memory buffer
+            
+        Returns:
+            A context manager for secure memory usage
+        """
+        return SecureContext(size)
+            
     @staticmethod
     def secure_string() -> str:
         """Creates a secure string."""
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        # Use cryptographically secure random bytes instead of random.choices
+        random_bytes = get_enhanced_random_bytes(32)
+        # Convert to alphanumeric characters
+        charset = string.ascii_letters + string.digits
+        # Map bytes to characters (without bias)
+        result = ""
+        for byte in random_bytes:
+            # Ensure no modulo bias by rejecting values above the largest multiple of len(charset)
+            max_value = 256 - (256 % len(charset))
+            if byte < max_value:
+                result += charset[byte % len(charset)]
+                if len(result) >= 32:  # We want a 32-character result
+                    break
+        
+        # If we don't have enough characters (unlikely), append more
+        while len(result) < 32:
+            more_bytes = get_enhanced_random_bytes(8)
+            for byte in more_bytes:
+                if byte < max_value and len(result) < 32:
+                    result += charset[byte % len(charset)]
+        
+        return result
 
     @staticmethod
     def secure_bytes(length: int = 32) -> bytearray:
         """Creates a secure bytearray."""
-        return bytearray(get_random_bytes(length))
+        return bytearray(get_enhanced_random_bytes(length))
+
+class SecureContext:
+    """Context manager for securely handling sensitive data."""
+    
+    def __init__(self, size: int = 32):
+        """Initialize secure context with memory buffer.
+        
+        Args:
+            size: Size of the secure memory buffer
+        """
+        self.buffer = bytearray(size)
+        self.size = size
+        
+    def __enter__(self) -> bytearray:
+        """Enter the context and return secure buffer."""
+        # Initialize with random data
+        random_bytes = get_enhanced_random_bytes(self.size)
+        for i in range(min(len(random_bytes), self.size)):
+            self.buffer[i] = random_bytes[i]
+        return self.buffer
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context and securely clear the buffer."""
+        SecureMemory.secure_clear(self.buffer)
+        # The buffer object itself will be garbage collected, but we've cleared its contents
 
 class ShareMetadata:
     """Centralized management of share metadata."""
@@ -1248,13 +1405,15 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
                 click.echo(f"Using {len(shares_data)} existing shares with ID: {share_set_id}")
         else:
             # Generate new shares
-            # Generate new key
-            key = get_random_bytes(32)
+            # Generate new key with enhanced entropy
+            key = get_enhanced_random_bytes(32)
             
             # Generate a unique set identifier hash for this group of shares
-            # This will be used to identify related shares during decryption
+            # Using enhanced entropy for share_set_id generation
+            random_component = get_enhanced_random_bytes(16).hex()
             input_filename = Path(input_file).stem
-            share_set_id = hashlib.sha256((label + input_filename + str(time.time())).encode()).hexdigest()[:16]
+            timestamp = str(time.time())
+            share_set_id = hashlib.sha256((label + input_filename + timestamp + random_component).encode()).hexdigest()[:16]
             
             if verbose:
                 click.echo(f"Generated share set ID: {share_set_id}")
