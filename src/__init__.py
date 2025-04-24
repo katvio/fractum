@@ -666,7 +666,7 @@ def calculate_tool_integrity():
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=VERSION)
-@click.option('--interactive', '-i', is_flag=True, help='Lance le mode interactif')
+@click.option('--interactive', '-i', is_flag=True, help='Launch interactive mode')
 @click.pass_context
 def cli(ctx, interactive):
     """Shamir's Secret Sharing Tool.
@@ -710,6 +710,10 @@ def cli(ctx, interactive):
             Directory containing shares or ZIP archives
             (can contain a mix of .txt files and .zip archives)
 
+            --manual-shares, -m
+            Manually enter share values instead of using files
+            (allows direct input of share index and value in Base64 or Hex format)
+
             --verbose, -v
             Enable verbose output for detailed operation information
 
@@ -724,13 +728,25 @@ def cli(ctx, interactive):
             Directory containing shares or ZIP archives to verify
             (can be a single file or a directory)
 
+    Global Options:
+
+        --interactive, -i
+        Launch the interactive mode that guides you through the operations step by step
+        (a menu-driven interface that simplifies using the tool without command line arguments)
+
     Examples:
+
+        # Launch interactive mode (recommended for new users)
+        fractum -i
 
         # Encrypt a file with 3-5 scheme
         fractum encrypt secret.txt -t 3 -n 5 -l mysecret
 
         # Decrypt using shares from a directory
         fractum decrypt secret.txt.enc -s ./shares
+
+        # Decrypt by manually entering share values
+        fractum decrypt secret.txt.enc -m
 
         # Verify shares in a directory
         fractum verify -s ./shares
@@ -864,10 +880,6 @@ def interactive_encrypt():
         if use_existing:
             click.echo(f"Shares directory: {existing_shares}")
         click.echo(f"Verbose mode: {'Enabled' if verbose else 'Disabled'}")
-        
-        if not click.confirm("\nDo you want to continue with these parameters?", default=None):
-            click.echo("Operation cancelled")
-            return False
         
         # Execute command via Click
         ctx = click.get_current_context()
@@ -1263,7 +1275,6 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
         if not metadata:
             threshold = click.prompt("Threshold (minimum number of shares needed)", type=int)
             total_shares = click.prompt("Total shares", type=int)
-            label = click.prompt("Label", type=str, default="manual")
             
             if threshold < 2 or threshold > total_shares or total_shares > 255:
                 click.echo("Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255.")
@@ -1271,7 +1282,6 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
                 
             metadata = {
                 'version': VERSION,
-                'label': label,
                 'threshold': threshold,
                 'total_shares': total_shares
             }
@@ -1318,10 +1328,6 @@ def interactive_decrypt():
             click.echo(f"Shares directory: {shares_dir}")
         click.echo(f"Verbose mode: {'Enabled' if verbose else 'Disabled'}")
         
-        if not click.confirm("\nDo you want to continue with these parameters?", default=None):
-            click.echo("Operation cancelled")
-            return False
-        
         # Execute command via Click
         ctx = click.get_current_context()
         ctx.invoke(decrypt,
@@ -1344,10 +1350,6 @@ def interactive_verify():
         # Confirm parameters
         click.echo("\nVerification parameters:")
         click.echo(f"Shares directory: {shares_dir}")
-        
-        if not click.confirm("\nDo you want to continue with these parameters?", default=None):
-            click.echo("Operation cancelled")
-            return False
         
         # Execute command via Click - Fixed to avoid passing input_file
         ctx = click.get_current_context()
