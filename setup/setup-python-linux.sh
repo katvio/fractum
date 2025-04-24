@@ -57,6 +57,23 @@ else
     rm -rf Python-3.12.10 Python-3.12.10.tgz
 fi
 
+# Return to the original directory if we moved
+cd - > /dev/null
+
+# Install pip if not already installed
+if ! command -v pip3.12 &> /dev/null; then
+    print_message "Installing pip for Python 3.12..."
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    python3.12 get-pip.py
+    rm get-pip.py
+fi
+
+# Install venv module if not available
+if ! python3.12 -m venv --help &> /dev/null; then
+    print_message "Installing venv module..."
+    sudo apt-get install -y python3.12-venv
+fi
+
 # Check if virtual environment already exists
 if [ -d "env" ]; then
     print_message "Virtual environment 'env' already exists"
