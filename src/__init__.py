@@ -435,9 +435,14 @@ class ShareManager:
                     if metadata.total_shares != current_metadata.total_shares:
                         raise ValueError(f"Incompatible total shares in {share_file}")
                 
+                # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
+                share_key = share_info.get('share_key', share_info.get('share'))
+                if not share_key:
+                    raise ValueError(f"No share key found in {share_file}")
+                
                 shares.append((
                     share_info['share_index'],
-                    base64.b64decode(share_info['share'])
+                    base64.b64decode(share_key)
                 ))
         
         return shares, metadata
@@ -458,7 +463,7 @@ class ShareManager:
         share_info = {
             **metadata.to_dict(),
             'share_index': idx,
-            'share': base64.b64encode(share_data).decode(),
+            'share_key': base64.b64encode(share_data).decode(),
             'hash': hashlib.sha256(share_data).hexdigest()
         }
         
@@ -712,7 +717,7 @@ def cli(ctx, interactive):
 
             --manual-shares, -m
             Manually enter share values instead of using files
-            (allows direct input of share index and value in Base64 or Hex format)
+            (allows direct input of share index and share_key value in Base64 or Hex format)
 
             --verbose, -v
             Enable verbose output for detailed operation information
@@ -1055,9 +1060,14 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
                                 }
                             }
                         
+                        # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
+                        share_key = share_info.get('share_key', share_info.get('share'))
+                        if not share_key:
+                            raise ValueError(f"No share key found in {share_file}")
+                        
                         shares_by_set_id[share_set_id]['shares'].append((
                             share_info['share_index'],
-                            base64.b64decode(share_info['share'])
+                            base64.b64decode(share_key)
                         ))
                     
                     # Also store by label for backward compatibility
@@ -1083,9 +1093,16 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
                             }
                         }
                     
+                    # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
+                    share_key = share_info.get('share_key', share_info.get('share'))
+                    if not share_key:
+                        if verbose:
+                            click.echo(f"No share key found in {share_file}")
+                        continue
+                    
                     shares_by_label[label]['shares'].append((
                         share_info['share_index'],
-                        base64.b64decode(share_info['share'])
+                        base64.b64decode(share_key)
                     ))
             except Exception as e:
                 if verbose:
@@ -1236,8 +1253,8 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
             click.echo("Invalid share index. Please enter a number.")
             continue
             
-        # Get share value
-        share_value = click.prompt("Share value (Base64 or Hex encoded)", type=str)
+        # Get share key value
+        share_value = click.prompt("Share key value (Base64 or Hex encoded)", type=str)
         
         # Try to detect the format and decode accordingly
         try:
@@ -1265,10 +1282,10 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
                     if len(share_data) != 32:
                         raise ValueError(f"Incorrect length for Hex data: {len(share_data)} bytes (expected 32)")
                 else:
-                    raise ValueError("Share value must be valid Base64 or Hex")
+                    raise ValueError("Share key value must be valid Base64 or Hex")
                 
         except Exception as e:
-            click.echo(f"Invalid share value: {str(e)}. Please try again.")
+            click.echo(f"Invalid share key value: {str(e)}. Please try again.")
             continue
             
         # First share determines metadata
@@ -1308,7 +1325,7 @@ def interactive_decrypt():
         input_file = click.prompt("Full path of the file to decrypt", type=click.Path(exists=True, dir_okay=False, file_okay=True))
         
         # Ask if using files or manual entry
-        use_manual = click.confirm("Do you want to enter shares manually?", default=None)
+        use_manual = click.confirm("Do you want to enter the share keys manually? If not, you will be asked to provide the path to the folder containing the necessary share files?", default=None)
         
         if use_manual:
             shares_dir = None
@@ -1460,7 +1477,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
                 with open(share_file, 'w') as f:
                     json.dump({
                         'share_index': idx,
-                        'share': base64.b64encode(share).decode(),
+                        'share_key': base64.b64encode(share).decode(),
                         'label': label,
                         'share_integrity_hash': hashlib.sha256(share).hexdigest(),
                         'threshold': threshold,
@@ -1597,7 +1614,7 @@ def verify(shares_dir: str):
             try:
                 with open(share_file, 'r') as f:
                     share_info = json.load(f)
-                    share_data = base64.b64decode(share_info['share'])
+                    share_data = base64.b64decode(share_info.get('share_key', share_info.get('share')))
                     computed_hash = hashlib.sha256(share_data).hexdigest()
                     
                     if computed_hash != share_info['share_integrity_hash']:
