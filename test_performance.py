@@ -27,7 +27,7 @@ from src import (
     SecureMemory
 )
 
-# Couleurs pour les logs
+# Colors for logs
 class LogColors:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -39,31 +39,31 @@ class LogColors:
     BOLD = '\033[1m'
 
 def log_test_start(test_name):
-    """Affiche un message de démarrage de test."""
-    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ DÉMARRAGE: {test_name}{LogColors.ENDC}")
+    """Display a test start message."""
+    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ STARTING: {test_name}{LogColors.ENDC}")
 
 def log_test_step(step_description):
-    """Affiche une étape de test."""
+    """Display a test step."""
     print(f"{LogColors.CYAN}  ↳ {step_description}{LogColors.ENDC}")
 
 def log_test_success(message):
-    """Affiche un message de succès."""
-    print(f"{LogColors.GREEN}  ✓ SUCCÈS: {message}{LogColors.ENDC}")
+    """Display a success message."""
+    print(f"{LogColors.GREEN}  ✓ SUCCESS: {message}{LogColors.ENDC}")
 
 def log_test_warning(message):
-    """Affiche un message d'avertissement."""
-    print(f"{LogColors.YELLOW}  ⚠ ATTENTION: {message}{LogColors.ENDC}")
+    """Display a warning message."""
+    print(f"{LogColors.YELLOW}  ⚠ WARNING: {message}{LogColors.ENDC}")
 
 def log_test_skip(message):
-    """Affiche un message de test ignoré."""
-    print(f"{LogColors.YELLOW}  ⚡ IGNORÉ: {message}{LogColors.ENDC}")
+    """Display a skipped test message."""
+    print(f"{LogColors.YELLOW}  ⚡ SKIPPED: {message}{LogColors.ENDC}")
 
 def log_test_end(test_name, success=True):
-    """Affiche un message de fin de test."""
+    """Display a test end message."""
     if success:
-        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ TERMINÉ: {test_name} - Réussi{LogColors.ENDC}")
+        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ FINISHED: {test_name} - Passed{LogColors.ENDC}")
     else:
-        print(f"{LogColors.RED}{LogColors.BOLD}✗ TERMINÉ: {test_name} - Échoué{LogColors.ENDC}")
+        print(f"{LogColors.RED}{LogColors.BOLD}✗ FINISHED: {test_name} - Failed{LogColors.ENDC}")
 
 def generate_large_file(file_path: str, size_mb: int) -> None:
     """Generate a large file with random content.
@@ -89,7 +89,7 @@ class EfficiencyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create shared test files for all efficiency tests."""
-        log_test_start("Préparation des fichiers de test pour tests d'efficacité")
+        log_test_start("Preparing test files for efficiency tests")
         
         cls.temp_dir = tempfile.TemporaryDirectory()
         cls.test_dir = Path(cls.temp_dir.name)
@@ -97,17 +97,17 @@ class EfficiencyTests(unittest.TestCase):
         # Create test files of various sizes
         cls.test_files = {}
         
-        log_test_step("Création d'un fichier de petite taille (1MB)")
+        log_test_step("Creating a small file (1MB)")
         # Small file (1MB) for quick tests
         cls.test_files["1MB"] = cls.test_dir / "test_1mb.bin"
         generate_large_file(str(cls.test_files["1MB"]), 1)
         
-        log_test_step("Création d'un fichier de taille moyenne (10MB)")
+        log_test_step("Creating a medium file (10MB)")
         # Medium file (10MB)
         cls.test_files["10MB"] = cls.test_dir / "test_10mb.bin"
         generate_large_file(str(cls.test_files["10MB"]), 10)
         
-        log_test_step("Création d'un fichier de grande taille (100MB)")
+        log_test_step("Creating a large file (100MB)")
         # Larger file (100MB) for more intensive tests
         cls.test_files["100MB"] = cls.test_dir / "test_100mb.bin"
         generate_large_file(str(cls.test_files["100MB"]), 100)
@@ -117,9 +117,9 @@ class EfficiencyTests(unittest.TestCase):
         # cls.test_files["1GB"] = cls.test_dir / "test_1gb.bin"
         # generate_large_file(str(cls.test_files["1GB"]), 1024)
         
-        log_success = f"Fichiers de test créés dans {cls.test_dir}"
+        log_success = f"Test files created in {cls.test_dir}"
         log_test_success(log_success)
-        log_test_end("Préparation des fichiers de test")
+        log_test_end("Test file preparation")
     
     @classmethod
     def tearDownClass(cls):
@@ -128,7 +128,7 @@ class EfficiencyTests(unittest.TestCase):
     
     def test_large_file_encryption_performance(self):
         """Benchmark encryption performance with large files."""
-        test_name = "Test de performance de chiffrement avec des fichiers volumineux"
+        test_name = "Large file encryption performance test"
         log_test_start(test_name)
         
         try:
@@ -136,7 +136,7 @@ class EfficiencyTests(unittest.TestCase):
             test_sizes = ["1MB", "10MB", "100MB"]  # Add "1GB" for extreme testing
             iterations = 3  # Number of times to repeat each test for averaging
             
-            log_test_step(f"Test avec tailles: {', '.join(test_sizes)} sur {iterations} itérations")
+            log_test_step(f"Testing with sizes: {', '.join(test_sizes)} over {iterations} iterations")
             
             # Test results will be stored here
             results = {}
@@ -147,7 +147,7 @@ class EfficiencyTests(unittest.TestCase):
             
             # Test each file size
             for size in test_sizes:
-                log_test_step(f"Test du fichier de {size}")
+                log_test_step(f"Testing {size} file")
                 test_file = self.test_files[size]
                 encrypted_file = self.test_dir / f"encrypted_{size}.enc"
                 
@@ -165,7 +165,7 @@ class EfficiencyTests(unittest.TestCase):
                     # Measure memory before operation
                     memory_before = process.memory_info().rss
                     
-                    log_test_step(f"Itération {i+1}/{iterations} pour {size}")
+                    log_test_step(f"Iteration {i+1}/{iterations} for {size}")
                     
                     # Measure encryption time
                     start_time = time.perf_counter()
@@ -182,8 +182,8 @@ class EfficiencyTests(unittest.TestCase):
                     memory_usages.append(memory_usage)
                     
                     # Print progress for visibility
-                    log_msg = f"Chiffrement de {size} (itération {i+1}/{iterations}): {encrypt_time:.2f} secondes, " + \
-                            f"mémoire: {memory_usage / (1024 * 1024):.2f} MB"
+                    log_msg = f"Encrypting {size} (iteration {i+1}/{iterations}): {encrypt_time:.2f} seconds, " + \
+                            f"memory: {memory_usage / (1024 * 1024):.2f} MB"
                     log_test_step(log_msg)
                 
                 # Calculate statistics
@@ -201,14 +201,14 @@ class EfficiencyTests(unittest.TestCase):
                     "throughput": throughput
                 }
                 
-                log_test_step(f"Performance moyenne de chiffrement pour {size}:")
-                print(f"  Temps: {avg_encrypt_time:.2f} secondes")
-                print(f"  Débit: {throughput:.2f} MB/s")
-                print(f"  Utilisation mémoire: {avg_memory_usage / (1024 * 1024):.2f} MB")
+                log_test_step(f"Average encryption performance for {size}:")
+                print(f"  Time: {avg_encrypt_time:.2f} seconds")
+                print(f"  Throughput: {throughput:.2f} MB/s")
+                print(f"  Memory usage: {avg_memory_usage / (1024 * 1024):.2f} MB")
                 
                 # Verify the encrypted file exists and has reasonable size
                 self.assertTrue(encrypted_file.exists(), "Encrypted file should exist")
-                log_test_success(f"Fichier de {size} chiffré créé avec succès")
+                log_test_success(f"{size} file encrypted successfully")
                 
                 # A basic performance requirement - encryption shouldn't be extremely slow
                 # This is a very conservative check (essentially verifying we're faster than 0.5 MB/s)
@@ -216,7 +216,7 @@ class EfficiencyTests(unittest.TestCase):
                 min_throughput = 0.5  # MB/s
                 self.assertGreater(throughput, min_throughput,
                                 f"Encryption throughput for {size} file is too low: {throughput:.2f} MB/s")
-                log_test_success(f"Débit de chiffrement suffisant: {throughput:.2f} MB/s (minimum requis: {min_throughput} MB/s)")
+                log_test_success(f"Sufficient encryption throughput: {throughput:.2f} MB/s (required minimum: {min_throughput} MB/s)")
             
             log_test_end(test_name)
         except Exception as e:
@@ -225,7 +225,7 @@ class EfficiencyTests(unittest.TestCase):
     
     def test_large_file_decryption_performance(self):
         """Benchmark decryption performance with large files."""
-        test_name = "Test de performance de déchiffrement avec des fichiers volumineux"
+        test_name = "Large file decryption performance test"
         log_test_start(test_name)
         
         try:
@@ -233,7 +233,7 @@ class EfficiencyTests(unittest.TestCase):
             test_sizes = ["1MB", "10MB", "100MB"]  # Add "1GB" for extreme testing
             iterations = 3  # Number of times to repeat each test for averaging
             
-            log_test_step(f"Test avec tailles: {', '.join(test_sizes)} sur {iterations} itérations")
+            log_test_step(f"Testing with sizes: {', '.join(test_sizes)} over {iterations} iterations")
             
             # Test results will be stored here
             results = {}
@@ -244,24 +244,24 @@ class EfficiencyTests(unittest.TestCase):
             
             # Test each file size
             for size in test_sizes:
-                log_test_step(f"Test du fichier de {size}")
+                log_test_step(f"Testing {size} file")
                 test_file = self.test_files[size]
                 encrypted_file = self.test_dir / f"encrypted_{size}.enc"
                 decrypted_file = self.test_dir / f"decrypted_{size}.bin"
                 
                 try:
                     # First encrypt the file with proper error handling
-                    log_test_step(f"Préparation - Chiffrement du fichier {size}")
+                    log_test_step(f"Preparation - Encrypting {size} file")
                     try:
                         encryptor.encrypt_file(str(test_file), str(encrypted_file))
                     except Exception as e:
-                        log_test_warning(f"Échec chiffrement {size}: {str(e)}")
+                        log_test_warning(f"Failed to encrypt {size}: {str(e)}")
                         self.fail(f"Failed to encrypt {size} file: {str(e)}")
                         continue
                         
                     # Verify the encrypted file exists and has reasonable size
                     self.assertTrue(encrypted_file.exists(), "Encrypted file should exist")
-                    log_test_success(f"Fichier de {size} chiffré créé avec succès")
+                    log_test_success(f"{size} file encrypted successfully")
                     
                     # Track memory and time for decryption
                     process = psutil.Process(os.getpid())
@@ -277,7 +277,7 @@ class EfficiencyTests(unittest.TestCase):
                         # Measure memory before operation
                         memory_before = process.memory_info().rss
                         
-                        log_test_step(f"Déchiffrement - Itération {i+1}/{iterations} pour {size}")
+                        log_test_step(f"Decryption - Iteration {i+1}/{iterations} for {size}")
                         
                         # Measure decryption time
                         start_time = time.perf_counter()
@@ -295,17 +295,17 @@ class EfficiencyTests(unittest.TestCase):
                             memory_usages.append(memory_usage)
                             
                             # Print progress for visibility
-                            log_msg = f"Déchiffrement de {size} (itération {i+1}/{iterations}): {decrypt_time:.2f} secondes, " + \
-                                    f"mémoire: {memory_usage / (1024 * 1024):.2f} MB"
+                            log_msg = f"Decrypting {size} (iteration {i+1}/{iterations}): {decrypt_time:.2f} seconds, " + \
+                                    f"memory: {memory_usage / (1024 * 1024):.2f} MB"
                             log_test_step(log_msg)
                         except Exception as e:
-                            log_test_warning(f"Erreur déchiffrement {size} (itération {i+1}/{iterations}): {str(e)}")
+                            log_test_warning(f"Error decrypting {size} (iteration {i+1}/{iterations}): {str(e)}")
                             # Skip this iteration
                             continue
                     
                     # Skip to next file size if all decryption attempts failed
                     if not decrypt_times:
-                        log_test_warning(f"Toutes les tentatives de déchiffrement ont échoué pour {size}")
+                        log_test_warning(f"All decryption attempts failed for {size}")
                         continue
                         
                     # Calculate statistics
@@ -323,25 +323,25 @@ class EfficiencyTests(unittest.TestCase):
                         "throughput": throughput
                     }
                     
-                    log_test_step(f"Performance moyenne de déchiffrement pour {size}:")
-                    print(f"  Temps: {avg_decrypt_time:.2f} secondes")
-                    print(f"  Débit: {throughput:.2f} MB/s")
-                    print(f"  Utilisation mémoire: {avg_memory_usage / (1024 * 1024):.2f} MB")
+                    log_test_step(f"Average decryption performance for {size}:")
+                    print(f"  Time: {avg_decrypt_time:.2f} seconds")
+                    print(f"  Throughput: {throughput:.2f} MB/s")
+                    print(f"  Memory usage: {avg_memory_usage / (1024 * 1024):.2f} MB")
                     
                     # Verify the decrypted file matches the original
                     with open(test_file, "rb") as f1, open(decrypted_file, "rb") as f2:
                         self.assertEqual(f1.read(), f2.read(), "Decrypted file content should match original")
-                    log_test_success(f"Contenu déchiffré identique à l'original pour {size}")
+                    log_test_success(f"Decrypted content identical to original for {size}")
                     
                     # A basic performance requirement - decryption shouldn't be extremely slow
                     # This is a very conservative check (essentially verifying we're faster than 0.5 MB/s)
                     min_throughput = 0.5  # MB/s
                     self.assertGreater(throughput, min_throughput,
                                     f"Decryption throughput for {size} file is too low: {throughput:.2f} MB/s")
-                    log_test_success(f"Débit de déchiffrement suffisant: {throughput:.2f} MB/s (minimum requis: {min_throughput} MB/s)")
+                    log_test_success(f"Sufficient decryption throughput: {throughput:.2f} MB/s (required minimum: {min_throughput} MB/s)")
                                 
                 except Exception as e:
-                    log_test_warning(f"Erreur test {size}: {str(e)}")
+                    log_test_warning(f"Error testing {size}: {str(e)}")
                     # Continue to next size rather than failing the entire test
                     continue
             
@@ -352,7 +352,7 @@ class EfficiencyTests(unittest.TestCase):
     
     def test_share_generation_performance(self):
         """Benchmark performance of share generation."""
-        test_name = "Test de performance de génération des parts"
+        test_name = "Share generation performance test"
         log_test_start(test_name)
         
         try:
@@ -362,7 +362,7 @@ class EfficiencyTests(unittest.TestCase):
             test_total_shares = [3, 5, 10, 20, 50, 100]
             iterations = 5  # Number of times to repeat each test for averaging
             
-            log_test_step(f"Test avec {len(test_thresholds)}x{len(test_total_shares)} combinaisons sur {iterations} itérations")
+            log_test_step(f"Testing with {len(test_thresholds)}x{len(test_total_shares)} combinations over {iterations} iterations")
             
             # Test results will be stored here
             results = {}
@@ -374,7 +374,7 @@ class EfficiencyTests(unittest.TestCase):
                     if threshold > total_shares:
                         continue
                     
-                    log_test_step(f"Test combinaison: seuil={threshold}, parts={total_shares}")
+                    log_test_step(f"Testing combination: threshold={threshold}, shares={total_shares}")
                     
                     # Create a test key
                     test_key = get_enhanced_random_bytes(secret_size)
@@ -411,15 +411,15 @@ class EfficiencyTests(unittest.TestCase):
                         "shares_per_second": total_shares / avg_generation_time
                     }
                     
-                    log_msg = f"Génération des parts ({threshold}-sur-{total_shares}): {avg_generation_time:.4f} secondes " + \
-                            f"(±{std_dev:.4f}), {total_shares / avg_generation_time:.1f} parts/seconde"
+                    log_msg = f"Share generation ({threshold}-of-{total_shares}): {avg_generation_time:.4f} seconds " + \
+                            f"(±{std_dev:.4f}), {total_shares / avg_generation_time:.1f} shares/second"
                     log_test_step(log_msg)
                     
                     # A basic performance requirement
                     max_acceptable_time = 1.0  # second
                     self.assertLess(avg_generation_time, max_acceptable_time,
                                   f"Share generation for {threshold}-of-{total_shares} is too slow")
-                    log_test_success(f"Performance acceptable pour {threshold}-sur-{total_shares}: {avg_generation_time:.4f}s < {max_acceptable_time}s")
+                    log_test_success(f"Acceptable performance for {threshold}-of-{total_shares}: {avg_generation_time:.4f}s < {max_acceptable_time}s")
             
             log_test_end(test_name)
         except Exception as e:
@@ -428,7 +428,7 @@ class EfficiencyTests(unittest.TestCase):
     
     def test_share_reconstruction_performance(self):
         """Benchmark performance of share reconstruction."""
-        test_name = "Test de performance de reconstruction des parts"
+        test_name = "Share reconstruction performance test"
         log_test_start(test_name)
         
         try:
@@ -438,7 +438,7 @@ class EfficiencyTests(unittest.TestCase):
             test_total_shares = [3, 5, 10, 20, 50, 100]
             iterations = 5  # Number of times to repeat each test for averaging
             
-            log_test_step(f"Test avec {len(test_thresholds)}x{len(test_total_shares)} combinaisons sur {iterations} itérations")
+            log_test_step(f"Testing with {len(test_thresholds)}x{len(test_total_shares)} combinations over {iterations} iterations")
             
             # Test results will be stored here
             results = {}
@@ -450,7 +450,7 @@ class EfficiencyTests(unittest.TestCase):
                     if threshold > total_shares:
                         continue
                     
-                    log_test_step(f"Test combinaison: seuil={threshold}, parts={total_shares}")
+                    log_test_step(f"Testing combination: threshold={threshold}, shares={total_shares}")
                     
                     # Create a test key
                     test_key = get_enhanced_random_bytes(secret_size)
@@ -490,7 +490,7 @@ class EfficiencyTests(unittest.TestCase):
                         "std_dev": std_dev
                     }
                     
-                    log_msg = f"Reconstruction des parts ({threshold}-sur-{total_shares}): {avg_reconstruction_time:.6f} secondes " + \
+                    log_msg = f"Share reconstruction ({threshold}-of-{total_shares}): {avg_reconstruction_time:.6f} seconds " + \
                             f"(±{std_dev:.6f})"
                     log_test_step(log_msg)
                     
@@ -498,7 +498,7 @@ class EfficiencyTests(unittest.TestCase):
                     max_acceptable_time = 0.1  # second
                     self.assertLess(avg_reconstruction_time, max_acceptable_time,
                                   f"Share reconstruction for {threshold}-of-{total_shares} is too slow")
-                    log_test_success(f"Performance acceptable pour {threshold}-sur-{total_shares}: {avg_reconstruction_time:.6f}s < {max_acceptable_time}s")
+                    log_test_success(f"Acceptable performance for {threshold}-of-{total_shares}: {avg_reconstruction_time:.6f}s < {max_acceptable_time}s")
             
             log_test_end(test_name)
         except Exception as e:
@@ -507,11 +507,11 @@ class EfficiencyTests(unittest.TestCase):
     
     def test_memory_usage_during_operations(self):
         """Measure memory usage during various operations."""
-        test_name = "Test d'utilisation mémoire pendant les opérations"
+        test_name = "Memory usage during operations test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Mesure de l'utilisation mémoire initiale")
+            log_test_step("Measuring initial memory usage")
             process = psutil.Process(os.getpid())
             
             # Force garbage collection to get stable baseline
@@ -520,7 +520,7 @@ class EfficiencyTests(unittest.TestCase):
             
             memory_usage = {}
             
-            log_test_step("Test 1: Utilisation mémoire pendant le chiffrement d'un fichier volumineux")
+            log_test_step("Test 1: Memory usage during large file encryption")
             # Test 1: Memory usage during large file encryption
             test_file = self.test_files["10MB"]
             encrypted_file = self.test_dir / "memory_test_encrypted.enc"
@@ -541,9 +541,9 @@ class EfficiencyTests(unittest.TestCase):
             # Store results
             memory_usage["encryption_10MB"] = encryption_memory
             
-            log_test_step(f"Utilisation mémoire pendant le chiffrement d'un fichier de 10MB: {encryption_memory / (1024 * 1024):.2f} MB")
+            log_test_step(f"Memory usage during 10MB file encryption: {encryption_memory / (1024 * 1024):.2f} MB")
             
-            log_test_step("Test 2: Utilisation mémoire pendant la génération d'un grand nombre de parts")
+            log_test_step("Test 2: Memory usage during generation of many shares")
             # Test 2: Memory usage during share generation (large number of shares)
             threshold = 10
             total_shares = 100
@@ -564,9 +564,9 @@ class EfficiencyTests(unittest.TestCase):
             # Store results
             memory_usage["share_generation_100"] = share_gen_memory
             
-            log_test_step(f"Utilisation mémoire pendant la génération de 100 parts: {share_gen_memory / (1024 * 1024):.2f} MB")
+            log_test_step(f"Memory usage during generation of 100 shares: {share_gen_memory / (1024 * 1024):.2f} MB")
             
-            log_test_step("Test 3: Utilisation mémoire pendant la reconstruction")
+            log_test_step("Test 3: Memory usage during reconstruction")
             # Test 3: Memory usage during share reconstruction
             # Force garbage collection
             gc.collect()
@@ -582,7 +582,7 @@ class EfficiencyTests(unittest.TestCase):
             # Store results
             memory_usage["share_reconstruction"] = share_recon_memory
             
-            log_test_step(f"Utilisation mémoire pendant la reconstruction des parts: {share_recon_memory / (1024 * 1024):.2f} MB")
+            log_test_step(f"Memory usage during share reconstruction: {share_recon_memory / (1024 * 1024):.2f} MB")
             
             # Check that memory usage is reasonable
             # These are just basic checks - adjust thresholds based on your application's requirements
@@ -592,15 +592,15 @@ class EfficiencyTests(unittest.TestCase):
             
             self.assertLess(encryption_memory, max_encryption_memory, 
                           "Encryption memory usage is too high")
-            log_test_success(f"Utilisation mémoire chiffrement OK: {encryption_memory/(1024*1024):.2f} MB < {max_encryption_memory/(1024*1024):.0f} MB")
+            log_test_success(f"Encryption memory usage OK: {encryption_memory/(1024*1024):.2f} MB < {max_encryption_memory/(1024*1024):.0f} MB")
             
             self.assertLess(share_gen_memory, max_share_gen_memory, 
                           "Share generation memory usage is too high")
-            log_test_success(f"Utilisation mémoire génération parts OK: {share_gen_memory/(1024*1024):.2f} MB < {max_share_gen_memory/(1024*1024):.0f} MB")
+            log_test_success(f"Share generation memory usage OK: {share_gen_memory/(1024*1024):.2f} MB < {max_share_gen_memory/(1024*1024):.0f} MB")
             
             self.assertLess(share_recon_memory, max_share_recon_memory, 
                           "Share reconstruction memory usage is too high")
-            log_test_success(f"Utilisation mémoire reconstruction OK: {share_recon_memory/(1024*1024):.2f} MB < {max_share_recon_memory/(1024*1024):.0f} MB")
+            log_test_success(f"Share reconstruction memory usage OK: {share_recon_memory/(1024*1024):.2f} MB < {max_share_recon_memory/(1024*1024):.0f} MB")
             
             log_test_end(test_name)
         except Exception as e:
@@ -627,7 +627,7 @@ class LoadTests(unittest.TestCase):
     
     def test_maximum_shares(self):
         """Test with the maximum number of shares (255)."""
-        test_name = "Test avec le nombre maximum de parts (255)"
+        test_name = "Maximum number of shares test (255)"
         log_test_start(test_name)
         
         try:
@@ -635,7 +635,7 @@ class LoadTests(unittest.TestCase):
             threshold = 200  # A high threshold to test extreme cases
             total_shares = 255  # Maximum possible
             
-            log_test_step(f"Création d'un test avec seuil={threshold}, parts={total_shares}")
+            log_test_step(f"Creating test with threshold={threshold}, shares={total_shares}")
             
             # Create a test key
             test_key = get_enhanced_random_bytes(32)
@@ -646,7 +646,7 @@ class LoadTests(unittest.TestCase):
             
             # Generate shares
             try:
-                log_test_step("Génération des parts")
+                log_test_step("Generating shares")
                 shares = manager.generate_shares(test_key, "max_shares_test")
                 generation_time = time.perf_counter() - start_time
                 
@@ -654,9 +654,9 @@ class LoadTests(unittest.TestCase):
                 self.assertEqual(len(shares), total_shares, 
                               f"Expected {total_shares} shares, got {len(shares)}")
                 
-                log_test_success(f"Généré {total_shares} parts avec seuil {threshold} en {generation_time:.2f} secondes")
+                log_test_success(f"Generated {total_shares} shares with threshold {threshold} in {generation_time:.2f} seconds")
                 
-                log_test_step("Test de reconstruction avec exactement le seuil de parts")
+                log_test_step("Testing reconstruction with exactly threshold shares")
                 # Test reconstruction with exactly threshold shares
                 start_time = time.perf_counter()
                 selected_shares = shares[:threshold]
@@ -666,9 +666,9 @@ class LoadTests(unittest.TestCase):
                 # Verify reconstruction was correct
                 self.assertEqual(reconstructed, test_key, "Reconstructed key does not match original")
                 
-                log_test_success(f"Secret reconstruit avec {threshold} parts en {reconstruction_time:.2f} secondes")
+                log_test_success(f"Secret reconstructed with {threshold} shares in {reconstruction_time:.2f} seconds")
                 
-                log_test_step("Test de performance avec différents nombres de parts")
+                log_test_step("Testing performance with different numbers of shares")
                 # Test reconstruction performance with varying numbers of shares
                 for num_shares in [threshold, threshold + 10, threshold + 20]:
                     if num_shares > total_shares:
@@ -684,10 +684,10 @@ class LoadTests(unittest.TestCase):
                     # Verify reconstruction was correct
                     self.assertEqual(reconstructed, test_key, f"Reconstruction failed with {num_shares} shares")
                     
-                    log_test_success(f"Reconstruction avec {num_shares} parts: {recon_time:.4f} secondes")
+                    log_test_success(f"Reconstruction with {num_shares} shares: {recon_time:.4f} seconds")
                 
             except Exception as e:
-                log_test_warning(f"Échec avec nombre maximum de parts: {str(e)}")
+                log_test_warning(f"Failed with maximum shares: {str(e)}")
                 self.fail(f"Failed with maximum shares: {str(e)}")
             
             log_test_end(test_name)
@@ -697,7 +697,7 @@ class LoadTests(unittest.TestCase):
     
     def test_concurrent_operations(self):
         """Test performance with many concurrent operations."""
-        test_name = "Test d'opérations concurrentes"
+        test_name = "Concurrent operations test"
         log_test_start(test_name)
         
         try:
@@ -705,10 +705,10 @@ class LoadTests(unittest.TestCase):
             num_threads = 8  # Adjust based on your CPU cores
             num_operations = 20  # Total operations across all threads
             
-            log_test_step(f"Test avec {num_threads} threads et {num_operations} opérations")
+            log_test_step(f"Testing with {num_threads} threads and {num_operations} operations")
             
             # Prepare test data - ensure it's valid content for encryption
-            log_test_step("Préparation des données de test")
+            log_test_step("Preparing test data")
             with open(self.test_dir / "valid_test_content.txt", "w") as f:
                 f.write("Test content for concurrent operations " * 1000)  # Create substantial content
             
@@ -717,7 +717,7 @@ class LoadTests(unittest.TestCase):
             threshold = 3
             total_shares = 5
             
-            log_test_step("Création de fichiers chiffrés pour les tests")
+            log_test_step("Creating encrypted files for testing")
             # Create encrypted files for each operation - ensure they're valid
             encrypted_files = []
             for i in range(num_operations // 2):  # Only create half as many since we'll also use share operations
@@ -730,9 +730,9 @@ class LoadTests(unittest.TestCase):
                         if f.read(4):  # Check that at least metadata length exists
                             encrypted_files.append(encrypted_file)
                 except Exception as e:
-                    log_test_warning(f"Erreur préparation fichier {i}: {str(e)}")
+                    log_test_warning(f"Error preparing file {i}: {str(e)}")
             
-            log_test_step(f"Créé {len(encrypted_files)} fichiers chiffrés pour les tests")
+            log_test_step(f"Created {len(encrypted_files)} encrypted files for testing")
             
             # Function to decrypt file
             def decrypt_file(file_index):
@@ -748,7 +748,7 @@ class LoadTests(unittest.TestCase):
                     # Verify decryption worked by checking file exists and has content
                     return decrypted_file.exists() and decrypted_file.stat().st_size > 0
                 except Exception as e:
-                    log_test_warning(f"Erreur dans thread {file_index}: {str(e)}")
+                    log_test_warning(f"Error in thread {file_index}: {str(e)}")
                     return False
             
             # Function to generate and combine shares
@@ -763,10 +763,10 @@ class LoadTests(unittest.TestCase):
                     reconstructed = manager.combine_shares(shares[:threshold])
                     return operation_key == reconstructed
                 except Exception as e:
-                    log_test_warning(f"Erreur dans traitement de parts {operation_index}: {str(e)}")
+                    log_test_warning(f"Error in share processing {operation_index}: {str(e)}")
                     return False
             
-            log_test_step("Exécution des opérations concurrentes")
+            log_test_step("Running concurrent operations")
             # Create a mixed workload of file operations and share operations
             results = []
             start_time = time.perf_counter()
@@ -790,11 +790,11 @@ class LoadTests(unittest.TestCase):
                         result = future.result()
                         results.append(result)
                         if result:
-                            log_test_success(f"Opération {idx} réussie")
+                            log_test_success(f"Operation {idx} succeeded")
                         else:
-                            log_test_warning(f"Opération {idx} échouée")
+                            log_test_warning(f"Operation {idx} failed")
                     except Exception as e:
-                        log_test_warning(f"Tâche {idx} a généré une exception: {str(e)}")
+                        log_test_warning(f"Task {idx} raised exception: {str(e)}")
                         results.append(False)
             
             end_time = time.perf_counter()
@@ -802,20 +802,20 @@ class LoadTests(unittest.TestCase):
             
             # Verify all operations completed successfully
             success_rate = sum(results) / len(results) if results else 0
-            log_test_step(f"Test terminé: {len(results)} opérations complétées en {total_time:.2f} secondes")
-            log_test_step(f"Taux de succès: {success_rate * 100:.2f}%")
-            log_test_step(f"Opérations par seconde: {len(results) / total_time:.2f}")
+            log_test_step(f"Test completed: {len(results)} operations in {total_time:.2f} seconds")
+            log_test_step(f"Success rate: {success_rate * 100:.2f}%")
+            log_test_step(f"Operations per second: {len(results) / total_time:.2f}")
             
             # Check that success rate is acceptable - lowered to 80% to account for potential race conditions
             self.assertGreaterEqual(success_rate, 0.8, 
                                  f"Too many concurrent operations failed: {success_rate * 100:.2f}%")
-            log_test_success(f"Taux de succès acceptable: {success_rate * 100:.2f}% >= 80%")
+            log_test_success(f"Acceptable success rate: {success_rate * 100:.2f}% >= 80%")
             
             # Simple performance requirement - adjust based on your system
             min_ops_per_second = 0.5
             self.assertGreaterEqual(len(results) / total_time, min_ops_per_second,
                                  f"Concurrent operations throughput too low: {len(results) / total_time:.2f} ops/sec")
-            log_test_success(f"Débit d'opérations acceptable: {len(results) / total_time:.2f} ops/sec >= {min_ops_per_second} ops/sec")
+            log_test_success(f"Acceptable operations throughput: {len(results) / total_time:.2f} ops/sec >= {min_ops_per_second} ops/sec")
             
             log_test_end(test_name)
         except Exception as e:

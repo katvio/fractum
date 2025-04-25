@@ -21,7 +21,7 @@ from src import (
     VERSION
 )
 
-# Couleurs pour les logs
+# Colors for logs
 class LogColors:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -33,31 +33,31 @@ class LogColors:
     BOLD = '\033[1m'
 
 def log_test_start(test_name):
-    """Affiche un message de démarrage de test."""
-    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ DÉMARRAGE: {test_name}{LogColors.ENDC}")
+    """Display a test start message."""
+    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ STARTING: {test_name}{LogColors.ENDC}")
 
 def log_test_step(step_description):
-    """Affiche une étape de test."""
+    """Display a test step."""
     print(f"{LogColors.CYAN}  ↳ {step_description}{LogColors.ENDC}")
 
 def log_test_success(message):
-    """Affiche un message de succès."""
-    print(f"{LogColors.GREEN}  ✓ SUCCÈS: {message}{LogColors.ENDC}")
+    """Display a success message."""
+    print(f"{LogColors.GREEN}  ✓ SUCCESS: {message}{LogColors.ENDC}")
 
 def log_test_warning(message):
-    """Affiche un message d'avertissement."""
-    print(f"{LogColors.YELLOW}  ⚠ ATTENTION: {message}{LogColors.ENDC}")
+    """Display a warning message."""
+    print(f"{LogColors.YELLOW}  ⚠ WARNING: {message}{LogColors.ENDC}")
 
 def log_test_skip(message):
-    """Affiche un message de test ignoré."""
-    print(f"{LogColors.YELLOW}  ⚡ IGNORÉ: {message}{LogColors.ENDC}")
+    """Display a skipped test message."""
+    print(f"{LogColors.YELLOW}  ⚡ SKIPPED: {message}{LogColors.ENDC}")
 
 def log_test_end(test_name, success=True):
-    """Affiche un message de fin de test."""
+    """Display a test end message."""
     if success:
-        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ TERMINÉ: {test_name} - Réussi{LogColors.ENDC}")
+        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ FINISHED: {test_name} - Passed{LogColors.ENDC}")
     else:
-        print(f"{LogColors.RED}{LogColors.BOLD}✗ TERMINÉ: {test_name} - Échoué{LogColors.ENDC}")
+        print(f"{LogColors.RED}{LogColors.BOLD}✗ FINISHED: {test_name} - Failed{LogColors.ENDC}")
 
 class TestShareMetadata(unittest.TestCase):
     """Tests for the ShareMetadata component."""
@@ -71,11 +71,11 @@ class TestShareMetadata(unittest.TestCase):
         
     def test_metadata_creation(self):
         """Test metadata creation."""
-        test_name = "Test de création des métadonnées"
+        test_name = "Metadata creation test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création d'un objet métadonnées")
+            log_test_step("Creating a metadata object")
             # Create metadata
             metadata = ShareMetadata(
                 version=self.version,
@@ -85,13 +85,13 @@ class TestShareMetadata(unittest.TestCase):
             )
             
             # Verify attributes
-            log_test_step("Vérification des attributs")
+            log_test_step("Verifying attributes")
             self.assertEqual(metadata.version, self.version, "Version not set correctly")
             self.assertEqual(metadata.label, self.label, "Label not set correctly")
             self.assertEqual(metadata.threshold, self.threshold, "Threshold not set correctly")
             self.assertEqual(metadata.total_shares, self.total_shares, "Total shares not set correctly")
             
-            log_test_success("Tous les attributs sont correctement définis")
+            log_test_success("All attributes are correctly set")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -99,11 +99,11 @@ class TestShareMetadata(unittest.TestCase):
         
     def test_metadata_from_share_info(self):
         """Test creating metadata from share info dictionary."""
-        test_name = "Test de création à partir d'un dictionnaire share_info"
+        test_name = "Creation from share_info dictionary test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création d'un dictionnaire share_info")
+            log_test_step("Creating a share_info dictionary")
             # Create a share_info dictionary
             share_info = {
                 'version': self.version,
@@ -115,18 +115,18 @@ class TestShareMetadata(unittest.TestCase):
                 }
             }
             
-            log_test_step("Création de métadonnées à partir du dictionnaire")
+            log_test_step("Creating metadata from dictionary")
             # Create metadata from share_info
             metadata = ShareMetadata.from_share_info(share_info)
             
-            log_test_step("Vérification des attributs chargés")
+            log_test_step("Verifying loaded attributes")
             # Verify attributes
             self.assertEqual(metadata.version, self.version, "Version not loaded correctly")
             self.assertEqual(metadata.label, self.label, "Label not loaded correctly")
             self.assertEqual(metadata.threshold, self.threshold, "Threshold not loaded correctly")
             self.assertEqual(metadata.total_shares, self.total_shares, "Total shares not loaded correctly")
             
-            log_test_success("Tous les attributs sont correctement chargés")
+            log_test_success("All attributes are correctly loaded")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -134,11 +134,11 @@ class TestShareMetadata(unittest.TestCase):
         
     def test_metadata_from_share_info_legacy(self):
         """Test creating metadata from legacy share info formats."""
-        test_name = "Test de chargement des formats legacy"
+        test_name = "Legacy format loading test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Test avec 'shares_tool_version' au premier niveau")
+            log_test_step("Testing with 'shares_tool_version' at top level")
             # Test with shares_tool_version at top level
             share_info1 = {
                 'shares_tool_version': self.version,
@@ -149,9 +149,9 @@ class TestShareMetadata(unittest.TestCase):
             
             metadata1 = ShareMetadata.from_share_info(share_info1)
             self.assertEqual(metadata1.version, self.version, "Version not loaded correctly from legacy format 1")
-            log_test_success("Version correctement chargée depuis le format legacy 1")
+            log_test_success("Version correctly loaded from legacy format 1")
             
-            log_test_step("Test sans information de version - devrait utiliser la version actuelle")
+            log_test_step("Testing without version information - should use current version")
             # Test with no version info - should default to current version
             share_info2 = {
                 'label': self.label,
@@ -161,7 +161,7 @@ class TestShareMetadata(unittest.TestCase):
             
             metadata2 = ShareMetadata.from_share_info(share_info2)
             self.assertEqual(metadata2.version, VERSION, "Default version not set correctly")
-            log_test_success(f"Version par défaut correctement définie: {VERSION}")
+            log_test_success(f"Default version correctly set: {VERSION}")
             
             log_test_end(test_name)
         except Exception as e:
@@ -170,11 +170,11 @@ class TestShareMetadata(unittest.TestCase):
         
     def test_metadata_to_dict(self):
         """Test converting metadata to dictionary."""
-        test_name = "Test de conversion en dictionnaire"
+        test_name = "Conversion to dictionary test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création d'un objet métadonnées")
+            log_test_step("Creating a metadata object")
             # Create metadata
             metadata = ShareMetadata(
                 version=self.version,
@@ -183,18 +183,18 @@ class TestShareMetadata(unittest.TestCase):
                 total_shares=self.total_shares
             )
             
-            log_test_step("Conversion en dictionnaire")
+            log_test_step("Converting to dictionary")
             # Convert to dictionary
             metadata_dict = metadata.to_dict()
             
-            log_test_step("Vérification des clés et valeurs")
+            log_test_step("Verifying keys and values")
             # Verify dictionary
             self.assertEqual(metadata_dict['version'], self.version, "Version not in dictionary")
             self.assertEqual(metadata_dict['label'], self.label, "Label not in dictionary")
             self.assertEqual(metadata_dict['threshold'], self.threshold, "Threshold not in dictionary")
             self.assertEqual(metadata_dict['total_shares'], self.total_shares, "Total shares not in dictionary")
             
-            log_test_success("Dictionnaire correctement généré avec toutes les clés")
+            log_test_success("Dictionary correctly generated with all keys")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -202,11 +202,11 @@ class TestShareMetadata(unittest.TestCase):
         
     def test_metadata_validation(self):
         """Test metadata validation."""
-        test_name = "Test de validation des métadonnées"
+        test_name = "Metadata validation test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création de métadonnées valides")
+            log_test_step("Creating valid metadata")
             # Create valid metadata
             valid_metadata = ShareMetadata(
                 version=self.version,
@@ -215,15 +215,15 @@ class TestShareMetadata(unittest.TestCase):
                 total_shares=self.total_shares
             )
             
-            log_test_step("Validation des métadonnées valides")
+            log_test_step("Validating valid metadata")
             # Validation should not raise an exception
             try:
                 valid_metadata.validate()
-                log_test_success("Métadonnées valides acceptées")
+                log_test_success("Valid metadata accepted")
             except ValueError:
                 self.fail("Validation failed for valid metadata")
             
-            log_test_step("Test avec seuil invalide (inférieur à 2)")
+            log_test_step("Testing with invalid threshold (less than 2)")
             # Test with invalid threshold
             invalid_threshold_metadata = ShareMetadata(
                 version=self.version,
@@ -234,9 +234,9 @@ class TestShareMetadata(unittest.TestCase):
             
             with self.assertRaises(ValueError, msg="Should reject threshold < 2"):
                 invalid_threshold_metadata.validate()
-            log_test_success("Seuil inférieur à 2 correctement rejeté")
+            log_test_success("Threshold less than 2 correctly rejected")
             
-            log_test_step("Test avec nombre total de parts invalide (inférieur au seuil)")
+            log_test_step("Testing with invalid total shares (less than threshold)")
             # Test with invalid total_shares
             invalid_total_shares_metadata = ShareMetadata(
                 version=self.version,
@@ -247,9 +247,9 @@ class TestShareMetadata(unittest.TestCase):
             
             with self.assertRaises(ValueError, msg="Should reject total_shares < threshold"):
                 invalid_total_shares_metadata.validate()
-            log_test_success("Nombre total de parts inférieur au seuil correctement rejeté")
+            log_test_success("Total shares less than threshold correctly rejected")
             
-            log_test_step("Test avec nombre total de parts excessif (>255)")
+            log_test_step("Testing with excessive total shares (>255)")
             # Test with excessive total_shares
             excessive_shares_metadata = ShareMetadata(
                 version=self.version,
@@ -260,9 +260,9 @@ class TestShareMetadata(unittest.TestCase):
             
             with self.assertRaises(ValueError, msg="Should reject total_shares > 255"):
                 excessive_shares_metadata.validate()
-            log_test_success("Nombre total de parts supérieur à 255 correctement rejeté")
+            log_test_success("Total shares greater than 255 correctly rejected")
             
-            log_test_step("Test avec étiquette vide")
+            log_test_step("Testing with empty label")
             # Test with empty label
             empty_label_metadata = ShareMetadata(
                 version=self.version,
@@ -273,9 +273,9 @@ class TestShareMetadata(unittest.TestCase):
             
             with self.assertRaises(ValueError, msg="Should reject empty label"):
                 empty_label_metadata.validate()
-            log_test_success("Étiquette vide correctement rejetée")
+            log_test_success("Empty label correctly rejected")
                 
-            log_test_step("Test avec étiquette None")
+            log_test_step("Testing with None label")
             # Test with None label
             none_label_metadata = ShareMetadata(
                 version=self.version,
@@ -286,7 +286,7 @@ class TestShareMetadata(unittest.TestCase):
             
             with self.assertRaises(ValueError, msg="Should reject None label"):
                 none_label_metadata.validate()
-            log_test_success("Étiquette None correctement rejetée")
+            log_test_success("None label correctly rejected")
             
             log_test_end(test_name)
         except Exception as e:
@@ -295,11 +295,11 @@ class TestShareMetadata(unittest.TestCase):
             
     def test_version_compatibility(self):
         """Test version compatibility checks."""
-        test_name = "Test de compatibilité des versions"
+        test_name = "Version compatibility test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création des instances de métadonnées avec différentes versions")
+            log_test_step("Creating metadata instances with different versions")
             # Create metadata instances with different versions
             current_version_metadata = ShareMetadata(
                 version=VERSION,
@@ -322,17 +322,17 @@ class TestShareMetadata(unittest.TestCase):
                 total_shares=self.total_shares
             )
             
-            log_test_step("Comparaison des instances de métadonnées")
+            log_test_step("Comparing metadata instances")
             # Compare metadata instances
             # In a real implementation, you might have version compatibility checks
             # For this test, we're just verifying the version attribute is correctly set
             self.assertNotEqual(current_version_metadata.version, older_version_metadata.version,
                                "Current and older versions should be different")
-            log_test_success("Version actuelle et ancienne correctement distinguées")
+            log_test_success("Current and older versions correctly distinguished")
                                
             self.assertNotEqual(current_version_metadata.version, newer_version_metadata.version,
                                "Current and newer versions should be different")
-            log_test_success("Version actuelle et future correctement distinguées")
+            log_test_success("Current and future versions correctly distinguished")
             
             log_test_end(test_name)
         except Exception as e:
@@ -360,36 +360,36 @@ class TestIntegrityVerification(unittest.TestCase):
         
     def test_tool_integrity_calculation(self):
         """Test tool integrity calculation."""
-        test_name = "Test de calcul d'intégrité de l'outil"
+        test_name = "Tool integrity calculation test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Calcul de l'intégrité de l'outil")
+            log_test_step("Calculating tool integrity")
             # Calculate tool integrity
             integrity = calculate_tool_integrity()
             
-            log_test_step("Vérification de la structure d'intégrité")
+            log_test_step("Verifying integrity structure")
             # Verify integrity structure
             self.assertIn('tool_hash', integrity, "Tool hash missing from integrity")
             self.assertIn('packages_hash', integrity, "Packages hash missing from integrity")
             self.assertIn('shares_tool_version', integrity, "Tool version missing from integrity")
-            log_test_success("Structure d'intégrité complète avec tous les champs requis")
+            log_test_success("Complete integrity structure with all required fields")
             
-            log_test_step("Vérification de la version")
+            log_test_step("Verifying version")
             # Verify version
             self.assertEqual(integrity['shares_tool_version'], VERSION, "Tool version incorrect")
-            log_test_success(f"Version correcte de l'outil: {VERSION}")
+            log_test_success(f"Correct tool version: {VERSION}")
             
-            log_test_step("Vérification du hash de l'outil")
+            log_test_step("Verifying tool hash")
             # Verify tool hash is a non-empty string
             self.assertIsInstance(integrity['tool_hash'], str, "Tool hash should be a string")
             self.assertTrue(len(integrity['tool_hash']) > 0, "Tool hash should not be empty")
-            log_test_success(f"Hash de l'outil valide: {integrity['tool_hash'][:16]}...")
+            log_test_success(f"Valid tool hash: {integrity['tool_hash'][:16]}...")
             
-            log_test_step("Vérification du hash des packages")
+            log_test_step("Verifying packages hash")
             # Verify packages hash is a dictionary
             self.assertIsInstance(integrity['packages_hash'], dict, "Packages hash should be a dictionary")
-            log_test_success(f"Hash des packages valide avec {len(integrity['packages_hash'])} packages")
+            log_test_success(f"Valid packages hash with {len(integrity['packages_hash'])} packages")
             
             log_test_end(test_name)
         except Exception as e:
@@ -398,15 +398,15 @@ class TestIntegrityVerification(unittest.TestCase):
         
     def test_share_integrity_validation(self):
         """Test share integrity validation."""
-        test_name = "Test de validation d'intégrité des parts"
+        test_name = "Share integrity validation test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Génération des parts")
+            log_test_step("Generating shares")
             # Generate shares
             shares = self.manager.generate_shares(self.test_secret, self.label)
             
-            log_test_step("Création des fichiers de parts avec information d'intégrité")
+            log_test_step("Creating share files with integrity information")
             # Create share files with integrity information
             share_files = []
             for idx, share_data in shares:
@@ -432,9 +432,9 @@ class TestIntegrityVerification(unittest.TestCase):
                     
                 share_files.append(share_file)
             
-            log_test_success(f"{len(share_files)} fichiers de parts créés avec succès")
+            log_test_success(f"{len(share_files)} share files successfully created")
             
-            log_test_step("Vérification de l'intégrité des fichiers de parts")
+            log_test_step("Verifying share files integrity")
             # Verify integrity of share files
             for i, share_file in enumerate(share_files):
                 with open(share_file, 'r') as f:
@@ -451,9 +451,9 @@ class TestIntegrityVerification(unittest.TestCase):
                                    f"Integrity hash mismatch for {share_file}")
                 
                 if i == 0 or i == len(share_files) - 1:
-                    log_test_step(f"Vérification de la part {i+1}/{len(share_files)}")
+                    log_test_step(f"Verifying share {i+1}/{len(share_files)}")
             
-            log_test_success("Intégrité des hashes vérifiée pour toutes les parts")
+            log_test_success("Hash integrity verified for all shares")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -461,11 +461,11 @@ class TestIntegrityVerification(unittest.TestCase):
                                
     def test_tampered_share_detection(self):
         """Test detection of tampered shares."""
-        test_name = "Test de détection de parts falsifiées"
+        test_name = "Tampered shares detection test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Génération d'une part")
+            log_test_step("Generating a share")
             # Generate shares
             shares = self.manager.generate_shares(self.test_secret, self.label)
             
@@ -489,7 +489,7 @@ class TestIntegrityVerification(unittest.TestCase):
             with open(share_file, 'w') as f:
                 json.dump(share_info, f)
             
-            log_test_step("Création d'une copie falsifiée du fichier de part")
+            log_test_step("Creating a tampered copy of the share file")
             # Create a tampered copy of the share file
             tampered_file = os.path.join(self.temp_dir.name, f"tampered_share_{idx}.json")
             
@@ -497,7 +497,7 @@ class TestIntegrityVerification(unittest.TestCase):
             with open(share_file, 'r') as f:
                 tampered_info = json.load(f)
             
-            log_test_step("Modification des données sans mettre à jour le hash d'intégrité")
+            log_test_step("Modifying data without updating integrity hash")
             # Tamper with the share data (decode, modify, re-encode)
             original_share_data = base64.b64decode(tampered_info['share_key'])
             tampered_share_data = bytearray(original_share_data)
@@ -512,7 +512,7 @@ class TestIntegrityVerification(unittest.TestCase):
             with open(tampered_file, 'w') as f:
                 json.dump(tampered_info, f)
             
-            log_test_step("Vérification que la falsification est détectée")
+            log_test_step("Verifying that tampering is detected")
             # Verify the tampering is detected
             with open(tampered_file, 'r') as f:
                 tampered_info = json.load(f)
@@ -527,7 +527,7 @@ class TestIntegrityVerification(unittest.TestCase):
                 self.assertNotEqual(calculated_hash, tampered_info['share_integrity_hash'],
                                   "Tampering not detected - hash still matches")
             
-            log_test_success("Falsification correctement détectée (hash calculé différent du hash stocké)")
+            log_test_success("Tampering correctly detected (calculated hash differs from stored hash)")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -535,15 +535,15 @@ class TestIntegrityVerification(unittest.TestCase):
     
     def test_share_loading_with_integrity_check(self):
         """Test loading shares with integrity checking."""
-        test_name = "Test de chargement des parts avec vérification d'intégrité"
+        test_name = "Share loading with integrity check test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Génération des parts")
+            log_test_step("Generating shares")
             # Generate shares
             shares = self.manager.generate_shares(self.test_secret, self.label)
             
-            log_test_step(f"Création de {self.threshold} fichiers de parts")
+            log_test_step(f"Creating {self.threshold} share files")
             # Create share files
             share_files = []
             for idx, share_data in shares[:self.threshold]:  # Just use threshold number of shares
@@ -569,33 +569,33 @@ class TestIntegrityVerification(unittest.TestCase):
                     
                 share_files.append(share_file)
             
-            log_test_step("Chargement des parts avec vérification d'intégrité")
+            log_test_step("Loading shares with integrity check")
             # Load shares with integrity check
             loaded_shares, metadata = ShareManager.load_shares(share_files)
             
-            log_test_step("Vérification du nombre de parts chargées")
+            log_test_step("Verifying number of loaded shares")
             # Verify number of loaded shares
             self.assertEqual(len(loaded_shares), self.threshold, "Incorrect number of shares loaded")
-            log_test_success(f"{len(loaded_shares)} parts chargées correctement")
+            log_test_success(f"{len(loaded_shares)} shares correctly loaded")
             
-            log_test_step("Vérification des métadonnées chargées")
+            log_test_step("Verifying loaded metadata")
             # Verify metadata
             self.assertEqual(metadata.version, VERSION, "Version not loaded correctly")
             self.assertEqual(metadata.label, self.label, "Label not loaded correctly")
             self.assertEqual(metadata.threshold, self.threshold, "Threshold not loaded correctly")
             self.assertEqual(metadata.total_shares, self.total_shares, "Total shares not loaded correctly")
-            log_test_success("Métadonnées chargées correctement")
+            log_test_success("Metadata correctly loaded")
             
-            log_test_step("Reconstruction du secret à partir des parts chargées")
+            log_test_step("Reconstructing secret from loaded shares")
             # Try to reconstruct secret from loaded shares
             reconstructed_secret = self.manager.combine_shares(loaded_shares)
             
             # Verify reconstruction
             self.assertEqual(reconstructed_secret[:len(self.test_secret)], self.test_secret,
                            "Reconstruction from loaded shares failed")
-            log_test_success("Secret correctement reconstruit à partir des parts chargées")
+            log_test_success("Secret correctly reconstructed from loaded shares")
             
-            log_test_step("Création d'une part falsifiée avec une étiquette différente")
+            log_test_step("Creating a tampered share with different label")
             # Create a tampered share file
             tampered_idx = self.threshold + 1  # Create a new share index
             tampered_file = os.path.join(self.temp_dir.name, f"tampered_share_{tampered_idx}.json")
@@ -615,13 +615,13 @@ class TestIntegrityVerification(unittest.TestCase):
             # Add tampered file to share files
             all_files = share_files + [tampered_file]
             
-            log_test_step("Tentative de chargement des parts incluant une part falsifiée")
+            log_test_step("Attempting to load shares including a tampered share")
             # Try to load all shares - should fail due to label mismatch
             with self.assertRaises(ValueError, msg="Loading tampered shares should raise ValueError"):
                 ShareManager.load_shares(all_files)
-            log_test_success("Chargement de parts falsifiées correctement rejeté")
+            log_test_success("Loading tampered shares correctly rejected")
             
-            log_test_step("Création d'une part avec hash falsifié")
+            log_test_step("Creating a share with tampered hash")
             # Create a second tampered share with corrupted hash
             tampered_hash_file = os.path.join(self.temp_dir.name, "tampered_hash.json")
             
@@ -638,7 +638,7 @@ class TestIntegrityVerification(unittest.TestCase):
             with open(tampered_hash_file, 'w') as f:
                 json.dump(tampered_hash_info, f)
             
-            log_test_step("Vérification manuelle de l'intégrité du hash")
+            log_test_step("Manual verification of hash integrity")
             # Manual verification of hash integrity for educational purposes
             with open(tampered_hash_file, 'r') as f:
                 hash_info = json.load(f)
@@ -652,7 +652,7 @@ class TestIntegrityVerification(unittest.TestCase):
             # Compare with stored hash - should be different
             self.assertNotEqual(calculated_hash, hash_info['share_integrity_hash'],
                                "Hash should not match for tampered data")
-            log_test_success("Intégrité du hash correctement vérifiée - falsification détectée")
+            log_test_success("Hash integrity correctly verified - tampering detected")
             
             log_test_end(test_name)
         except Exception as e:

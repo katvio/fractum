@@ -32,7 +32,7 @@ from src import (
     cli
 )
 
-# Couleurs pour les logs
+# Colors for logs
 class LogColors:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -44,58 +44,58 @@ class LogColors:
     BOLD = '\033[1m'
 
 def log_test_start(test_name):
-    """Affiche un message de démarrage de test."""
-    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ DÉMARRAGE: {test_name}{LogColors.ENDC}")
+    """Display a test start message."""
+    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ STARTING: {test_name}{LogColors.ENDC}")
 
 def log_test_step(step_description):
-    """Affiche une étape de test."""
+    """Display a test step."""
     print(f"{LogColors.CYAN}  ↳ {step_description}{LogColors.ENDC}")
 
 def log_test_success(message):
-    """Affiche un message de succès."""
-    print(f"{LogColors.GREEN}  ✓ SUCCÈS: {message}{LogColors.ENDC}")
+    """Display a success message."""
+    print(f"{LogColors.GREEN}  ✓ SUCCESS: {message}{LogColors.ENDC}")
 
 def log_test_warning(message):
-    """Affiche un message d'avertissement."""
-    print(f"{LogColors.YELLOW}  ⚠ ATTENTION: {message}{LogColors.ENDC}")
+    """Display a warning message."""
+    print(f"{LogColors.YELLOW}  ⚠ WARNING: {message}{LogColors.ENDC}")
 
 def log_test_skip(message):
-    """Affiche un message de test ignoré."""
-    print(f"{LogColors.YELLOW}  ⚡ IGNORÉ: {message}{LogColors.ENDC}")
+    """Display a skipped test message."""
+    print(f"{LogColors.YELLOW}  ⚡ SKIPPED: {message}{LogColors.ENDC}")
 
 def log_test_end(test_name, success=True):
-    """Affiche un message de fin de test."""
+    """Display a test end message."""
     if success:
-        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ TERMINÉ: {test_name} - Réussi{LogColors.ENDC}")
+        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ FINISHED: {test_name} - Passed{LogColors.ENDC}")
     else:
-        print(f"{LogColors.RED}{LogColors.BOLD}✗ TERMINÉ: {test_name} - Échoué{LogColors.ENDC}")
+        print(f"{LogColors.RED}{LogColors.BOLD}✗ FINISHED: {test_name} - Failed{LogColors.ENDC}")
 
 class CryptographicSecurityTests(unittest.TestCase):
     """Tests for cryptographic security properties."""
     
     def test_entropy_source_quality(self):
         """Verify quality of random bytes from get_enhanced_random_bytes."""
-        test_name = "Test de qualité de source d'entropie"
+        test_name = "Entropy source quality test"
         log_test_start(test_name)
         
         try:
             # Generate multiple samples
-            samples = 100  # Réduit pour accélérer les tests
+            samples = 100  # Reduced to speed up tests
             sample_size = 32  # 32 bytes = 256 bits
             
-            log_test_step(f"Génération de {samples} échantillons aléatoires de {sample_size} octets")
+            log_test_step(f"Generating {samples} random samples of {sample_size} bytes")
             # Collect samples
             random_bytes = [get_enhanced_random_bytes(sample_size) for _ in range(samples)]
             
             # Test 1: Check uniqueness of samples
-            log_test_step("Vérification de l'unicité des échantillons")
+            log_test_step("Verifying sample uniqueness")
             unique_samples = set(random_bytes)
             self.assertEqual(len(unique_samples), samples, 
                              "Random bytes should be unique across samples")
-            log_test_success("Tous les échantillons sont uniques")
+            log_test_success("All samples are unique")
             
             # Test 2: Check byte distribution
-            log_test_step("Analyse de la distribution des octets")
+            log_test_step("Analyzing byte distribution")
             # Flatten all bytes together
             all_bytes = bytearray()
             for sample in random_bytes:
@@ -115,15 +115,15 @@ class CryptographicSecurityTests(unittest.TestCase):
             expected_std_dev = (avg_freq * (1 - 1/256)) ** 0.5
             
             # Verify that actual standard deviation is reasonably close to expected
-            # We'll use a 50% margin for this test (augmenté pour la robustesse)
+            # We'll use a 50% margin for this test (increased for robustness)
             margin = 0.5
             self.assertLess(abs(std_dev - expected_std_dev), margin * expected_std_dev,
                           f"Byte distribution not within expected randomness bounds: "
                           f"std_dev={std_dev}, expected={expected_std_dev}")
-            log_test_success(f"Distribution des octets dans les limites attendues (écart-type: {std_dev:.2f})")
+            log_test_success(f"Byte distribution within expected limits (std dev: {std_dev:.2f})")
             
             # Test 3: Check bit distribution (should be roughly 50% ones and 50% zeros)
-            log_test_step("Analyse de la distribution des bits")
+            log_test_step("Analyzing bit distribution")
             bit_count = 0
             for b in all_bytes:
                 # Count bits in each byte
@@ -132,16 +132,16 @@ class CryptographicSecurityTests(unittest.TestCase):
                         bit_count += 1
                         
             # For random data, expect approximately 50% of bits to be 1
-            # Allow a 10% margin for statistical variation (augmenté pour la robustesse)
+            # Allow a 10% margin for statistical variation (increased for robustness)
             expected_ones = len(all_bytes) * 8 * 0.5
             margin = 0.1
             self.assertLess(abs(bit_count - expected_ones), margin * expected_ones,
                           f"Bit distribution not balanced: {bit_count} ones, expected ~{expected_ones}")
             bit_percentage = (bit_count / (len(all_bytes) * 8)) * 100
-            log_test_success(f"Distribution des bits équilibrée: {bit_percentage:.2f}% de uns (attendu ~50%)")
+            log_test_success(f"Balanced bit distribution: {bit_percentage:.2f}% ones (expected ~50%)")
             
             # Test 4: Test for sequential correlation
-            log_test_step("Vérification de l'absence de corrélation séquentielle")
+            log_test_step("Verifying absence of sequential correlation")
             # Compute the correlation between consecutive samples
             correlations = []
             for i in range(1, len(random_bytes)):
@@ -155,11 +155,11 @@ class CryptographicSecurityTests(unittest.TestCase):
             avg_correlation = sum(correlations) / len(correlations)
             expected_correlation = 32 * 8 * 0.5  # Half the bits should be different on average
             
-            # Allow a 15% margin for statistical variation (augmenté pour la robustesse)
+            # Allow a 15% margin for statistical variation (increased for robustness)
             margin = 0.15
             self.assertLess(abs(avg_correlation - expected_correlation), margin * expected_correlation,
                           f"Sequential correlation detected: avg_distance={avg_correlation}, expected={expected_correlation}")
-            log_test_success(f"Aucune corrélation séquentielle détectée (distance moyenne: {avg_correlation:.2f})")
+            log_test_success(f"No sequential correlation detected (average distance: {avg_correlation:.2f})")
             
             log_test_end(test_name)
         except Exception as e:
@@ -168,13 +168,13 @@ class CryptographicSecurityTests(unittest.TestCase):
         
     def test_key_reuse_prevention(self):
         """Test that keys are not reused across different encryptions."""
-        test_name = "Test de prévention de réutilisation des clés"
+        test_name = "Key reuse prevention test"
         log_test_start(test_name)
         
         try:
             # Create test files
             with tempfile.TemporaryDirectory() as temp_dir:
-                log_test_step("Création des fichiers de test identiques")
+                log_test_step("Creating identical test files")
                 # Create two identical test files
                 test_file1 = os.path.join(temp_dir, "test1.txt")
                 test_file2 = os.path.join(temp_dir, "test2.txt")
@@ -186,11 +186,11 @@ class CryptographicSecurityTests(unittest.TestCase):
                     f.write(test_content)
                 
                 # Encrypt both files using different keys
-                log_test_step("Génération de deux clés différentes")
+                log_test_step("Generating two different keys")
                 key1 = get_enhanced_random_bytes(32)
                 key2 = get_enhanced_random_bytes(32)
                 
-                log_test_step("Chiffrement du premier fichier avec la première clé")
+                log_test_step("Encrypting first file with first key")
                 # First encryption - with explicit metadata to make things easier to verify
                 encryptor1 = FileEncryptor(key1)
                 encrypted_file1 = os.path.join(temp_dir, "test1.enc")
@@ -211,7 +211,7 @@ class CryptographicSecurityTests(unittest.TestCase):
                         f_out.write(tag)
                         f_out.write(ciphertext)
                 
-                log_test_step("Chiffrement du second fichier avec la seconde clé")
+                log_test_step("Encrypting second file with second key")
                 # Second encryption - with different metadata
                 encryptor2 = FileEncryptor(key2)
                 encrypted_file2 = os.path.join(temp_dir, "test2.enc")
@@ -232,40 +232,40 @@ class CryptographicSecurityTests(unittest.TestCase):
                         f_out.write(tag)
                         f_out.write(ciphertext)
                 
-                # Vérifier que les fichiers ont bien été créés
+                # Verify files were created
                 self.assertTrue(os.path.exists(encrypted_file1), "First encrypted file should exist")
                 self.assertTrue(os.path.exists(encrypted_file2), "Second encrypted file should exist")
-                log_test_success("Fichiers chiffrés créés avec succès")
+                log_test_success("Encrypted files created successfully")
                 
                 # Now test direct file comparison
-                log_test_step("Comparaison des fichiers chiffrés")
+                log_test_step("Comparing encrypted files")
                 with open(encrypted_file1, "rb") as f1, open(encrypted_file2, "rb") as f2:
                     content1 = f1.read()
                     content2 = f2.read()
                     
-                    # Vérifier que les fichiers ont bien du contenu
+                    # Verify files have content
                     self.assertGreater(len(content1), 0, "First encrypted file content should not be empty")
                     self.assertGreater(len(content2), 0, "Second encrypted file content should not be empty")
                     
-                    # Les fichiers chiffrés doivent être différents
+                    # Encrypted files should be different
                     self.assertNotEqual(content1, content2, 
                                       "Encrypted files should be different even with identical content")
-                    log_test_success("Les fichiers chiffrés sont différents malgré un contenu identique")
+                    log_test_success("Encrypted files are different despite identical content")
                     
-                    # Tester le déchiffrement des deux fichiers pour vérifier qu'ils décryptent correctement
-                    # avec leurs clés respectives
-                    log_test_step("Déchiffrement et vérification des deux fichiers")
+                    # Test decryption of both files to verify they decrypt correctly
+                    # with their respective keys
+                    log_test_step("Decrypting and verifying both files")
                     decrypted_file1 = os.path.join(temp_dir, "test1.dec")
                     decrypted_file2 = os.path.join(temp_dir, "test2.dec")
                     
                     encryptor1.decrypt_file(encrypted_file1, decrypted_file1)
                     encryptor2.decrypt_file(encrypted_file2, decrypted_file2)
                     
-                    # Vérifier que les fichiers déchiffrés sont identiques à l'original
+                    # Verify decrypted files match original
                     with open(decrypted_file1, "rb") as df1, open(decrypted_file2, "rb") as df2:
                         self.assertEqual(df1.read(), test_content, "First decryption should match original")
                         self.assertEqual(df2.read(), test_content, "Second decryption should match original")
-                    log_test_success("Déchiffrement réussi, contenu original récupéré pour les deux fichiers")
+                    log_test_success("Decryption successful, original content recovered for both files")
                 
             log_test_end(test_name)
         except Exception as e:
@@ -274,7 +274,7 @@ class CryptographicSecurityTests(unittest.TestCase):
     
     def test_no_secrets_in_logs(self):
         """Verify that no secrets are logged during verbose mode."""
-        test_name = "Test d'absence de secrets dans les logs"
+        test_name = "No secrets in logs test"
         log_test_start(test_name)
         
         try:
@@ -282,14 +282,14 @@ class CryptographicSecurityTests(unittest.TestCase):
             stdout_capture = io.StringIO()
             
             with tempfile.TemporaryDirectory() as temp_dir:
-                log_test_step("Création d'un fichier test avec des données secrètes")
+                log_test_step("Creating a test file with secret data")
                 # Create a test file
                 test_file = os.path.join(temp_dir, "secret_file.txt")
                 with open(test_file, "w") as f:
                     f.write("This is secret data that should not be logged")
                     
                 # Create a key that we'll check is not logged
-                log_test_step("Génération d'une clé secrète et capture des sorties verboses")
+                log_test_step("Generating a secret key and capturing verbose output")
                 test_key = get_enhanced_random_bytes(32)
                 test_key_hex = test_key.hex()
                 test_key_b64 = base64.b64encode(test_key).decode('ascii')
@@ -320,24 +320,24 @@ class CryptographicSecurityTests(unittest.TestCase):
                 # Get the captured output
                 log_output = stdout_capture.getvalue()
                 
-                log_test_step("Vérification qu'aucune clé secrète n'apparaît dans les logs")
+                log_test_step("Verifying no secret key appears in logs")
                 # Check that key is not present in any format
                 self.assertNotIn(test_key_hex, log_output, "Secret key (hex) found in logs")
                 self.assertNotIn(test_key_b64, log_output, "Secret key (base64) found in logs")
-                log_test_success("Aucune clé secrète n'apparaît dans les logs")
+                log_test_success("No secret key appears in logs")
                 
-                log_test_step("Vérification qu'aucune part secrète n'apparaît dans les logs")
+                log_test_step("Verifying no secret share appears in logs")
                 # Check that shares are not present in any format
                 for share_format in share_formats:
                     self.assertNotIn(share_format, log_output, f"Share data found in logs: {share_format[:10]}...")
-                log_test_success("Aucune part secrète n'apparaît dans les logs")
+                log_test_success("No secret shares appear in logs")
                 
-                log_test_step("Vérification qu'aucune donnée secrète n'apparaît dans les logs")
+                log_test_step("Verifying no secret data appears in logs")
                 # Check that secret file content is not logged
                 with open(test_file, "r") as f:
                     secret_content = f.read()
                     self.assertNotIn(secret_content, log_output, "Secret file content found in logs")
-                log_test_success("Aucune donnée secrète n'apparaît dans les logs")
+                log_test_success("No secret data appears in logs")
             
             log_test_end(test_name)
         except Exception as e:
@@ -350,11 +350,11 @@ class SideChannelSecurityTests(unittest.TestCase):
     
     def test_timing_attack_resistance(self):
         """Test for resistance against timing attacks in cryptographic operations."""
-        test_name = "Test de résistance aux attaques temporelles"
+        test_name = "Timing attack resistance test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création des données de test et génération des parts")
+            log_test_step("Creating test data and generating shares")
             # Create test data
             test_secret = get_enhanced_random_bytes(32)
             label = "timing_test"
@@ -365,7 +365,7 @@ class SideChannelSecurityTests(unittest.TestCase):
             manager = ShareManager(threshold, total_shares)
             shares = manager.generate_shares(test_secret, label)
             
-            log_test_step(f"Mesure des temps pour {threshold} parts sur plusieurs essais")
+            log_test_step(f"Measuring times for {threshold} shares across multiple trials")
             # Measure time for key reconstruction with different subsets of shares
             # The time should be consistent regardless of which shares are used
             timings = []
@@ -388,16 +388,16 @@ class SideChannelSecurityTests(unittest.TestCase):
                 self.assertEqual(reconstructed, test_secret, "Reconstructed secret is incorrect")
                 
                 if i == 0:
-                    log_test_step(f"Essai {i+1}/{num_trials}: {timings[-1]:.6f} secondes")
+                    log_test_step(f"Trial {i+1}/{num_trials}: {timings[-1]:.6f} seconds")
                 elif i == num_trials - 1:
-                    log_test_step(f"Essai {i+1}/{num_trials}: {timings[-1]:.6f} secondes")
+                    log_test_step(f"Trial {i+1}/{num_trials}: {timings[-1]:.6f} seconds")
             
             # Calculate statistics
             avg_time = sum(timings) / len(timings)
             max_deviation = max(abs(t - avg_time) for t in timings)
             
             # Print timing statistics for debugging
-            log_test_step(f"Statistiques des temps de reconstruction (secondes):")
+            log_test_step(f"Reconstruction time statistics (seconds):")
             print(f"  Average: {avg_time:.6f}")
             print(f"  Min: {min(timings):.6f}")
             print(f"  Max: {max(timings):.6f}")
@@ -409,7 +409,7 @@ class SideChannelSecurityTests(unittest.TestCase):
             self.assertLess(max_deviation, avg_time * 3, 
                            f"Timing variation too high: max deviation {max_deviation:.6f} vs avg {avg_time:.6f}")
             
-            log_test_success(f"Variations de temps limitées: écart max {max_deviation:.6f}s vs moyenne {avg_time:.6f}s")
+            log_test_success(f"Limited time variations: max deviation {max_deviation:.6f}s vs average {avg_time:.6f}s")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -417,25 +417,25 @@ class SideChannelSecurityTests(unittest.TestCase):
     
     def test_memory_usage_patterns(self):
         """Verify memory usage patterns don't leak information."""
-        test_name = "Test des schémas d'utilisation mémoire"
+        test_name = "Memory usage patterns test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Mesure de l'utilisation mémoire initiale")
+            log_test_step("Measuring initial memory usage")
             # Track memory usage before operations
             process = psutil.Process(os.getpid())
             initial_memory = process.memory_info().rss
             
             # Number of iterations to perform to amplify memory effects
             iterations = 5
-            # Adapter les tailles des secrets pour respecter la limite de 32 octets
+            # Adjust secret sizes to respect 32-byte limit
             secret_sizes = [16, 24, 28, 32]  # Different secret sizes in bytes
             
-            log_test_step(f"Test avec différentes tailles de secrets: {secret_sizes}")
+            log_test_step(f"Testing with different secret sizes: {secret_sizes}")
             memory_increases = []
             
             for secret_size in secret_sizes:
-                log_test_step(f"Test avec secrets de {secret_size} octets")
+                log_test_step(f"Testing with {secret_size}-byte secrets")
                 # Force garbage collection to stabilize memory usage
                 gc.collect()
                 
@@ -470,9 +470,9 @@ class SideChannelSecurityTests(unittest.TestCase):
                 # Calculate memory increase
                 memory_increase = after_memory - before_memory
                 memory_increases.append(memory_increase)
-                log_test_step(f"Augmentation mémoire pour {secret_size} octets: {memory_increase/1024:.2f} KB")
+                log_test_step(f"Memory increase for {secret_size} bytes: {memory_increase/1024:.2f} KB")
             
-            log_test_step("Vérification des corrélations entre taille et utilisation mémoire")
+            log_test_step("Checking correlations between size and memory usage")
             # Check for correlation between secret size and memory increase
             # Ideally, memory usage should not correlate strongly with secret size
             # This would indicate potential information leakage
@@ -488,16 +488,16 @@ class SideChannelSecurityTests(unittest.TestCase):
                 
                 # If memory increase scales much faster than secret size,
                 # it might indicate information leakage
-                # We'll use a generous threshold of 5x to account for other memory allocations and système
+                # We'll use a generous threshold of 5x to account for other memory allocations and system noise
                 self.assertLess(increase_ratio, size_ratio * 5,
                               f"Memory usage scales suspiciously with secret size: "
                               f"size_ratio={size_ratio}, increase_ratio={increase_ratio}")
-                log_test_step(f"Ratio taille {size_ratio:.2f} vs ratio mémoire {increase_ratio:.2f} - OK")
+                log_test_step(f"Size ratio {size_ratio:.2f} vs memory ratio {increase_ratio:.2f} - OK")
                 
                 prev_size = secret_sizes[i]
                 prev_increase = max(1, abs(memory_increases[i]))
             
-            log_test_success("Pas de fuite d'information détectée dans l'utilisation mémoire")
+            log_test_success("No information leakage detected in memory usage")
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -505,11 +505,11 @@ class SideChannelSecurityTests(unittest.TestCase):
     
     def test_residual_data_after_clearing(self):
         """Check for residual data after secure clearing."""
-        test_name = "Test d'absence de données résiduelles après effacement"
+        test_name = "Residual data after clearing test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Test de nettoyage des bytearrays")
+            log_test_step("Testing bytearray clearing")
             # Test with bytearrays which can be cleared securely
             test_data = bytearray(b"SECRET_DATA_TO_CLEAR" * 10)
             
@@ -522,31 +522,31 @@ class SideChannelSecurityTests(unittest.TestCase):
             # Verify bytearray is zeroed
             zeroed = all(b == 0 for b in test_data)
             self.assertTrue(zeroed, "Bytearray should be zeroed after clearing")
-            log_test_success("Bytearray correctement vidé (tous les octets sont à zéro)")
+            log_test_success("Bytearray properly cleared (all bytes are zero)")
             
-            log_test_step("Test de traitement des chaînes de caractères")
+            log_test_step("Testing string handling")
             # Test with string - we expect the secure_clear to at least not crash
             try:
                 test_string = "SENSITIVE_STRING_DATA_TO_CLEAR" * 5
                 SecureMemory.secure_clear(test_string)
-                log_test_success("Traitement des chaînes terminé sans erreur")
+                log_test_success("String processing completed without error")
                 # No assertion here as Python strings are immutable
             except Exception as e:
-                log_test_warning(f"Erreur pendant le traitement des chaînes: {str(e)}")
+                log_test_warning(f"Error during string processing: {str(e)}")
                 self.fail(f"SecureMemory.secure_clear failed on string: {str(e)}")
             
-            log_test_step("Test de traitement des listes")
+            log_test_step("Testing list handling")
             # Test with list - we expect the secure_clear to at least not crash
             try:
                 test_list = [b"ITEM1", b"ITEM2", "SECRET3", bytearray(b"ITEM4")]
                 SecureMemory.secure_clear(test_list)
-                log_test_success("Traitement des listes terminé sans erreur")
+                log_test_success("List processing completed without error")
                 # Check if list is empty (this may or may not happen depending on implementation)
                 if isinstance(test_list, list):
                     self.assertEqual(len(test_list), 0, "List should be emptied if possible")
-                    log_test_success("Liste vidée avec succès")
+                    log_test_success("List successfully emptied")
             except Exception as e:
-                log_test_warning(f"Erreur pendant le traitement des listes: {str(e)}")
+                log_test_warning(f"Error during list processing: {str(e)}")
                 self.fail(f"SecureMemory.secure_clear failed on list: {str(e)}")
             
             log_test_end(test_name)
@@ -580,11 +580,11 @@ class EdgeCaseSecurityTests(unittest.TestCase):
     
     def test_adversarial_shares(self):
         """Test share reconstruction with adversarially crafted shares."""
-        test_name = "Test de résistance aux parts falsifiées"
+        test_name = "Resistance to tampered shares test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Test 1: Parts avec indices incohérents")
+            log_test_step("Test 1: Shares with inconsistent indices")
             # Test 1: Shares with inconsistent indices
             inconsistent_indices = [
                 (1, self.valid_shares[0][1]),  # Valid share data but with wrong index
@@ -594,9 +594,9 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             
             with self.assertRaises(ValueError, msg="Should fail with inconsistent indices"):
                 self.manager.combine_shares(inconsistent_indices)
-            log_test_success("Détection réussie des indices incohérents")
+            log_test_success("Successfully detected inconsistent indices")
             
-            log_test_step("Test 2: Parts avec données manipulées")
+            log_test_step("Test 2: Shares with manipulated data")
             # Test 2: Crafted shares with manipulated data
             corrupted_shares = [
                 (self.valid_shares[0][0], self.valid_shares[0][1]),  # Valid share
@@ -610,21 +610,21 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 # Verify reconstruction gives different result than original
                 self.assertNotEqual(reconstructed, self.test_secret, 
                                    "Corrupted shares should not reconstruct to the original secret")
-                log_test_success("Données corrompues produisent un résultat incorrect, comme attendu")
+                log_test_success("Corrupted data produces incorrect result as expected")
             except Exception as e:
                 # Some implementations might detect this corruption and raise an exception
-                log_test_success(f"Détection des données corrompues avec exception: {str(e)}")
+                log_test_success(f"Corrupted data detected with exception: {str(e)}")
                 pass
             
-            log_test_step("Test 3: Nombre insuffisant de parts")
+            log_test_step("Test 3: Insufficient number of shares")
             # Test 3: Insufficient number of shares
             insufficient_shares = self.valid_shares[:self.threshold - 1]
             
             with self.assertRaises(ValueError, msg="Should fail with insufficient shares"):
                 self.manager.combine_shares(insufficient_shares)
-            log_test_success("Détection réussie d'un nombre insuffisant de parts")
+            log_test_success("Successfully detected insufficient number of shares")
             
-            log_test_step("Test 4: Mélange de parts provenant de secrets différents")
+            log_test_step("Test 4: Mixing shares from different secrets")
             # Test 4: Shares from different secrets mixed together
             another_secret = get_enhanced_random_bytes(32)
             another_shares = self.manager.generate_shares(another_secret, "another_label")
@@ -651,13 +651,13 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                                   "Mixed shares should not reconstruct to the first original secret")
                 self.assertNotEqual(reconstructed, another_secret, 
                                   "Mixed shares should not reconstruct to the second original secret")
-                log_test_success("Parts mélangées produisent un résultat incorrect, comme attendu")
+                log_test_success("Mixed shares produce incorrect result as expected")
             except Exception as e:
                 # Some implementations might detect the inconsistency
-                log_test_success(f"Détection des parts mélangées avec exception: {str(e)}")
+                log_test_success(f"Mixed shares detected with exception: {str(e)}")
                 pass
             
-            log_test_step("Test 5: Manipulation d'octets spécifiques")
+            log_test_step("Test 5: Manipulating specific bytes")
             # Test 5: Attempting to manipulate specific bytes        
             # Create slightly modified shares - each with a unique index
             modified_shares = []
@@ -680,10 +680,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 # The reconstructed secret should be different from the original
                 self.assertNotEqual(reconstructed, self.test_secret,
                                    "Modified shares should not reconstruct to the original secret")
-                log_test_success("Parts modifiées produisent un résultat incorrect, comme attendu")
+                log_test_success("Modified shares produce incorrect result as expected")
             except Exception as e:
                 # If implementation detects the inconsistency, that's fine too
-                log_test_success(f"Détection des parts modifiées avec exception: {str(e)}")
+                log_test_success(f"Modified shares detected with exception: {str(e)}")
                 pass
             
             log_test_end(test_name)
@@ -693,11 +693,11 @@ class EdgeCaseSecurityTests(unittest.TestCase):
     
     def test_malicious_metadata(self):
         """Verify behavior with malicious metadata."""
-        test_name = "Test de résistance aux métadonnées malveillantes"
+        test_name = "Resistance to malicious metadata test"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création d'un fichier de test")
+            log_test_step("Creating a test file")
             # Create a test file for testing
             test_file = self.test_dir / "test_file.txt"
             with open(test_file, "w") as f:
@@ -707,14 +707,14 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             encrypted_file = self.test_dir / "test_file.enc"
             encryptor = FileEncryptor(self.test_secret)
             encryptor.encrypt_file(str(test_file), str(encrypted_file))
-            log_test_success("Fichier chiffré avec succès pour les tests")
+            log_test_success("File encrypted successfully for testing")
             
-            log_test_step("Création de variantes avec métadonnées malveillantes")
+            log_test_step("Creating variants with malicious metadata")
             # Create several variants of files with malicious metadata
             test_cases = []
             
             # 1. File with oversized metadata length
-            log_test_step("Cas 1: Métadonnées de taille excessive")
+            log_test_step("Case 1: Oversized metadata length")
             oversized_length_file = self.test_dir / "oversized_length.enc"
             with open(encrypted_file, "rb") as src, open(oversized_length_file, "wb") as dst:
                 # Read the original file
@@ -727,7 +727,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             test_cases.append(("Oversized Length", oversized_length_file))
             
             # 2. File with metadata containing control characters
-            log_test_step("Cas 2: Métadonnées avec caractères de contrôle")
+            log_test_step("Case 2: Metadata with control characters")
             control_chars_file = self.test_dir / "control_chars.enc"
             with open(encrypted_file, "rb") as src, open(control_chars_file, "wb") as dst:
                 # Read the original file
@@ -745,8 +745,8 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 
             test_cases.append(("Control Characters", control_chars_file))
             
-            # 3. File with malicious version string - nous lisons le contenu en bytes ici
-            log_test_step("Cas 3: Chaîne de version malveillante")
+            # 3. File with malicious version string - reading content as bytes here
+            log_test_step("Case 3: Malicious version string")
             malicious_version_file = self.test_dir / "malicious_version.enc"
             with open(encrypted_file, "rb") as src, open(malicious_version_file, "wb") as dst:
                 # Read the original file
@@ -766,12 +766,12 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                     dst.write(modified_metadata)
                     dst.write(original_content[4+metadata_len:])
                     
-                    # Ajouter ce cas de test uniquement si la modification a été effectuée
+                    # Add this test case only if the modification was made
                     test_cases.append(("Malicious Version", malicious_version_file))
-                # Si on ne peut pas trouver la version exacte, on ne fait rien et on passe au cas suivant
+                # If we can't find the exact version, do nothing and skip to the next case
                 
             # 4. File with deeply nested JSON structure
-            log_test_step("Cas 4: Structure JSON profondément imbriquée")
+            log_test_step("Case 4: Deeply nested JSON structure")
             recursive_file = self.test_dir / "recursive.enc"
             with open(encrypted_file, "rb") as src, open(recursive_file, "wb") as dst:
                 # Read the original file to get metadata length and encryption data
@@ -782,7 +782,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             # Now create a JSON with deeply nested structure
             deep_json = {"a": 1}
             current = deep_json
-            for i in range(100):  # Profondeur de 100 au lieu de 1000 pour éviter les problèmes de mémoire
+            for i in range(100):  # Depth of 100 instead of 1000 to avoid memory issues
                 current["nested"] = {"a": i}
                 current = current["nested"]
                 
@@ -800,7 +800,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             test_cases.append(("Recursive Structure", recursive_file))
             
             # 5. File with invalid UTF-8 sequences in metadata
-            log_test_step("Cas 5: Séquences UTF-8 invalides dans les métadonnées")
+            log_test_step("Case 5: Invalid UTF-8 sequences in metadata")
             invalid_utf8_file = self.test_dir / "invalid_utf8.enc"
             with open(encrypted_file, "rb") as src, open(invalid_utf8_file, "wb") as dst:
                 # Read the original file
@@ -817,10 +817,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 
             test_cases.append(("Invalid UTF-8", invalid_utf8_file))
             
-            log_test_step(f"Test de déchiffrement avec les {len(test_cases)} fichiers malveillants")
+            log_test_step(f"Testing decryption with {len(test_cases)} malicious files")
             # Test each malicious file
             for desc, malicious_file in test_cases:
-                log_test_step(f"Test du cas: {desc}")
+                log_test_step(f"Testing case: {desc}")
                 with self.subTest(f"Testing {desc} metadata"):
                     try:
                         # Attempt to decrypt the malicious file
@@ -832,7 +832,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                         # If it succeeds, verify the content is correct
                         with open(test_file, "rb") as f1, open(decrypted_file, "rb") as f2:
                             self.assertEqual(f1.read(), f2.read(), "Decrypted content should match original")
-                        log_test_success(f"Cas {desc}: Déchiffrement réussi, contenu correct")
+                        log_test_success(f"Case {desc}: Decryption successful, content correct")
                         
                     except Exception as e:
                         # Verify that the exception is related to metadata parsing
@@ -840,7 +840,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                         acceptable_errors = [
                             "metadata", "json", "utf", "decode", "parse", "recursion", "length",
                             "memory", "value", "buffer", "overflow", "incorrect key", "nonce",
-                            "version", "incompatible"  # Ajout des mots-clés pour les erreurs de version
+                            "version", "incompatible"  # Added keywords for version errors
                         ]
                         
                         error_message = str(e).lower()
@@ -848,7 +848,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                         
                         self.assertTrue(is_acceptable_error, 
                                       f"Exception with {desc} should be handled gracefully: {e}")
-                        log_test_success(f"Cas {desc}: Erreur gérée correctement: {e}")
+                        log_test_success(f"Case {desc}: Error handled correctly: {e}")
             
             log_test_end(test_name)
         except Exception as e:

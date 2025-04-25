@@ -661,6 +661,15 @@ class ShareArchiver:
             sss_dir.mkdir(exist_ok=True)
             shutil.copy("src/__init__.py", sss_dir)
             
+            # Copy setup folder with all setup files
+            setup_src_dir = Path("setup")
+            if setup_src_dir.exists():
+                setup_dst_dir = temp_dir / "setup"
+                setup_dst_dir.mkdir(exist_ok=True)
+                for setup_file in setup_src_dir.glob("*"):
+                    if setup_file.is_file():
+                        shutil.copy(setup_file, setup_dst_dir)
+            
             # Create packages directory
             packages_dir = temp_dir / "packages"
             packages_dir.mkdir(exist_ok=True)

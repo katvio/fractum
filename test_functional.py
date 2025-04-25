@@ -349,6 +349,15 @@ class CLIEndToEndTests(unittest.TestCase):
         self.assertTrue((src_dir / "__init__.py").exists(), "source code not found in archive")
         log_success("Found src directory and source code in archive")
         
+        # Copy setup folder with all setup files
+        setup_src_dir = Path("setup")
+        if setup_src_dir.exists():
+            setup_dst_dir = extract_dir / "setup"
+            setup_dst_dir.mkdir(exist_ok=True)
+            for setup_file in setup_src_dir.glob("*"):
+                if setup_file.is_file():
+                    shutil.copy(setup_file, setup_dst_dir)
+        
         log_header("Archive creation and extraction tests completed successfully")
     
     def test_interactive_mode(self):
@@ -627,20 +636,15 @@ class CompatibilityTests(unittest.TestCase):
 
     def test_file_format_compatibility(self):
         """Test compatibility with different file formats."""
-        log_header("Testing file format compatibility")
-        
         # Create test data
         threshold = 3
         total_shares = 5
         label = "format_test"
         test_secret = os.urandom(32)
-        log_info(f"Using parameters: threshold={threshold}, total_shares={total_shares}, label={label}")
         
         # Create a share manager and generate shares
-        log_step("Creating ShareManager and generating shares")
         manager = ShareManager(threshold, total_shares)
         shares = manager.generate_shares(test_secret, label)
-        log_success(f"Generated {len(shares)} shares")
         
         # Create shares in different formats
         format_shares = []
@@ -648,7 +652,6 @@ class CompatibilityTests(unittest.TestCase):
         # 1. Standard format
         idx, share_data = shares[0]
         standard_share = self.shares_dir / f"standard_share_{idx}.txt"
-        log_step(f"Creating standard format share (share {idx})")
         
         # Calculate hash
         share_hash = hashlib.sha256(share_data).hexdigest()
@@ -669,12 +672,10 @@ class CompatibilityTests(unittest.TestCase):
             json.dump(standard_info, f, indent=2)
             
         format_shares.append(standard_share)
-        log_success("Created standard format share")
         
         # 2. Legacy format (using 'share' instead of 'share_key')
         idx, share_data = shares[1]
         legacy_share = self.shares_dir / f"legacy_share_{idx}.txt"
-        log_step(f"Creating legacy format share with 'share' key (share {idx})")
         
         # Calculate hash
         share_hash = hashlib.sha256(share_data).hexdigest()
@@ -695,12 +696,10 @@ class CompatibilityTests(unittest.TestCase):
             json.dump(legacy_info, f, indent=2)
             
         format_shares.append(legacy_share)
-        log_success("Created legacy format share")
         
         # 3. Extended format (extra fields)
         idx, share_data = shares[2]
         extended_share = self.shares_dir / f"extended_share_{idx}.txt"
-        log_step(f"Creating extended format share with extra fields (share {idx})")
         
         # Calculate hash
         share_hash = hashlib.sha256(share_data).hexdigest()
@@ -724,30 +723,22 @@ class CompatibilityTests(unittest.TestCase):
             json.dump(extended_info, f, indent=2)
             
         format_shares.append(extended_share)
-        log_success("Created extended format share with extra fields")
         
         # Try to load shares with different formats
         try:
-            log_step("Attempting to load shares with different formats")
             loaded_shares, metadata = ShareManager.load_shares([str(s) for s in format_shares])
             
             # Verify the number of loaded shares
             self.assertEqual(len(loaded_shares), threshold, "Incorrect number of shares loaded")
-            log_success(f"Successfully loaded {len(loaded_shares)} shares with different formats")
             
             # Try to reconstruct the secret
-            log_step("Reconstructing secret from different format shares")
             reconstructed_secret = manager.combine_shares(loaded_shares)
             
             # Verify the reconstructed secret
             self.assertEqual(reconstructed_secret, test_secret, 
                            "Failed to reconstruct secret with different format shares")
-            log_success("Successfully reconstructed secret with different format shares")
         except Exception as e:
-            log_error(f"Failed to load different format shares: {str(e)}")
             self.fail(f"Failed to load different format shares: {str(e)}")
-        
-        log_header("File format compatibility test completed successfully")
 
 
 class ErrorHandlingTests(unittest.TestCase):
@@ -755,35 +746,28 @@ class ErrorHandlingTests(unittest.TestCase):
     
     def setUp(self):
         """Setup test environment."""
-        log_header("Setting up error handling tests")
         # Create temporary directory for test files
         self.temp_dir = tempfile.TemporaryDirectory()
         self.test_dir = Path(self.temp_dir.name)
-        log_info(f"Created temporary directory at {self.test_dir}")
         
         # Create test file
         self.test_file = self.test_dir / "error_test.txt"
         with open(self.test_file, "w") as f:
             f.write("Test content for error handling")
-        log_step(f"Created test file: {self.test_file.name}")
             
         # Create shares directory
         self.shares_dir = self.test_dir / "shares"
         self.shares_dir.mkdir(exist_ok=True)
-        log_info(f"Created shares directory at {self.shares_dir}")
         
         # Create common variables
         self.threshold = 3
         self.total_shares = 5
         self.label = "error_test"
         self.test_secret = os.urandom(32)
-        log_info(f"Using parameters: threshold={self.threshold}, total_shares={self.total_shares}, label={self.label}")
         
         # Create a share manager and generate shares
-        log_step("Creating ShareManager and generating shares")
         self.manager = ShareManager(self.threshold, self.total_shares)
         self.shares = self.manager.generate_shares(self.test_secret, self.label)
-        log_success(f"Generated {len(self.shares)} shares")
         
         # Create share files
         self.share_files = []
@@ -809,46 +793,35 @@ class ErrorHandlingTests(unittest.TestCase):
                 json.dump(share_info, f, indent=2)
                 
             self.share_files.append(share_file)
-        log_success(f"Created {len(self.share_files)} share files")
         
         # Encrypt test file
-        log_step("Encrypting test file")
         self.encryptor = FileEncryptor(self.test_secret)
         self.encrypted_file = self.test_dir / "error_test.txt.enc"
         self.encryptor.encrypt_file(str(self.test_file), str(self.encrypted_file))
-        log_success(f"Encrypted file created: {self.encrypted_file.name}")
         
     def tearDown(self):
         """Clean up test environment."""
-        log_info("Cleaning up test environment")
         self.temp_dir.cleanup()
     
     def test_corrupted_shares(self):
         """Test with corrupted shares."""
-        log_header("Testing corrupted shares handling")
-        
         # Create a corrupted share with completely invalid JSON
         corrupted_share = self.shares_dir / "corrupted_share.txt"
-        log_step("Creating corrupted share with invalid JSON")
         
         # Write invalid JSON
         with open(corrupted_share, "w") as f:
             f.write("This is not valid JSON at all")
-        log_success("Created corrupted share with invalid JSON")
         
         # Try to load shares including corrupted one
         corrupted_set = [str(corrupted_share)]
-        log_step("Attempting to load corrupted share")
         
         # Should raise an exception when trying to parse invalid JSON
         with self.assertRaises(Exception, msg="Should fail when loading corrupted JSON"):
             ShareManager.load_shares(corrupted_set)
-        log_success("Correctly failed to load corrupted JSON share")
         
         # Test with invalid Base64
         idx, share_data = self.shares[0]
         invalid_base64_share = self.shares_dir / f"invalid_base64_share_{idx}.txt"
-        log_step("Creating share with invalid Base64 encoding")
         
         # Calculate hash
         share_hash = hashlib.sha256(share_data).hexdigest()
@@ -867,50 +840,32 @@ class ErrorHandlingTests(unittest.TestCase):
         # Write invalid Base64 share file
         with open(invalid_base64_share, "w") as f:
             json.dump(invalid_base64_info, f, indent=2)
-        log_success("Created share with invalid Base64 encoding")
         
         # Try to load share with invalid Base64
-        log_step("Attempting to load share with invalid Base64")
         with self.assertRaises(Exception, msg="Should fail with invalid Base64"):
             ShareManager.load_shares([str(invalid_base64_share)])
-        log_success("Correctly failed to load share with invalid Base64")
-        
-        log_header("Corrupted shares test completed successfully")
     
     def test_insufficient_shares(self):
         """Test with insufficient shares."""
-        log_header("Testing insufficient shares handling")
-        
         # Select fewer shares than threshold
         insufficient_shares = self.share_files[:self.threshold - 1]
-        log_step(f"Selected {len(insufficient_shares)} shares (below threshold of {self.threshold})")
         
         # Try to load insufficient shares
         try:
-            log_step("Attempting to load insufficient shares")
             shares_data, metadata = ShareManager.load_shares([str(s) for s in insufficient_shares])
-            log_info(f"Loaded {len(shares_data)} shares")
             
             # Try to reconstruct with insufficient shares
-            log_step("Attempting to reconstruct secret with insufficient shares")
             with self.assertRaises(ValueError, msg="Should fail with insufficient shares"):
                 self.manager.combine_shares(shares_data)
-            log_success("Correctly failed to reconstruct with insufficient shares")
         except ValueError as e:
             # Either load_shares or combine_shares should raise ValueError
             self.assertIn("insufficient", str(e).lower(), 
                         "Error message should mention insufficient shares")
-            log_success(f"Correctly failed with message about insufficient shares: {str(e)}")
-        
-        log_header("Insufficient shares test completed successfully")
     
     def test_file_access_issues(self):
         """Test with file access issues."""
-        log_header("Testing file access issues")
-        
         # 1. Test with non-existent file
         non_existent_file = self.test_dir / "non_existent.txt"
-        log_step("Testing with non-existent file")
         
         # Use a try-except block to catch FileNotFoundError instead of sys.exit 
         with self.assertRaises((FileNotFoundError, ValueError), msg="Should fail with non-existent file"):
@@ -918,14 +873,12 @@ class ErrorHandlingTests(unittest.TestCase):
             encryptor = FileEncryptor(os.urandom(32))
             output_file = self.test_dir / "output.enc"
             encryptor.encrypt_file(str(non_existent_file), str(output_file))
-        log_success("Correctly failed with non-existent file")
         
         # 2. Test with inaccessible directory
         # This test might be system-dependent, so make it more robust
         try:
             inaccessible_dir = self.test_dir / "no_access"
             inaccessible_dir.mkdir(exist_ok=True)
-            log_step("Testing with inaccessible directory")
             
             # Try to create a file in this directory after changing permissions
             test_perm_file = inaccessible_dir / "test_perm.txt"
@@ -933,57 +886,42 @@ class ErrorHandlingTests(unittest.TestCase):
             # First ensure we can write to confirm permissions are working
             with open(test_perm_file, 'w') as f:
                 f.write("test")
-            log_info("Created test permission file")
             
             # Now try to make directory read-only and test
             try:
                 # Make directory read-only (can't create files)
-                log_step("Setting directory to read-only")
                 os.chmod(inaccessible_dir, 0o500)  # r-x------
                 
                 # Try to create a file in the read-only directory
                 test_denied_file = inaccessible_dir / "should_fail.txt"
-                log_step("Attempting to create file in read-only directory")
                 
                 # This should fail with permission error
                 with self.assertRaises(PermissionError, msg="Should fail with permission issues"):
                     with open(test_denied_file, 'w') as f:
                         f.write("This should fail")
-                log_success("Correctly failed with permission issues")
                     
             finally:
                 # Reset permissions to ensure cleanup works
                 os.chmod(inaccessible_dir, 0o700)  # rwx------
-                log_info("Reset directory permissions for cleanup")
         except PermissionError:
             # Skip if we can't change permissions (could happen in some environments)
-            log_warning("Skipping permission test as we can't modify permissions")
-        
-        log_header("File access issues test completed successfully")
+            pass
     
     def test_incorrect_keys(self):
         """Test with incorrect keys for decryption."""
-        log_header("Testing incorrect keys handling")
-        
         # Generate a different key
         wrong_key = os.urandom(32)
-        log_step("Generating a different key for testing")
         
         # Create an encryptor with the wrong key
         wrong_encryptor = FileEncryptor(wrong_key)
-        log_info("Created encryptor with wrong key")
         
         # Attempt to decrypt with wrong key
-        log_step("Attempting to decrypt with wrong key")
         with self.assertRaises(ValueError, msg="Should fail with incorrect key"):
             decrypted_file = self.test_dir / "wrong_key_decrypted.txt"
             wrong_encryptor.decrypt_file(str(self.encrypted_file), str(decrypted_file))
-        log_success("Correctly failed decryption with wrong key")
         
         # Generate shares with the wrong key
-        log_step("Generating shares with wrong key")
         wrong_shares = self.manager.generate_shares(wrong_key, self.label)
-        log_success(f"Generated {len(wrong_shares)} shares with wrong key")
         
         # Create share files with wrong key
         wrong_share_files = []
@@ -1009,30 +947,20 @@ class ErrorHandlingTests(unittest.TestCase):
                 json.dump(share_info, f, indent=2)
                 
             wrong_share_files.append(wrong_share_file)
-        log_success(f"Created {len(wrong_share_files)} share files with wrong key")
         
         # Load wrong shares
-        log_step("Loading shares created with wrong key")
         wrong_shares_data, metadata = ShareManager.load_shares([str(s) for s in wrong_share_files])
-        log_success(f"Loaded {len(wrong_shares_data)} shares with wrong key")
         
         # Reconstruct wrong key
-        log_step("Reconstructing wrong key from shares")
         wrong_reconstructed_key = self.manager.combine_shares(wrong_shares_data)
-        log_success("Successfully reconstructed the wrong key")
         
         # Create encryptor with wrong reconstructed key
-        log_step("Creating encryptor with reconstructed wrong key")
         wrong_key_encryptor = FileEncryptor(wrong_reconstructed_key)
         
         # Attempt to decrypt with wrong reconstructed key
-        log_step("Attempting to decrypt with wrong reconstructed key")
         with self.assertRaises(ValueError, msg="Should fail with incorrect reconstructed key"):
             decrypted_file = self.test_dir / "wrong_reconstructed_decrypted.txt"
             wrong_key_encryptor.decrypt_file(str(self.encrypted_file), str(decrypted_file))
-        log_success("Correctly failed decryption with wrong reconstructed key")
-        
-        log_header("Incorrect keys test completed successfully")
 
 
 if __name__ == "__main__":

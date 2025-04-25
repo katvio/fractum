@@ -22,7 +22,7 @@ from src import (
     ShareMetadata
 )
 
-# Couleurs pour les logs
+# Colors for logs
 class LogColors:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -34,31 +34,31 @@ class LogColors:
     BOLD = '\033[1m'
 
 def log_test_start(test_name):
-    """Affiche un message de démarrage de test."""
-    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ DÉMARRAGE: {test_name}{LogColors.ENDC}")
+    """Display a test start message."""
+    print(f"\n{LogColors.BLUE}{LogColors.BOLD}▶ STARTING: {test_name}{LogColors.ENDC}")
 
 def log_test_step(step_description):
-    """Affiche une étape de test."""
+    """Display a test step."""
     print(f"{LogColors.CYAN}  ↳ {step_description}{LogColors.ENDC}")
 
 def log_test_success(message):
-    """Affiche un message de succès."""
-    print(f"{LogColors.GREEN}  ✓ SUCCÈS: {message}{LogColors.ENDC}")
+    """Display a success message."""
+    print(f"{LogColors.GREEN}  ✓ SUCCESS: {message}{LogColors.ENDC}")
 
 def log_test_warning(message):
-    """Affiche un message d'avertissement."""
-    print(f"{LogColors.YELLOW}  ⚠ ATTENTION: {message}{LogColors.ENDC}")
+    """Display a warning message."""
+    print(f"{LogColors.YELLOW}  ⚠ WARNING: {message}{LogColors.ENDC}")
 
 def log_test_skip(message):
-    """Affiche un message de test ignoré."""
-    print(f"{LogColors.YELLOW}  ⚡ IGNORÉ: {message}{LogColors.ENDC}")
+    """Display a skipped test message."""
+    print(f"{LogColors.YELLOW}  ⚡ SKIPPED: {message}{LogColors.ENDC}")
 
 def log_test_end(test_name, success=True):
-    """Affiche un message de fin de test."""
+    """Display a test end message."""
     if success:
-        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ TERMINÉ: {test_name} - Réussi{LogColors.ENDC}")
+        print(f"{LogColors.GREEN}{LogColors.BOLD}✓ FINISHED: {test_name} - Passed{LogColors.ENDC}")
     else:
-        print(f"{LogColors.RED}{LogColors.BOLD}✗ TERMINÉ: {test_name} - Échoué{LogColors.ENDC}")
+        print(f"{LogColors.RED}{LogColors.BOLD}✗ FINISHED: {test_name} - Failed{LogColors.ENDC}")
 
 class InputFuzzingTests(unittest.TestCase):
     """Tests for input fuzzing - modifying inputs to test robustness."""
@@ -124,7 +124,7 @@ class InputFuzzingTests(unittest.TestCase):
     
     def test_share_file_bit_flipping(self):
         """Test with random bit flipping in share files."""
-        test_name = "Test de flipping de bits sur les fichiers de parts"
+        test_name = "Bit flipping test on share files"
         log_test_start(test_name)
         
         try:
@@ -132,14 +132,14 @@ class InputFuzzingTests(unittest.TestCase):
             original_share = self.share_files[0]
             fuzz_share = self.shares_dir / "fuzzed_share.txt"
             
-            log_test_step(f"Copie du fichier original {original_share.name} vers {fuzz_share.name}")
+            log_test_step(f"Copying original file {original_share.name} to {fuzz_share.name}")
             # Read the original share file
             with open(original_share, "rb") as f:
                 content = bytearray(f.read())
             
             # Flip bits at random positions
             num_flips = min(10, len(content))  # Flip up to 10 bits
-            log_test_step(f"Modification aléatoire de {num_flips} bits dans le fichier")
+            log_test_step(f"Randomly modifying {num_flips} bits in the file")
             for _ in range(num_flips):
                 pos = random.randint(0, len(content) - 1)
                 bit = random.randint(0, 7)
@@ -149,12 +149,12 @@ class InputFuzzingTests(unittest.TestCase):
             with open(fuzz_share, "wb") as f:
                 f.write(content)
             
-            log_test_step("Tentative de chargement du fichier modifié")
+            log_test_step("Attempting to load the modified file")
             # Try to load the fuzzed share file
             # It should either fail with an exception or load but give incorrect results later
             try:
                 shares_data, metadata = ShareManager.load_shares([str(fuzz_share)])
-                log_test_step("Fichier chargé, tentative de reconstruction du secret")
+                log_test_step("File loaded, attempting to reconstruct the secret")
                 
                 # If it loaded, reconstruct should either fail or give incorrect results
                 try:
@@ -162,13 +162,13 @@ class InputFuzzingTests(unittest.TestCase):
                     # Verify that the reconstructed secret is different from the original
                     self.assertNotEqual(reconstructed, self.test_secret, 
                                       "Fuzzed share should not reconstruct the correct secret")
-                    log_test_success("Secret reconstruit mais incorrect comme attendu")
+                    log_test_success("Secret reconstructed but incorrect as expected")
                 except Exception as e:
                     # Expected - combining with fuzzed share should fail
-                    log_test_success(f"Échec de la reconstruction comme attendu: {str(e)}")
+                    log_test_success(f"Reconstruction failed as expected: {str(e)}")
             except Exception as e:
                 # Expected - loading fuzzed share might fail
-                log_test_success(f"Échec du chargement comme attendu: {str(e)}")
+                log_test_success(f"Loading failed as expected: {str(e)}")
             
             log_test_end(test_name)
         except Exception as e:
@@ -177,14 +177,14 @@ class InputFuzzingTests(unittest.TestCase):
     
     def test_encrypted_file_bit_flipping(self):
         """Test with bit flipping in encrypted files."""
-        test_name = "Test de flipping de bits sur les fichiers chiffrés"
+        test_name = "Bit flipping test on encrypted files"
         log_test_start(test_name)
         
         try:
             # Make a copy of the encrypted file for testing
             fuzzed_encrypted = self.test_dir / "fuzzed_encrypted.enc"
             
-            log_test_step(f"Copie du fichier chiffré vers {fuzzed_encrypted.name}")
+            log_test_step(f"Copying encrypted file to {fuzzed_encrypted.name}")
             # Read the original encrypted file
             with open(self.encrypted_file, "rb") as f:
                 content = bytearray(f.read())
@@ -194,7 +194,7 @@ class InputFuzzingTests(unittest.TestCase):
             start_pos = min(100, len(content) // 3)  # Skip header
             num_flips = min(20, max(1, len(content) // 100))  # Flip ~1% of bits
             
-            log_test_step(f"Modification de {num_flips} bits dans le contenu chiffré (après pos {start_pos})")
+            log_test_step(f"Modifying {num_flips} bits in the encrypted content (after pos {start_pos})")
             for _ in range(num_flips):
                 pos = random.randint(start_pos, len(content) - 1)
                 bit = random.randint(0, 7)
@@ -204,7 +204,7 @@ class InputFuzzingTests(unittest.TestCase):
             with open(fuzzed_encrypted, "wb") as f:
                 f.write(content)
             
-            log_test_step("Tentative de déchiffrement du fichier modifié")
+            log_test_step("Attempting to decrypt the modified file")
             # Try to decrypt the fuzzed file
             decrypted_file = self.test_dir / "fuzzed_decrypted.txt"
             
@@ -212,9 +212,9 @@ class InputFuzzingTests(unittest.TestCase):
             try:
                 with self.assertRaises(Exception, msg="Decryption of tampered file should fail"):
                     self.encryptor.decrypt_file(str(fuzzed_encrypted), str(decrypted_file))
-                log_test_success("Déchiffrement échoué comme prévu avec le fichier modifié")
+                log_test_success("Decryption failed as expected with the modified file")
             except Exception as e:
-                log_test_warning(f"Le test a échoué: {str(e)}")
+                log_test_warning(f"The test failed: {str(e)}")
                 raise e
             
             log_test_end(test_name)
@@ -224,13 +224,13 @@ class InputFuzzingTests(unittest.TestCase):
     
     def test_malformed_json_shares(self):
         """Test with malformed JSON in share files."""
-        test_name = "Test avec des fichiers JSON malformés"
+        test_name = "Test with malformed JSON files"
         log_test_start(test_name)
         
         try:
             malformed_variants = []
             
-            log_test_step("Création d'un fichier de base pour les tests")
+            log_test_step("Creating a base file for testing")
             # Create several malformed JSON share files
             base_share_file = self.shares_dir / "malformed_json_base.txt"
             
@@ -250,7 +250,7 @@ class InputFuzzingTests(unittest.TestCase):
             with open(base_share_file, "w") as f:
                 json.dump(valid_share_info, f, indent=2)
             
-            log_test_step("Création de variantes de JSON malformés")
+            log_test_step("Creating malformed JSON variants")
             # 1. Truncated JSON
             truncated_file = self.shares_dir / "malformed_truncated.txt"
             with open(base_share_file, "r") as f:
@@ -299,17 +299,17 @@ class InputFuzzingTests(unittest.TestCase):
                 
             malformed_variants.append(non_json_file)
             
-            log_test_step(f"Test de {len(malformed_variants)} variantes de fichiers malformés")
+            log_test_step(f"Testing {len(malformed_variants)} malformed file variants")
             # Test each malformed variant
             for variant_file in malformed_variants:
                 with self.subTest(f"Testing malformed JSON: {variant_file.name}"):
-                    log_test_step(f"Test du fichier: {variant_file.name}")
+                    log_test_step(f"Testing file: {variant_file.name}")
                     try:
                         with self.assertRaises(Exception, msg=f"Loading {variant_file.name} should fail"):
                             ShareManager.load_shares([str(variant_file)])
-                        log_test_success(f"Échec du chargement de {variant_file.name} comme attendu")
+                        log_test_success(f"Loading {variant_file.name} failed as expected")
                     except Exception as e:
-                        log_test_warning(f"Le test a échoué pour {variant_file.name}: {str(e)}")
+                        log_test_warning(f"The test failed for {variant_file.name}: {str(e)}")
                         raise e
             
             log_test_end(test_name)
@@ -319,11 +319,11 @@ class InputFuzzingTests(unittest.TestCase):
     
     def test_invalid_utf8_sequences(self):
         """Test with invalid UTF-8 sequences in labels and metadata."""
-        test_name = "Test avec des séquences UTF-8 invalides"
+        test_name = "Test with invalid UTF-8 sequences"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création d'un fichier avec des séquences UTF-8 invalides")
+            log_test_step("Creating a file with invalid UTF-8 sequences")
             # Create shares with invalid UTF-8 sequences
             invalid_utf8_share = self.shares_dir / "invalid_utf8_share.txt"
             
@@ -336,11 +336,11 @@ class InputFuzzingTests(unittest.TestCase):
             try:
                 # Attempt to decode, which should fail
                 invalid_utf8 = invalid_utf8_bytes.decode('utf-8')
-                log_test_step("Décodage UTF-8 réussi de manière inattendue")
+                log_test_step("UTF-8 decoding unexpectedly succeeded")
             except UnicodeDecodeError:
                 # Use a replacement character instead
                 invalid_utf8 = '' * 5
-                log_test_step("Utilisation de caractères de remplacement après échec de décodage UTF-8")
+                log_test_step("Using replacement characters after UTF-8 decoding failure")
                 
             # Create share info with invalid UTF-8 in label and version
             share_info = {
@@ -357,18 +357,18 @@ class InputFuzzingTests(unittest.TestCase):
             with open(invalid_utf8_share, "w", encoding='utf-8', errors='replace') as f:
                 json.dump(share_info, f, indent=2, ensure_ascii=False)
             
-            log_test_step("Tentative de chargement du fichier avec UTF-8 invalide")
+            log_test_step("Attempting to load the file with invalid UTF-8")
             # Try to load the share with invalid UTF-8
             # It should either load with replacement characters or fail gracefully
             try:
                 shares_data, metadata = ShareManager.load_shares([str(invalid_utf8_share)])
                 # If it loaded, check that the label was handled properly
                 self.assertIsNotNone(metadata.label, "Label should not be None even with invalid UTF-8")
-                log_test_success("Fichier chargé avec succès malgré les séquences UTF-8 invalides")
+                log_test_success("File loaded successfully despite invalid UTF-8 sequences")
             except Exception as e:
                 # If it failed, it should be a specific error about encoding, not a crash
                 self.assertIn("UTF-8", str(e), "Error should mention UTF-8 issues")
-                log_test_success(f"Échec du chargement avec message approprié: {str(e)}")
+                log_test_success(f"Loading failed with appropriate message: {str(e)}")
             
             log_test_end(test_name)
         except Exception as e:
@@ -395,7 +395,7 @@ class ParameterFuzzingTests(unittest.TestCase):
     
     def test_threshold_boundary_values(self):
         """Test with boundary values for threshold/shares."""
-        test_name = "Test des valeurs limites pour seuil/parts"
+        test_name = "Test with boundary values for threshold/shares"
         log_test_start(test_name)
         
         try:
@@ -410,41 +410,41 @@ class ParameterFuzzingTests(unittest.TestCase):
                 (256, 256, False),   # Likely beyond implementation limits
             ]
             
-            log_test_step(f"Test de {len(test_cases)} combinaisons de seuil/parts")
+            log_test_step(f"Testing {len(test_cases)} threshold/shares combinations")
             
             for threshold, shares, should_succeed in test_cases:
                 test_label = f"t{threshold}_s{shares}"
                 test_secret = os.urandom(32)
                 
                 with self.subTest(f"Testing threshold={threshold}, shares={shares}"):
-                    log_test_step(f"Test avec seuil={threshold}, parts={shares}, attendu: {'succès' if should_succeed else 'échec'}")
+                    log_test_step(f"Testing with threshold={threshold}, shares={shares}, expected: {'success' if should_succeed else 'failure'}")
                     try:
                         # Try to create a share manager with these parameters
                         manager = ShareManager(threshold, shares)
                         
                         # If we get here and should_succeed is False, test fails
                         if not should_succeed:
-                            log_test_warning(f"Création réussie alors que l'échec était attendu")
+                            log_test_warning(f"Creation succeeded when failure was expected")
                             self.fail(f"Should not succeed with threshold={threshold}, shares={shares}")
                         
                         # Try to generate shares
-                        log_test_step(f"Génération de {shares} parts")
+                        log_test_step(f"Generating {shares} shares")
                         share_data = manager.generate_shares(test_secret, test_label)
                         self.assertEqual(len(share_data), shares, f"Should generate {shares} shares")
                         
                         # Validate we can reconstruct with threshold shares
-                        log_test_step(f"Reconstruction avec {threshold} parts")
+                        log_test_step(f"Reconstructing with {threshold} shares")
                         reconstructed = manager.combine_shares(share_data[:threshold])
                         self.assertEqual(reconstructed, test_secret, "Secret should be reconstructed correctly")
-                        log_test_success(f"Reconstruction réussie avec seuil={threshold}, parts={shares}")
+                        log_test_success(f"Reconstruction successful with threshold={threshold}, shares={shares}")
                         
                     except Exception as e:
                         # If it throws an exception, it should match our expectation
                         if should_succeed:
-                            log_test_warning(f"Échec alors que le succès était attendu: {str(e)}")
+                            log_test_warning(f"Failed when success was expected: {str(e)}")
                             self.fail(f"Should succeed but failed: {str(e)}")
                         else:
-                            log_test_success(f"Échec comme attendu: {str(e)}")
+                            log_test_success(f"Failed as expected: {str(e)}")
             
             log_test_end(test_name)
         except Exception as e:
@@ -453,7 +453,7 @@ class ParameterFuzzingTests(unittest.TestCase):
     
     def test_large_files(self):
         """Test with extremely large files."""
-        test_name = "Test avec des fichiers volumineux"
+        test_name = "Test with large files"
         log_test_start(test_name)
         
         try:
@@ -466,17 +466,17 @@ class ParameterFuzzingTests(unittest.TestCase):
                 # (1024 * 1024 * 1024, "1GB"),   # 1 GB (careful with memory!)
             ]
             
-            log_test_step(f"Test avec {len(sizes)} tailles de fichiers")
+            log_test_step(f"Testing {len(sizes)} file sizes")
             
             for size_bytes, size_name in sizes:
                 with self.subTest(f"Testing file size: {size_name}"):
-                    log_test_step(f"Test avec un fichier de {size_name}")
+                    log_test_step(f"Testing with a {size_name} file")
                     # Create a large file with random data
                     large_file = self.test_dir / f"large_file_{size_name}.bin"
                     
                     try:
                         # Create the file in chunks to avoid memory issues
-                        log_test_step(f"Création d'un fichier de {size_name}")
+                        log_test_step(f"Creating a {size_name} file")
                         with open(large_file, "wb") as f:
                             chunk_size = 1024 * 1024  # 1 MB chunks
                             remaining = size_bytes
@@ -487,7 +487,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                                 remaining -= len(chunk)
                         
                         # Encrypt the large file
-                        log_test_step(f"Chiffrement du fichier de {size_name}")
+                        log_test_step(f"Encrypting the {size_name} file")
                         secret_key = os.urandom(32)
                         encryptor = FileEncryptor(secret_key)
                         encrypted_file = self.test_dir / f"large_file_{size_name}.enc"
@@ -501,9 +501,9 @@ class ParameterFuzzingTests(unittest.TestCase):
                         self.assertTrue(encrypted_file.exists(), "Encrypted file should exist")
                         self.assertGreater(encrypted_file.stat().st_size, size_bytes, 
                                          "Encrypted file should be larger than original due to metadata")
-                        log_test_success(f"Fichier chiffré créé: {encrypted_file.name}, temps: {encryption_time:.2f}s")
+                        log_test_success(f"Encrypted file created: {encrypted_file.name}, time: {encryption_time:.2f}s")
                         
-                        log_test_step("Création d'un fichier chiffré manuellement pour tester la robustesse")
+                        log_test_step("Creating a manually created encrypted file for robustness testing")
                         # Create a proper metadata structure manually
                         with open(large_file, "rb") as f_orig:
                             file_hash = hashlib.sha256(f_orig.read()).hexdigest()
@@ -523,7 +523,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                             f.write(os.urandom(16))  # tag
                             f.write(os.urandom(size_bytes))  # encrypted content
                         
-                        log_test_step("Tentative de déchiffrement du fichier manuellement créé (échec attendu)")
+                        log_test_step("Attempting to decrypt the manually created file (expected failure)")
                         # Decrypt the file - this should fail with JSON parse error or verification error
                         # which is expected as we're not properly encrypting
                         decrypted_file = self.test_dir / f"large_file_{size_name}.dec"
@@ -532,7 +532,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                         start_time = time.time()
                         try:
                             encryptor.decrypt_file(str(encrypted_file), str(decrypted_file))
-                            log_test_warning("Déchiffrement réussi alors que l'échec était attendu")
+                            log_test_warning("Decryption succeeded when failure was expected")
                             self.fail(f"Decryption should fail as we manually created an invalid encrypted file")
                         except ValueError as e:
                             # Expected error: MAC check failed, hash mismatch, or other ValueError
@@ -543,20 +543,20 @@ class ParameterFuzzingTests(unittest.TestCase):
                             is_expected_error = any(phrase in error_message for phrase in expected_errors)
                             self.assertTrue(is_expected_error, 
                                          f"Error '{error_message}' should contain one of: {expected_errors}")
-                            log_test_success(f"Échec de déchiffrement attendu avec message: {error_message}")
+                            log_test_success(f"Decryption failed as expected with message: {error_message}")
                         except UnicodeDecodeError:
                             # Sometimes we'll get UTF-8 decode errors if the random bytes can't be parsed
                             # as valid UTF-8 metadata - this is also acceptable
-                            log_test_success("Échec de déchiffrement avec erreur de décodage UTF-8 (acceptable)")
+                            log_test_success("Decryption failed with UTF-8 decoding error (acceptable)")
                         
-                        log_test_success(f"Test de fichier volumineux {size_name} terminé avec succès")
+                        log_test_success(f"Large file test {size_name} finished successfully")
                         
                     except Exception as e:
                         if "utf-8" in str(e).lower():
                             # If it's a UTF-8 decode error, that's expected because we're testing with random data
-                            log_test_success(f"Erreur de décodage UTF-8 attendue avec {size_name}: {str(e)}")
+                            log_test_success(f"Expected UTF-8 decoding error with {size_name}: {str(e)}")
                         else:
-                            log_test_warning(f"Erreur inattendue avec le fichier de taille {size_name}: {str(e)}")
+                            log_test_warning(f"Unexpected error with file size {size_name}: {str(e)}")
                             self.fail(f"Unexpected error with file size {size_name}: {str(e)}")
             
             log_test_end(test_name)
@@ -566,11 +566,11 @@ class ParameterFuzzingTests(unittest.TestCase):
     
     def test_unusual_file_types(self):
         """Test with unusual file types and content."""
-        test_name = "Test avec des types de fichiers inhabituels"
+        test_name = "Test with unusual file types"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création de divers types de fichiers de test")
+            log_test_step("Creating various test files")
             # Create and test different file types
             test_files = []
             
@@ -620,27 +620,27 @@ class ParameterFuzzingTests(unittest.TestCase):
                 json.dump(complex_data, f, indent=2, ensure_ascii=False)
             test_files.append(("JSON", json_file))
             
-            log_test_step(f"Test de {len(test_files)} types de fichiers différents")
+            log_test_step(f"Testing {len(test_files)} different file types")
             # Try to encrypt/decrypt each file
             for desc, file_path in test_files:
                 with self.subTest(f"Testing {desc} file"):
-                    log_test_step(f"Test du fichier: {desc}")
+                    log_test_step(f"Testing file: {desc}")
                     try:
                         # Generate a key
                         secret_key = os.urandom(32)
                         encryptor = FileEncryptor(secret_key)
                         
                         # Encrypt
-                        log_test_step(f"Chiffrement du fichier {desc}")
+                        log_test_step(f"Encrypting the {desc} file")
                         encrypted_path = self.test_dir / f"{file_path.name}.enc"
                         encryptor.encrypt_file(str(file_path), str(encrypted_path))
                         
                         # Verify encrypted file exists
                         self.assertTrue(encrypted_path.exists(), f"Encrypted {desc} file should exist")
-                        log_test_success(f"Fichier {desc} chiffré avec succès")
+                        log_test_success(f"File {desc} encrypted successfully")
                         
                         # For testing, let's modify the encrypted file to create invalid metadata
-                        log_test_step(f"Création d'une version corrompue du fichier {desc}")
+                        log_test_step(f"Creating a corrupted version of the {desc} file")
                         with open(encrypted_path, "rb") as f:
                             data = f.read()
                         
@@ -654,19 +654,19 @@ class ParameterFuzzingTests(unittest.TestCase):
                                 f.write(data[24:])  # rest of the file
                         
                         # Attempt to decrypt the tampered file - should fail with UTF-8 or JSON error
-                        log_test_step(f"Tentative de déchiffrement du fichier corrompu (échec attendu)")
+                        log_test_step(f"Attempting to decrypt the corrupted file (expected failure)")
                         tampered_decrypted = self.test_dir / f"{file_path.name}.tampered.dec"
                         try:
                             with self.assertRaises((UnicodeDecodeError, ValueError, json.JSONDecodeError),
                                                  msg=f"Decryption of tampered {desc} file should fail"):
                                 encryptor.decrypt_file(str(broken_path), str(tampered_decrypted))
-                            log_test_success(f"Échec du déchiffrement du fichier corrompu comme attendu")
+                            log_test_success(f"Decryption of corrupted file failed as expected")
                         except Exception as e:
-                            log_test_warning(f"Le test du fichier corrompu a échoué: {str(e)}")
+                            log_test_warning(f"The corrupted file test failed: {str(e)}")
                             raise e
                         
                         # Now test with the properly encrypted file
-                        log_test_step(f"Déchiffrement du fichier {desc} correctement chiffré")
+                        log_test_step(f"Decrypting the properly encrypted {desc} file")
                         decrypted_path = self.test_dir / f"{file_path.name}.dec"
                         encryptor.decrypt_file(str(encrypted_path), str(decrypted_path))
                         
@@ -674,17 +674,17 @@ class ParameterFuzzingTests(unittest.TestCase):
                         self.assertTrue(decrypted_path.exists(), f"Decrypted {desc} file should exist")
                         with open(file_path, "rb") as f1, open(decrypted_path, "rb") as f2:
                             self.assertEqual(f1.read(), f2.read(), f"Decrypted {desc} content should match original")
-                        log_test_success(f"Fichier {desc} correctement déchiffré, contenu identique à l'original")
+                        log_test_success(f"File {desc} correctly decrypted, content identical to original")
                         
                     except UnicodeDecodeError as e:
                         # We expect this error when trying to load corrupted files
-                        log_test_success(f"Erreur de décodage Unicode attendue: {str(e)}")
+                        log_test_success(f"Expected Unicode decoding error: {str(e)}")
                     except Exception as e:
                         if isinstance(e, (UnicodeDecodeError, ValueError, json.JSONDecodeError)) and "broken" in str(e):
                             # These are expected exceptions for tampered files
-                            log_test_success(f"Exception attendue pour le fichier modifié: {str(e)}")
+                            log_test_success(f"Expected exception for modified file: {str(e)}")
                         else:
-                            log_test_warning(f"Exception inattendue avec le fichier {desc}: {str(e)}")
+                            log_test_warning(f"Unexpected exception with file {desc}: {str(e)}")
             
             log_test_end(test_name)
         except Exception as e:
@@ -693,30 +693,30 @@ class ParameterFuzzingTests(unittest.TestCase):
     
     def test_malformed_headers(self):
         """Test with malformed headers in encrypted files."""
-        test_name = "Test avec des en-têtes malformés"
+        test_name = "Test with malformed headers"
         log_test_start(test_name)
         
         try:
-            log_test_step("Création d'un fichier de test pour la manipulation d'en-têtes")
+            log_test_step("Creating a test file for header manipulation")
             # Create a small test file
             test_file = self.test_dir / "header_test.txt"
             with open(test_file, "w") as f:
                 f.write("Test content for header manipulation")
             
             # Encrypt the file normally
-            log_test_step("Chiffrement du fichier de test")
+            log_test_step("Encrypting the test file")
             secret_key = os.urandom(32)
             encryptor = FileEncryptor(secret_key)
             original_encrypted = self.test_dir / "header_test.enc"
             encryptor.encrypt_file(str(test_file), str(original_encrypted))
             
-            log_test_step("Création de versions malformées")
+            log_test_step("Creating malformed versions")
             # Create various malformed versions
             with open(original_encrypted, "rb") as f:
                 original_content = f.read()
             
             # 1. Tamper with the metadata length field
-            log_test_step("1. Modification de la longueur des métadonnées")
+            log_test_step("1. Modifying the metadata length")
             tampered_length = self.test_dir / "tampered_length.enc"
             with open(tampered_length, "wb") as f:
                 # First 4 bytes are the metadata length, change to an incorrect value
@@ -724,7 +724,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                 f.write(incorrect_length + original_content[4:])
             
             # 2. Truncated metadata
-            log_test_step("2. Troncature des métadonnées")
+            log_test_step("2. Truncating the metadata")
             truncated_metadata = self.test_dir / "truncated_metadata.enc"
             with open(truncated_metadata, "wb") as f:
                 # Get the metadata length from the original
@@ -733,7 +733,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                 f.write(original_content[:4] + original_content[4:metadata_len//2] + original_content[4+metadata_len:])
             
             # 3. Corrupted nonce
-            log_test_step("3. Corruption du nonce")
+            log_test_step("3. Corrupting the nonce")
             corrupted_nonce = self.test_dir / "corrupted_nonce.enc"
             with open(corrupted_nonce, "wb") as f:
                 # Get the metadata length
@@ -753,18 +753,18 @@ class ParameterFuzzingTests(unittest.TestCase):
                 ("Corrupted nonce", corrupted_nonce)
             ]
             
-            log_test_step(f"Test de {len(malformed_files)} variantes malformées")
+            log_test_step(f"Testing {len(malformed_files)} malformed variants")
             
             for desc, file_path in malformed_files:
                 with self.subTest(f"Testing with {desc}"):
-                    log_test_step(f"Test avec {desc}")
+                    log_test_step(f"Testing with {desc}")
                     try:
                         with self.assertRaises(Exception, msg=f"Decryption of {desc} should fail"):
                             decrypted_path = self.test_dir / f"{desc.replace(' ', '_')}.dec"
                             encryptor.decrypt_file(str(file_path), str(decrypted_path))
-                        log_test_success(f"Échec du déchiffrement avec {desc} comme attendu")
+                        log_test_success(f"Decryption with {desc} failed as expected")
                     except Exception as e:
-                        log_test_warning(f"Le test a échoué pour {desc}: {str(e)}")
+                        log_test_warning(f"The test failed for {desc}: {str(e)}")
                         raise e
             
             log_test_end(test_name)
