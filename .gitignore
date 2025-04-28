@@ -5,3 +5,4 @@ build
 env
 shares
 __pycache__
+.python-version
