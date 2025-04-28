@@ -13,6 +13,12 @@ if ! command -v git    &>/dev/null \
   sudo apt-get install -y git curl wget lsb-release software-properties-common build-essential
 else
   echo "Step 1/4: System tools already installed"
+  # Ensure software-properties-common is installed (needed for add-apt-repository)
+  if ! dpkg -l | grep -q software-properties-common; then
+    echo "→ Installing software-properties-common (required for PPA management)"
+    sudo apt-get update
+    sudo apt-get install -y software-properties-common
+  fi
 fi
 
 # 2) Python 3.12.10
