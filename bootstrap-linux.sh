@@ -20,29 +20,46 @@ fi
 
 # 2) pyenv installation (for exact Python version control)
 echo "Step 2/4: Installing pyenv for exact Python 3.12.10 version"
-if ! command -v pyenv &>/dev/null; then
-  echo "→ Installing pyenv..."
-  curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
-  
-  # Add pyenv to PATH for this session
-  export PYENV_ROOT="$HOME/.pyenv"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init --path)"
-  eval "$(pyenv init -)"
-  
-  # Add to .bashrc for future sessions
-  if ! grep -q 'pyenv init' ~/.bashrc; then
-    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-    echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
-    echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+PYENV_ROOT="$HOME/.pyenv"
+
+if [[ -d "$PYENV_ROOT" ]]; then
+  if [[ -x "$PYENV_ROOT/bin/pyenv" ]]; then
+    echo "→ pyenv already installed"
+  else
+    echo "→ Found incomplete pyenv installation at $PYENV_ROOT"
+    read -p "Do you want to remove and reinstall pyenv? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      rm -rf "$PYENV_ROOT"
+      echo "→ Installing pyenv..."
+      curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+    else
+      echo "Please remove $PYENV_ROOT manually and run this script again."
+      exit 1
+    fi
   fi
 else
-  echo "→ pyenv already installed"
-  export PYENV_ROOT="$HOME/.pyenv"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init --path)"
-  eval "$(pyenv init -)"
+  echo "→ Installing pyenv..."
+  curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+fi
+
+# Add pyenv to PATH for this session
+export PYENV_ROOT="$HOME/.pyenv"
+if [[ ! -d "$PYENV_ROOT" ]]; then
+  echo "ERROR: pyenv installation failed. Please check error messages above."
+  exit 1
+fi
+
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path 2>/dev/null || echo 'Failed to init pyenv path')"
+eval "$(pyenv init - 2>/dev/null || echo 'Failed to init pyenv')"
+
+# Add to .bashrc for future sessions
+if ! grep -q 'pyenv init' ~/.bashrc; then
+  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+  echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+  echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
+  echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 fi
 
 # 3) Install Python 3.12.10 with pyenv
