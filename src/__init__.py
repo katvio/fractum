@@ -647,8 +647,11 @@ class ShareArchiver:
             files_to_copy = [
                 ("README.md", "README.md"),
                 ("requirements.txt", "requirements.txt"),
-                ("setup.py", "setup.py"),
                 ("LICENSE", "LICENSE"),
+                # Add bootstrap files
+                ("bootstrap-linux.sh", "bootstrap-linux.sh"),
+                ("bootstrap-macos.sh", "bootstrap-macos.sh"),
+                ("bootstrap-windows.ps1", "bootstrap-windows.ps1")
             ]
             
             for src, dst in files_to_copy:

@@ -874,38 +874,46 @@ class ErrorHandlingTests(unittest.TestCase):
             output_file = self.test_dir / "output.enc"
             encryptor.encrypt_file(str(non_existent_file), str(output_file))
         
-        # 2. Test with inaccessible directory
-        # This test might be system-dependent, so make it more robust
-        try:
-            inaccessible_dir = self.test_dir / "no_access"
-            inaccessible_dir.mkdir(exist_ok=True)
-            
-            # Try to create a file in this directory after changing permissions
-            test_perm_file = inaccessible_dir / "test_perm.txt"
-            
-            # First ensure we can write to confirm permissions are working
-            with open(test_perm_file, 'w') as f:
-                f.write("test")
-            
-            # Now try to make directory read-only and test
+        # 2. Test with inaccessible directory - skip on Windows or adapt 
+        # Permissions work differently on Windows, so we need to adapt this test
+        if platform.system() != "Windows":
+            # Unix/Linux/Mac test for permissions
             try:
-                # Make directory read-only (can't create files)
-                os.chmod(inaccessible_dir, 0o500)  # r-x------
+                inaccessible_dir = self.test_dir / "no_access"
+                inaccessible_dir.mkdir(exist_ok=True)
                 
-                # Try to create a file in the read-only directory
-                test_denied_file = inaccessible_dir / "should_fail.txt"
+                # Try to create a file in this directory after changing permissions
+                test_perm_file = inaccessible_dir / "test_perm.txt"
                 
-                # This should fail with permission error
-                with self.assertRaises(PermissionError, msg="Should fail with permission issues"):
-                    with open(test_denied_file, 'w') as f:
-                        f.write("This should fail")
+                # First ensure we can write to confirm permissions are working
+                with open(test_perm_file, 'w') as f:
+                    f.write("test")
+                
+                # Now try to make directory read-only and test
+                try:
+                    # Make directory read-only (can't create files)
+                    os.chmod(inaccessible_dir, 0o500)  # r-x------
                     
-            finally:
-                # Reset permissions to ensure cleanup works
-                os.chmod(inaccessible_dir, 0o700)  # rwx------
-        except PermissionError:
-            # Skip if we can't change permissions (could happen in some environments)
-            pass
+                    # Try to create a file in the read-only directory
+                    test_denied_file = inaccessible_dir / "should_fail.txt"
+                    
+                    # This should fail with permission error
+                    with self.assertRaises(PermissionError, msg="Should fail with permission issues"):
+                        with open(test_denied_file, 'w') as f:
+                            f.write("This should fail")
+                        
+                finally:
+                    # Reset permissions to ensure cleanup works
+                    os.chmod(inaccessible_dir, 0o700)  # rwx------
+            except PermissionError:
+                # Skip if we can't change permissions (could happen in some environments)
+                pass
+        else:
+            # Windows specific test or skip
+            log_info("Permission test skipped on Windows platform")
+            # For full Windows compatibility, we could implement a Windows-specific
+            # permission test using the win32security and ntsecuritycon modules
+            # But this is beyond the scope of this test suite
     
     def test_incorrect_keys(self):
         """Test with incorrect keys for decryption."""
