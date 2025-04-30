@@ -6,3 +6,4 @@ env
 shares
 __pycache__
 .python-version
+.venv

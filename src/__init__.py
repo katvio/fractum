@@ -875,23 +875,44 @@ def interactive_encrypt():
         existing_shares = None
         if use_existing:
             existing_shares = click.prompt("Full path of the directory containing existing shares", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+            # Convert to absolute path
+            existing_shares = str(Path(existing_shares).absolute())
+            click.echo(f"Using existing shares from: {existing_shares}")
             
             # Check existing shares - examine all files, not just those with specific names
             share_files = []
-            for file_path in Path(existing_shares).glob("*.*"):
+            existing_shares_path = Path(existing_shares).absolute()
+            
+            # First try general pattern
+            for file_path in existing_shares_path.glob("*.*"):
                 if file_path.is_file():
                     try:
                         with open(file_path, 'r') as f:
                             share_info = json.load(f)
                             # Check if this is a valid share file by looking for essential fields
-                            if all(key in share_info for key in ['share_index', 'share', 'label', 'threshold', 'total_shares']):
+                            if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label', 'threshold', 'total_shares']):
                                 share_files.append(file_path)
                     except (json.JSONDecodeError, UnicodeDecodeError, IOError):
                         # Not a valid JSON file, skip it
                         continue
             
+            # If no files found with general pattern, try specific patterns
             if not share_files:
-                raise ValueError("No valid share files found in specified directory")
+                click.echo("No shares found with standard naming. Trying alternative formats...")
+                for file_pattern in ["share_*.txt", "*.share", "*.json"]:
+                    potential_files = list(existing_shares_path.glob(file_pattern))
+                    if potential_files:
+                        for file_path in potential_files:
+                            try:
+                                with open(file_path, 'r') as f:
+                                    share_info = json.load(f)
+                                    if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
+                                        share_files.append(file_path)
+                            except:
+                                continue
+            
+            if not share_files:
+                raise ValueError(f"No valid share files found in specified directory: {existing_shares}")
                 
             # Read label from first share
             with open(share_files[0], 'r') as f:
@@ -1000,8 +1021,12 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
         if not shares_dir:
             raise ValueError("Either --shares-dir or --manual-shares must be provided")
             
-        shares_path = Path(shares_dir)
+        # Convert shares_dir to absolute path if it's a relative path
+        shares_path = Path(shares_dir).absolute()
         
+        if verbose:
+            click.echo(f"Looking for shares in: {shares_path}")
+            
         # Extract share_set_id from metadata
         extracted_share_set_id = None
         with open(input_file, 'rb') as f:
@@ -1038,7 +1063,7 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
                     with open(file_path, 'r') as f:
                         share_info = json.load(f)
                         # Check if this is a valid share file by looking for essential fields
-                        if all(key in share_info for key in ['share_index', 'share', 'label']):
+                        if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
                             content_share_files.append(file_path)
                 except (json.JSONDecodeError, UnicodeDecodeError, IOError):
                     # Not a valid JSON file, skip it
@@ -1053,7 +1078,7 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
             all_files = list(shares_path.glob("*"))
             share_files = [f for f in all_files if f.is_file()]
             if not share_files:
-                raise ValueError(f"No files found in directory {shares_dir}")
+                raise ValueError(f"No files found in directory {shares_path}")
             else:
                 click.echo(f"Found {len(share_files)} files in directory, but none match the expected share format")
                 click.echo("Please ensure you're pointing to a directory containing valid share files or archives")
@@ -1389,6 +1414,9 @@ def interactive_decrypt():
         else:
             # Ask for shares directory
             shares_dir = click.prompt("Full path of the directory containing shares", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+            # Convert to absolute path
+            shares_dir = str(Path(shares_dir).absolute())
+            click.echo(f"Using shares directory: {shares_dir}")
         
         # Ask for verbose mode
         verbose = click.confirm("Do you want to enable verbose mode?", default=None)
@@ -1420,12 +1448,14 @@ def interactive_verify():
     try:
         # Ask for shares directory
         shares_dir = click.prompt("Full path of the directory containing shares", type=click.Path(exists=True))
+        # Convert to absolute path
+        shares_dir = str(Path(shares_dir).absolute())
         
         # Confirm parameters
         click.echo("\nVerification parameters:")
         click.echo(f"Shares directory: {shares_dir}")
         
-        # Execute command via Click - Fixed to avoid passing input_file
+        # Execute command via Click
         ctx = click.get_current_context()
         ctx.invoke(verify, shares_dir=shares_dir)
         return True
@@ -1466,22 +1496,65 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
         tool_integrity = calculate_tool_integrity()
         
         if existing_shares:
+            # Convert existing_shares to absolute path if necessary
+            existing_shares_path = Path(existing_shares).absolute()
+            if verbose:
+                click.echo(f"Looking for existing shares in: {existing_shares_path}")
+                
             # Use existing shares - examine all files, not just those with specific names
             share_files = []
-            for file_path in Path(existing_shares).glob("*.*"):
+            for file_path in existing_shares_path.glob("*.*"):
                 if file_path.is_file():
                     try:
                         with open(file_path, 'r') as f:
                             share_info = json.load(f)
                             # Check if this is a valid share file by looking for essential fields
-                            if all(key in share_info for key in ['share_index', 'share', 'label', 'threshold', 'total_shares']):
+                            if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label', 'threshold', 'total_shares']):
                                 share_files.append(file_path)
                     except (json.JSONDecodeError, UnicodeDecodeError, IOError):
                         # Not a valid JSON file, skip it
                         continue
             
             if not share_files:
-                raise ValueError("No valid share files found in specified directory")
+                if verbose:
+                    click.echo(f"No valid share files found in: {existing_shares_path}")
+                    click.echo("Searching for share files in alternative formats...")
+                
+                # Try looking for share files with specific naming patterns
+                for file_pattern in ["share_*.txt", "*.share", "*.json"]:
+                    potential_files = list(existing_shares_path.glob(file_pattern))
+                    if potential_files:
+                        for file_path in potential_files:
+                            try:
+                                with open(file_path, 'r') as f:
+                                    share_info = json.load(f)
+                                    if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
+                                        share_files.append(file_path)
+                            except:
+                                continue
+                
+                if not share_files:
+                    raise ValueError(f"No valid share files found in specified directory: {existing_shares}")
+                
+            if verbose:
+                click.echo(f"Found {len(share_files)} valid share files")
+                
+            # Read label from first share
+            with open(share_files[0], 'r') as f:
+                share_info = json.load(f)
+                existing_label = share_info['label']
+                
+            click.echo(f"\nExisting shares found with label: {existing_label}")
+            click.echo("You must use the same label for compatibility")
+            label = existing_label
+            click.echo(f"Label used: {label}")
+            
+            # Read parameters from existing shares
+            threshold = share_info.get('threshold', 3)
+            total_shares = share_info.get('total_shares', 5)
+            click.echo(f"Existing shares parameters:")
+            click.echo(f"- Threshold: {threshold}")
+            click.echo(f"- Total shares: {total_shares}")
             
             shares_data, metadata = ShareManager.load_shares(share_files)
             
@@ -1606,7 +1679,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
 def verify(shares_dir: str):
     """Verifies share integrity."""
     try:
-        shares_path = Path(shares_dir)
+        shares_path = Path(shares_dir).absolute()
         
         # Check if it's an archive directory
         if shares_path.is_dir():
@@ -1621,7 +1694,7 @@ def verify(shares_dir: str):
                         with open(file_path, 'r') as f:
                             share_info = json.load(f)
                             # Check if this is a valid share file by looking for essential fields
-                            if all(key in share_info for key in ['share_index', 'share', 'label']):
+                            if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
                                 content_share_files.append(file_path)
                     except (json.JSONDecodeError, UnicodeDecodeError, IOError):
                         # Not a valid JSON file, skip it
@@ -1636,7 +1709,7 @@ def verify(shares_dir: str):
                 all_files = list(shares_path.glob("*"))
                 share_files = [f for f in all_files if f.is_file()]
                 if not share_files:
-                    raise ValueError(f"No files found in directory {shares_dir}")
+                    raise ValueError(f"No files found in directory {shares_path}")
                 else:
                     click.echo(f"Found {len(share_files)} files in directory, but none match the expected share format")
                     click.echo("Please ensure you're pointing to a directory containing valid share files or archives")

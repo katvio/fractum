@@ -12,7 +12,7 @@ If (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 function Step($i,$total,$msg) {
-  Write-Host "Step $i/$total: $msg"
+  Write-Host "Step $i of $total`: $msg"
 }
 
 Write-Host "==> fractum Windows bootstrap"
@@ -21,7 +21,16 @@ Write-Host "==> fractum Windows bootstrap"
 Step 1 4 "Checking/Installing Python 3.12.10"
 if (-not (Get-Command python3.12 -ErrorAction SilentlyContinue)) {
   if (Get-Command winget -ErrorAction SilentlyContinue) {
-    winget install --id Python.Python.3.12 -e --accept-package-agreements --accept-source-agreements
+    Write-Host "→ Installing Python 3.12.10 via winget..."
+    winget install --id Python.Python.3.12 --version 3.12.10 --exact --accept-package-agreements --accept-source-agreements
+    # Fallback if exact version isn't available
+    if (-not $?) {
+      Write-Host "→ Exact version not available via winget, trying Chocolatey..."
+      Set-ExecutionPolicy Bypass -Scope Process -Force
+      [Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      choco install python --version=3.12.10 -y
+    }
   } else {
     Write-Host "→ Installing Chocolatey..."
     Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -35,7 +44,7 @@ if (-not (Get-Command python3.12 -ErrorAction SilentlyContinue)) {
 
 # 2) Check version
 Step 2 4 "Verifying Python version"
-$py = (Get-Command python3.12 -ErrorAction SilentlyContinue) ? 'python3.12' : 'python'
+$py = if (Get-Command python3.12 -ErrorAction SilentlyContinue) { 'python3.12' } else { 'python' }
 $ver = (& $py --version).Split()[1]
 if ($ver -ne '3.12.10') {
   Write-Error "Python 3.12.10 required (found $ver)"
