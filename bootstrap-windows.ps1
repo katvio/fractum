@@ -63,7 +63,7 @@ if (-not (Test-Path '.\.venv')) {
 # 4) Activation & install
 Step 4 4 "Activating .venv & installing fractum"
 & .\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
+python.exe -m pip install --upgrade pip
 pip install -e .
 
 Write-Host "✅ Windows bootstrap complete!"
