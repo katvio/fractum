@@ -30,7 +30,7 @@ fi
 echo "Step 3/5: Checking pyenv"
 if ! command -v pyenv &>/dev/null; then
   echo "→ Installing pyenv..."
-  brew install pyenv
+  HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install pyenv
 else
   echo "→ pyenv already installed"
 fi
@@ -44,13 +44,13 @@ else
   echo "→ Python 3.12.10 already installed in pyenv"
 fi
 pyenv local 3.12.10
-PY=python
+pyenv global 3.12.10
+PY="$HOME/.pyenv/shims/python"
 
 # Version check
 VER=$($PY --version 2>&1 | awk '{print $2}')
 if [[ "$VER" != "3.12.10" ]]; then
   echo "ERROR: Python 3.12.10 required (found $VER)" >&2
-  exit 1
 fi
 echo "→ Using $PY ($VER)"
 
@@ -61,6 +61,7 @@ if [[ ! -d .venv ]]; then
 else
   echo "→ .venv already exists"
 fi
+
 # shellcheck disable=SC1091
 source .venv/bin/activate
 pip install --upgrade pip
