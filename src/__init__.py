@@ -648,7 +648,9 @@ class ShareArchiver:
                 ("README.md", "README.md"),
                 ("requirements.txt", "requirements.txt"),
                 ("LICENSE", "LICENSE"),
-                # Add bootstrap files
+                ("setup.py", "setup.py"),
+                (".dockerignore", ".dockerignore"),
+                ("Dockerfile", "Dockerfile"),
                 ("bootstrap-linux.sh", "bootstrap-linux.sh"),
                 ("bootstrap-macos.sh", "bootstrap-macos.sh"),
                 ("bootstrap-windows.ps1", "bootstrap-windows.ps1")
@@ -663,6 +665,28 @@ class ShareArchiver:
             sss_dir = temp_dir / "src"
             sss_dir.mkdir(exist_ok=True)
             shutil.copy("src/__init__.py", sss_dir)
+            
+            # Copy tests directory if it exists
+            tests_src_dir = Path("tests")
+            if tests_src_dir.exists() and tests_src_dir.is_dir():
+                tests_dst_dir = temp_dir / "tests"
+                tests_dst_dir.mkdir(exist_ok=True)
+                
+                # Copy all Python files directly in the tests directory
+                for test_file in tests_src_dir.glob("*.py"):
+                    if test_file.is_file():
+                        shutil.copy(test_file, tests_dst_dir)
+                
+                # Copy any subdirectories recursively
+                for test_dir in tests_src_dir.glob("**/"):
+                    if test_dir != tests_src_dir and test_dir.is_dir():
+                        relative_dir = test_dir.relative_to(tests_src_dir)
+                        dest_dir = tests_dst_dir / relative_dir
+                        dest_dir.mkdir(parents=True, exist_ok=True)
+                        
+                        for test_file in test_dir.glob("*.py"):
+                            if test_file.is_file():
+                                shutil.copy(test_file, dest_dir)
             
             # Copy setup folder with all setup files
             setup_src_dir = Path("setup")
