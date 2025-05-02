@@ -7,3 +7,4 @@ shares
 __pycache__
 .python-version
 .venv
+data
