@@ -1,62 +1,15 @@
-# Version control
-.git
-.gitignore
-.gitattributes
+.git/
 
-# Development artifacts
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# Documentation
-docs/
-
-# Virtual environments
-venv/
-ENV/
-.env
-.venv
-
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS specific files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# User data that shouldn't be in the image
 data/
 shares/
 
-# Docker files (avoid recursive builds)
 docker-compose.yml
+
+.venv
+venv
+.env
+
+.gitignore
