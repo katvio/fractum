@@ -661,10 +661,12 @@ class ShareArchiver:
                 if src_path.exists():
                     shutil.copy(src_path, temp_dir / dst)
             
-            # Copy source code
+            # Copy source code - Use absolute path based on __file__
             sss_dir = temp_dir / "src"
             sss_dir.mkdir(exist_ok=True)
-            shutil.copy("src/__init__.py", sss_dir)
+            # Get the absolute path of the current module
+            src_init_path = Path(__file__)
+            shutil.copy(src_init_path, sss_dir / "__init__.py")
             
             # Copy setup folder with all setup files
             setup_src_dir = Path("setup")
