@@ -1,0 +1,22 @@
+FROM python:3.12.10-slim
+
+WORKDIR /app
+
+# Copy application code and tests
+COPY setup.py /app/
+COPY src/ /app/src/
+COPY tests/ /app/tests/
+COPY packages/ /app/packages/
+
+# Install dependencies with testing extras
+RUN pip install --no-cache-dir -e ".[test]"
+
+# Install additional testing dependencies if needed
+RUN pip install --no-cache-dir pytest pytest-cov psutil
+
+# Create data and shares directories for testing
+RUN mkdir -p /data /app/shares && chmod 777 /data /app/shares
+
+# Set entrypoint to run tests from tests directory
+WORKDIR /app/tests
+ENTRYPOINT ["python", "run_tests.py"]
