@@ -1,13 +1,55 @@
-# fractum
+# Fractum
 
 A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AES-256-GCM file encryption. Split secrets (passwords, SSH keys, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup. Works with any file type without restrictions (documents, images, archives, databases, etc.).
 
-## Requirements
+## Table of Contents
+- [Features](#features)
+- [How it works](#how-it-works)
+  - [Input and Output Files](#input-and-output-files)
+  - [Security Architecture](#security-architecture)
+- [Repository Layout](#repository-layout)
+- [Installation](#installation)
+  - [The Docker way (recommended usage)](#the-docker-way-recommended-usage)
+  - [Manual installation using venv](#manual-installation-using-venv)
+- [Usage](#usage)
+  - [Encrypting a file](#encrypting-a-file)
+  - [Decrypting a file](#decrypting-a-file)
+- [Security Features](#security-features)
+- [License](#license)
 
-- **Operating Systems**:
-  - Linux (Ubuntu/Debian-based recommended)
-  - macOS 10.15 or later
-  - Windows 10/11 (64-bit)
+## Features
+
+- **Fully Offline Operation**: 
+  - Works completely offline, perfect for air-gapped environments
+  - No internet connection required for any operation
+  - All dependencies bundled in share archives
+
+- **Portable Design**: 
+  - Self-contained solution fits on a USB key
+  - Includes all dependencies and bootstrap scripts
+  - No system-wide installation required
+
+- **Cryptographic Features**:
+  - AES-256-GCM for file encryption
+  - Shamir's Secret Sharing for key distribution
+  - Configurable threshold (k) and total shares (n)
+  - Default scheme: 3-out-of-5 (k=3, n=5)
+
+- **Share Management**:
+  - Create new shares or use existing ones
+  - Share validation without secret disclosure
+  - Label support for share identification
+
+- **Security Measures**:
+  - Secure memory handling
+  - File integrity verification (SHA-256)
+  - Version control for compatibility
+
+- **Cross-Platform Support**: 
+  - Windows (PowerShell 5.1+)
+  - macOS (10.15+)
+  - Linux (Ubuntu 20.04+, Debian 11+)
+  - Consistent behavior across all platforms
 
 ## How it works
 
@@ -16,22 +58,44 @@ A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AE
 When you use Fractum to encrypt a file, the process transforms your data as follows:
 
 **Input:**
-
 - Your sensitive file (e.g., `passwords.txt`, `important_documents.zip`)
+- Optional: Existing shares for reusing the same key
 
 **Output:**
-
-- An encrypted file with `.enc` extension (e.g., `passwords.txt.enc`, `important_documents.zip.enc`)
+- An encrypted file with `.enc` extension (e.g., `passwords.txt.enc`)
 - Multiple share archives (ZIP files), one for each share (e.g., `share_1.zip`, `share_2.zip`, etc.)
 
-Each share archive is completely self-contained and includes:
-
-- The share file (e.g., `share_1.txt`) containing cryptographic data
+Each share archive contains:
+- The share file (e.g., `share_1.txt`) with cryptographic data
 - The encrypted file (`passwords.txt.enc`)
-- The complete Fractum application with all necessary dependencies
-- Bootstrap scripts for easy setup on any platform
+- The complete Fractum application
+- Bootstrap scripts for all supported platforms
+- SHA-256 checksums for integrity verification
+- Version information for compatibility checking
 
-This design allows you to distribute the shares to different storage locations while ensuring each share contains everything needed to recover your data when the time comes.
+![How Fractum splits your secrets into shares](shema.png)
+
+### Security Architecture
+
+1. **Key Generation**:
+   - Generate a random 256-bit AES key
+   - Split the key using Shamir's Secret Sharing
+   - Store shares in separate files
+
+2. **File Encryption**:
+   - Use AES-256-GCM for file encryption
+   - Generate a unique nonce for each encryption
+   - Include authentication tag for integrity
+
+3. **Share Distribution**:
+   - Create self-contained share archives
+   - Include all necessary components
+   - Add integrity checks
+
+4. **Reconstruction**:
+   - Collect required number of shares
+   - Reconstruct the original key
+   - Decrypt the file using AES-256-GCM
 
 ## Repository Layout
 ```text
@@ -39,7 +103,7 @@ fractum/
 ├── packages/
 ├── src/
 │   └── __init__.py
-├──tests/
+├── tests/
 ├── bootstrap-linux.sh
 ├── bootstrap-macos.sh
 ├── bootstrap-windows.ps1
@@ -50,7 +114,7 @@ fractum/
 
 ## The Docker way (recommended usage)
 
-For ultra-secure operations, Fractum can run in a completely network-isolated Docker container, creating a "secure enclave" environment.
+For ultra-secure operations, Fractum can run in a completely network-isolated Docker container.
 
 ### Prerequisites
 
@@ -64,6 +128,9 @@ git clone https://github.com/katvio/fractum.git
 ```
 ```
 cd fractum
+```
+```
+git checkout tags/v1.0.0
 ```
 
 2. **Create data folders**
@@ -233,3 +300,26 @@ This command:
 - Loads shares from ZIPs or individual files
 - Reconstructs the key if at least 3 shares are available (threshold)
 - Decrypts the file to recreate passwords.txt 
+
+## Security Features
+
+- **Network Isolation**: 
+  - Docker container runs with `--network=none`
+  - No outgoing or incoming network connections
+  - Prevents data exfiltration
+
+- **Process Security**:
+  - Non-root execution in container
+  - Minimal attack surface
+  - Read-only application code
+  - Ephemeral environment
+
+- **Data Protection**:
+  - Secure memory handling
+  - Automatic memory clearing
+  - No sensitive data in swap or logs
+
+- **Integrity Verification**:
+  - SHA-256 checksums for all files
+  - Share validation without secret disclosure
+  - Version compatibility checking
