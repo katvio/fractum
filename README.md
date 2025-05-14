@@ -2,6 +2,8 @@
 
 A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AES-256-GCM file encryption. Split secrets (passwords, SSH keys, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup. Works with any file type without restrictions (documents, images, archives, databases, etc.).
 
+![How Fractum splits your secrets into shares](diagram.png)
+
 ## Table of Contents
 - [Features](#features)
 - [How it works](#how-it-works)
@@ -14,8 +16,7 @@ A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AE
 - [Usage](#usage)
   - [Encrypting a file](#encrypting-a-file)
   - [Decrypting a file](#decrypting-a-file)
-- [Security Features](#security-features)
-- [License](#license)
+- [Contributing](#contributing)
 
 ## Features
 
@@ -23,27 +24,32 @@ A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AE
   - Works completely offline, perfect for air-gapped environments
   - No internet connection required for any operation
   - All dependencies bundled in share archives
+  - Docker container runs with `--network=none` for complete isolation
 
 - **Portable Design**: 
   - Self-contained solution fits on a USB key
   - Includes all dependencies and bootstrap scripts
   - No system-wide installation required
+  - Read-only application code in container
 
 - **Cryptographic Features**:
   - AES-256-GCM for file encryption
   - Shamir's Secret Sharing for key distribution
   - Configurable threshold (k) and total shares (n)
-  - Default scheme: 3-out-of-5 (k=3, n=5)
+  - Secure memory handling and automatic clearing
 
 - **Share Management**:
   - Create new shares or use existing ones
   - Share validation without secret disclosure
   - Label support for share identification
+  - SHA-256 checksums for all files
 
-- **Security Measures**:
-  - Secure memory handling
-  - File integrity verification (SHA-256)
-  - Version control for compatibility
+- **Security**:
+  - Non-root execution in container
+  - Minimal attack surface
+  - Ephemeral environment
+  - No sensitive data in swap or logs
+  - Version compatibility checking
 
 - **Cross-Platform Support**: 
   - Windows (PowerShell 5.1+)
@@ -73,8 +79,6 @@ Each share archive contains:
 - SHA-256 checksums for integrity verification
 - Version information for compatibility checking
 
-![How Fractum splits your secrets into shares](shema.png)
-
 ### Security Architecture
 
 1. **Key Generation**:
@@ -97,20 +101,6 @@ Each share archive contains:
    - Reconstruct the original key
    - Decrypt the file using AES-256-GCM
 
-## Repository Layout
-```text
-fractum/
-├── packages/
-├── src/
-│   └── __init__.py
-├── tests/
-├── bootstrap-linux.sh
-├── bootstrap-macos.sh
-├── bootstrap-windows.ps1
-├── Dockerfile
-├── README.md
-└── setup.py
-```
 
 ## The Docker way (recommended usage)
 
@@ -193,7 +183,6 @@ docker run --rm -it `
   fractum-secure decrypt /data/YOUR_FILE.enc `
   --shares-dir /app/shares
 ```
-
 ### Benefits to using Docker
 
 The Docker approach provides several security benefits:
@@ -275,7 +264,7 @@ fractum --help            # Show CLI usage
 
 ### 5. Try it out
 
-```bash
+```
 # Example: split a file into shares
 fractum encrypt passwords.txt --threshold 3 --shares 5 --label "my passwords" -v
 ```
@@ -290,36 +279,32 @@ This command:
       - The encrypted file (`passwords.txt.enc`)
       - The source code of fractum and bootstrap scripts (for portability)
       
-```bash
+```
 # Example: reconstruct using shares
 fractum decrypt passwords.txt.enc --shares-dir <folder containing ZIPs or shares>
 ```
-
 This command:
 
 - Loads shares from ZIPs or individual files
 - Reconstructs the key if at least 3 shares are available (threshold)
 - Decrypts the file to recreate passwords.txt 
 
-## Security Features
+## Repository Layout
+```
+fractum/
+├── packages/
+├── src/
+│   └── __init__.py
+├── tests/
+├── bootstrap-linux.sh
+├── bootstrap-macos.sh
+├── bootstrap-windows.ps1
+├── Dockerfile
+├── README.md
+└── setup.py
+```
 
-- **Network Isolation**: 
-  - Docker container runs with `--network=none`
-  - No outgoing or incoming network connections
-  - Prevents data exfiltration
+## Contributing
+If you want to contribute submit a GitHub pull request or open an issue. Thank you!
 
-- **Process Security**:
-  - Non-root execution in container
-  - Minimal attack surface
-  - Read-only application code
-  - Ephemeral environment
-
-- **Data Protection**:
-  - Secure memory handling
-  - Automatic memory clearing
-  - No sensitive data in swap or logs
-
-- **Integrity Verification**:
-  - SHA-256 checksums for all files
-  - Share validation without secret disclosure
-  - Version compatibility checking
+Any contribution is better than no contribution :-) Submit a pull request or open an issue even if you are not sure or if you feel the contribution is not significant enough.
