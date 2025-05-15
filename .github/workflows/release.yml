@@ -1,0 +1,52 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to create release from'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.commit_sha }}
+
+      - name: Get version from setup.py
+        id: get_version
+        run: |
+          VERSION=$(python setup.py --version)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and package
+        run: |
+          python setup.py sdist bdist_wheel
+          zip -r dist/fractum-${{ steps.get_version.outputs.version }}.zip \
+            src/ \
+            tests/ \
+            packages/ \
+            bootstrap-*.sh \
+            bootstrap-*.ps1 \
+            Dockerfile \
+            setup.py \
+            README.md \
+            LICENSE 
