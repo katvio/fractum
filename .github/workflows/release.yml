@@ -24,6 +24,19 @@ jobs:
           VERSION=$(python setup.py --version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Package repository
+        run: |
+          mkdir -p dist
+          zip -r dist/fractum-${{ steps.get_version.outputs.version }}.zip \
+            src/ \
+            packages/ \
+            bootstrap-*.sh \
+            bootstrap-*.ps1 \
+            Dockerfile \
+            setup.py \
+            README.md \
+            LICENSE
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v2.2.2
@@ -35,18 +48,4 @@ jobs:
           files: |
             dist/*.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and package
-        run: |
-          python setup.py sdist bdist_wheel
-          zip -r dist/fractum-${{ steps.get_version.outputs.version }}.zip \
-            src/ \
-            tests/ \
-            packages/ \
-            bootstrap-*.sh \
-            bootstrap-*.ps1 \
-            Dockerfile \
-            setup.py \
-            README.md \
-            LICENSE 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
