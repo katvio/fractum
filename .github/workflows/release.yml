@@ -45,8 +45,6 @@ jobs:
           name: Release v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
-          files: |
-            dist/*.zip
           generate_release_notes: false
           make_latest: true
         env:
