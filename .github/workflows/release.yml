@@ -47,5 +47,7 @@ jobs:
           prerelease: false
           files: |
             dist/*.zip
+          generate_release_notes: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
