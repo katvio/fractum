@@ -1,6 +1,14 @@
 # Fractum
 
-A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AES-256-GCM file encryption. Split secrets (passwords, SSH keys, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup. Works with any file type without restrictions (documents, images, archives, databases, etc.).
+A fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AES-256-GCM file encryption. Split secrets (passwords, SSH keys, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup. Works with any file type without restrictions (documents, images, zip, databases, etc.).
+
+Fractum is designed for organizations and individuals who need to securely store critical information like:
+
+- Cryptocurrency wallet seeds
+- SSH Keys
+- Sensitive documents
+- Database backups
+- Lastpass/Bitwarden exports
 
 ![How Fractum splits your secrets into shares](diagram.png)
 
