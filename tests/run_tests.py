@@ -39,7 +39,9 @@ def print_result(success, message):
 def find_test_files():
     """Find all test files in the current directory."""
     test_files = []
-    for file in Path('.').glob('test_*.py'):
+    # Use the directory where this script is located
+    script_dir = Path(__file__).parent
+    for file in script_dir.glob('test_*.py'):
         if file.is_file() and file.stem != 'test_all' and file.stem != 'run_tests':
             test_files.append(file.stem)
     
