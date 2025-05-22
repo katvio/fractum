@@ -128,7 +128,7 @@ git clone https://github.com/katvio/fractum.git
 cd fractum
 ```
 ```
-git checkout tags/v1.0.0
+git checkout tags/v1.1.0
 ```
 
 2. **Create data folders**

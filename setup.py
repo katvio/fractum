@@ -15,7 +15,7 @@ if packages_dir.exists():
 
 setup(
     name='fractum',
-    version='1.0.0',
+    version='1.1.0',
     packages=find_packages(),
     install_requires=install_requires,
     dependency_links=dependency_links,
