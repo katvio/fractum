@@ -4,27 +4,19 @@
 import unittest
 import tempfile
 import os
-import sys
-import json
-import base64
-import hashlib
 import random
 import time
 import psutil
 import gc
-import threading
 import concurrent.futures
 import statistics
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
 
 # Import from the src module
 from src import (
     ShareManager,
     FileEncryptor,
-    VERSION,
-    get_enhanced_random_bytes,
-    SecureMemory
+    get_enhanced_random_bytes
 )
 
 # Colors for logs

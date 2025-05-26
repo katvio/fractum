@@ -6,20 +6,15 @@ import sys
 import os
 import platform
 import tempfile
-import shutil
-import subprocess
 import importlib.util
 import socket
-from unittest import mock
 from pathlib import Path
 
 # Import from the src module
 from src import (
     ShareManager,
     FileEncryptor,
-    VERSION,
-    get_enhanced_random_bytes,
-    SecureMemory
+    get_enhanced_random_bytes
 )
 
 # Colors for logs

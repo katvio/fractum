@@ -14,7 +14,6 @@ from Crypto.Cipher import AES
 from src.crypto.memory import SecureMemory
 from src.crypto.encryption import FileEncryptor
 from src.shares.manager import ShareManager
-from src.shares.metadata import ShareMetadata
 from src.shares.archiver import ShareArchiver
 from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_bytes
 
@@ -106,7 +105,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
             # Read parameters from existing shares
             threshold = share_info.get('threshold', 3)
             total_shares = share_info.get('total_shares', 5)
-            click.echo(f"Existing shares parameters:")
+            click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
             

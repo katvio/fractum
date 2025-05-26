@@ -111,7 +111,7 @@ def interactive_encrypt():
             # Read parameters from existing shares
             threshold = share_info.get('threshold', 3)
             total_shares = share_info.get('total_shares', 5)
-            click.echo(f"Existing shares parameters:")
+            click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
             

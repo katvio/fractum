@@ -2,7 +2,6 @@ import json
 import hashlib
 import base64
 from typing import List, Tuple
-from pathlib import Path
 from Crypto.Protocol.SecretSharing import Shamir
 
 from src import VERSION

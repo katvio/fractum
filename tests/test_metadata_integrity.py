@@ -4,14 +4,10 @@
 import unittest
 import tempfile
 import os
-import sys
 import json
 import base64
 import hashlib
 import random
-import string
-from pathlib import Path
-from unittest.mock import patch, Mock, MagicMock
 
 # Import from the src module
 from src import (
