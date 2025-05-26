@@ -2,6 +2,7 @@ import json
 import hashlib
 import base64
 from typing import List, Tuple
+# Using PyCryptodome (not deprecated PyCrypto) for Shamir's Secret Sharing
 from Crypto.Protocol.SecretSharing import Shamir
 
 from src import VERSION

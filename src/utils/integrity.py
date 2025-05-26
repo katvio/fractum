@@ -14,6 +14,7 @@ def get_enhanced_random_bytes(length: int = 32) -> bytes:
     Returns:
         bytes: Cryptographically secure random bytes from mixed sources
     """
+    # Using PyCryptodome (not deprecated PyCrypto) for cryptographically secure random generation
     from Crypto.Random import get_random_bytes
     
     # Collect entropy from multiple sources

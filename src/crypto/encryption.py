@@ -1,6 +1,7 @@
 import json
 import time
 import hashlib
+# Using PyCryptodome (not deprecated PyCrypto) for AES-256-GCM encryption
 from Crypto.Cipher import AES
 
 from src import VERSION
