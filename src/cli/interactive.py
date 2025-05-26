@@ -92,7 +92,7 @@ def interactive_encrypt():
                                     share_info = json.load(f)
                                     if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
                                         share_files.append(file_path)
-                            except:
+                            except (json.JSONDecodeError, UnicodeDecodeError, IOError) as e:
                                 continue
             
             if not share_files:

@@ -83,7 +83,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
                                     share_info = json.load(f)
                                     if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
                                         share_files.append(file_path)
-                            except:
+                            except (json.JSONDecodeError, UnicodeDecodeError, IOError) as e:
                                 continue
                 
                 if not share_files:
@@ -313,7 +313,7 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
                         # Check if this is a valid share file by looking for essential fields
                         if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
                             content_share_files.append(file_path)
-                except (json.JSONDecodeError, UnicodeDecodeError, IOError):
+                except (json.JSONDecodeError, UnicodeDecodeError, IOError) as e:
                     # Not a valid JSON file, skip it
                     continue
         

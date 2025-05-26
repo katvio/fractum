@@ -30,13 +30,13 @@ if IS_WINDOWS:
         # Essayer de configurer l'encodage UTF-8 pour stdout
         import sys
         sys.stdout.reconfigure(encoding='utf-8')
-    except:
+    except Exception as e:
         pass
     
     try:
         # Essayer de configurer l'environnement pour UTF-8
         os.environ["PYTHONIOENCODING"] = "utf-8"
-    except:
+    except Exception as e:
         pass
 
 # Colors for logs

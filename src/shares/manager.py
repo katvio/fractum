@@ -147,7 +147,7 @@ class ShareManager:
             test_shares = shares[:self.threshold]
             Shamir.combine(test_shares)
             return True
-        except:
+        except Exception as e:
             return False
 
     @staticmethod
