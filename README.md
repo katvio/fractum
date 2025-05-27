@@ -112,7 +112,7 @@ Each share archive contains:
 
 ## The Docker way (recommended usage)
 
-For ultra-secure operations, Fractum can run in a completely network-isolated Docker container.
+For ultra-secure operations, Fractum can run in a completely network-isolated Docker container. The primary benefit of this approach is that the `--network=none` flag provides users with confidence that the Fractum code cannot exfiltrate their secrets through any network connection. Additionally, this Docker setup can work inside a [TEE](https://www.halborn.com/blog/post/what-is-a-trusted-execution-environment-tee) using tools like [Enclaver.io](https://github.com/enclaver-io/enclaver) for even more advanced security scenarios.
 
 ### Prerequisites
 
@@ -125,10 +125,7 @@ For ultra-secure operations, Fractum can run in a completely network-isolated Do
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum
-```
-```
-git checkout tags/v1.1.0
+cd fractum && git checkout tags/v1.1.0
 ```
 
 2. **Create data folders**
@@ -208,7 +205,7 @@ The Docker approach provides several security benefits:
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum
+cd fractum && git checkout tags/v1.1.0
 ```
 
 ### 2. Bootstrap your environment
@@ -300,16 +297,16 @@ This command:
 ## Repository Layout
 ```
 fractum/
-├── packages/
-├── src/
-│   └── __init__.py
-├── tests/
-├── bootstrap-linux.sh
-├── bootstrap-macos.sh
-├── bootstrap-windows.ps1
-├── Dockerfile
-├── README.md
-└── setup.py
+├── packages/                    # Pre-downloaded Python packages for offline installation
+├── src/                         # Main application source code
+│   └── __init__.py             # Package initialization and version definition
+├── tests/                       # Unit tests and integration tests
+├── bootstrap-linux.sh           # Linux environment setup script
+├── bootstrap-macos.sh           # macOS environment setup script  
+├── bootstrap-windows.ps1        # Windows PowerShell setup script
+├── Dockerfile                   # Docker container configuration for secure execution
+├── README.md                    # Project documentation and usage instructions
+└── setup.py                     # Python package installation configuration
 ```
 
 ## Contributing
