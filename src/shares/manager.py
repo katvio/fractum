@@ -5,7 +5,6 @@ from typing import List, Tuple
 # Using PyCryptodome (not deprecated PyCrypto) for Shamir's Secret Sharing
 from Crypto.Protocol.SecretSharing import Shamir
 
-from src import VERSION
 from src.shares.metadata import ShareMetadata
 
 class ShareManager:
@@ -19,6 +18,9 @@ class ShareManager:
         Raises:
             ValueError: If parameters are invalid
         """
+        # Import VERSION here to avoid circular import
+        from src import VERSION
+        
         if not isinstance(threshold, int) or threshold < 2:
             raise ValueError("Threshold must be a positive integer greater than 1")
         if not isinstance(total_shares, int) or total_shares < threshold:

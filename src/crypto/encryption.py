@@ -5,10 +5,10 @@ import hashlib
 from Crypto.Cipher import AES
 from typing import Dict, Any, Optional
 
-from src import VERSION
-
 class FileEncryptor:
     def __init__(self, key: bytes):
+        # Import VERSION here to avoid circular import
+        from src import VERSION
         self.key = key
         self.version = VERSION
 

@@ -1,10 +1,13 @@
-from src import VERSION
 from typing import Optional, Dict, Any
 
 class ShareMetadata:
     """Centralized management of share metadata."""
     
-    def __init__(self, version: str = VERSION, label: Optional[str] = None, threshold: int = 3, total_shares: int = 5):
+    def __init__(self, version: Optional[str] = None, label: Optional[str] = None, threshold: int = 3, total_shares: int = 5):
+        # Import VERSION here to avoid circular import
+        if version is None:
+            from src import VERSION
+            version = VERSION
         self.version = version
         self.label = label
         self.threshold = threshold
@@ -13,6 +16,9 @@ class ShareMetadata:
     @classmethod
     def from_share_info(cls, share_info: Dict[str, Any]) -> 'ShareMetadata':
         """Creates a ShareMetadata instance from share information."""
+        # Import VERSION here to avoid circular import
+        from src import VERSION
+        
         # Look for version in different places to maintain compatibility with old files
         # 1. In tool_integrity.shares_tool_version (new format)
         # 2. Directly in shares_tool_version (intermediate format)
