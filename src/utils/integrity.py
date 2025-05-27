@@ -1,6 +1,7 @@
 import os
 import time
 import hashlib
+from typing import Dict, Any
 from pathlib import Path
 
 from src import VERSION
@@ -47,9 +48,9 @@ def get_enhanced_random_bytes(length: int = 32) -> bytes:
         
     return result
 
-def calculate_tool_integrity():
+def calculate_tool_integrity() -> Dict[str, Any]:
     """Calculates integrity hashes of the tool and its dependencies."""
-    integrity = {
+    integrity: Dict[str, Any] = {
         'tool_hash': '',
         'packages_hash': {},
         'shares_tool_version': VERSION

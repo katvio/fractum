@@ -7,8 +7,9 @@ import shutil
 import zipfile
 import time
 import click
+import binascii
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from Crypto.Cipher import AES
 
 from src.crypto.memory import SecureMemory
@@ -24,7 +25,7 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
 @click.option('--label', '-l', required=True, help='Label to identify shares')
 @click.option('--existing-shares', '-e', type=click.Path(exists=True, dir_okay=True, file_okay=False), help='Directory containing existing shares')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose mode')
-def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_shares: str, verbose: bool):
+def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_shares: str, verbose: bool) -> None:
     """Encrypts a file and generates shares."""
     try:
         # Replace spaces with underscores in label
@@ -55,7 +56,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
                 click.echo(f"Looking for existing shares in: {existing_shares_path}")
                 
             # Use existing shares - examine all files, not just those with specific names
-            share_files = []
+            share_files: List[Path] = []
             for file_path in existing_shares_path.glob("*.*"):
                 if file_path.is_file():
                     try:
@@ -109,7 +110,8 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
             
-            shares_data, metadata = ShareManager.load_shares(share_files)
+            share_files_str = [str(f) for f in share_files]
+            shares_data, metadata = ShareManager.load_shares(share_files_str)
             
             # Verify metadata compatibility
             if metadata.label != label:
@@ -154,7 +156,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
             archiver = ShareArchiver()
             
             # Save shares and create archives
-            share_files = []
+            new_share_files: List[str] = []
             for idx, share in share_data:
                 share_file = f"share_{idx}.txt"
                 with open(share_file, 'w') as f:
@@ -169,7 +171,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
                         'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
                         'share_set_id': share_set_id  # Add the share set ID to identify related shares
                     }, f, indent=2)
-                share_files.append(share_file)
+                new_share_files.append(share_file)
             
             if verbose:
                 click.echo(f"Generated shares: {shares}")
@@ -179,7 +181,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
         encryptor = FileEncryptor(key)
         
         # Add share_set_id to metadata before encryption
-        metadata = {
+        metadata_dict = {
             'version': share_manager.version,
             'timestamp': int(time.time()),
             'share_set_id': share_set_id if 'share_set_id' in locals() else None
@@ -187,13 +189,13 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
         
         # Calculate data hash
         with open(input_file, 'rb') as f:
-            data = f.read()
-        data_hash = hashlib.sha256(data).hexdigest()
+            file_data = f.read()
+        data_hash = hashlib.sha256(file_data).hexdigest()
         
         # Encrypt the file with metadata
         with open(input_file, 'rb') as f_in, open(output_file, 'wb') as f_out:
             # Write metadata
-            encryptor._write_metadata(f_out, data_hash, metadata)
+            encryptor._write_metadata(f_out, data_hash, metadata_dict)
             
             # Read the input file
             data = f_in.read()
@@ -212,7 +214,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
         
         # Create archives for each share
         if not existing_shares:
-            for idx, share_file in enumerate(share_files, 1):
+            for idx, share_file in enumerate(new_share_files, 1):
                 archive_path = archiver.create_share_archive(share_file, output_file, idx, label)
                 if verbose:
                     click.echo(f"Created archive: {Path(archive_path).absolute()}")
@@ -232,7 +234,7 @@ def encrypt(input_file: str, threshold: int, shares: int, label: str, existing_s
 @click.option('--shares-dir', '-s', type=click.Path(exists=True, dir_okay=True, file_okay=False), help='Path to directory containing shares or ZIP archives')
 @click.option('--manual-shares', '-m', is_flag=True, help='Manually enter share values instead of using files')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose mode')
-def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool):
+def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool) -> None:
     """Decrypts a file using shares."""
     try:
         # If manual shares option is selected, collect shares interactively
@@ -290,8 +292,8 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
                     click.echo("No share set ID found in metadata")
         
         # Dictionary to store shares by set_id and label
-        shares_by_set_id = {}
-        shares_by_label = {}
+        shares_by_set_id: Dict[str, Dict[str, Any]] = {}
+        shares_by_label: Dict[str, Dict[str, Any]] = {}
         
         # Look for share files in directory
         share_files = []
@@ -562,7 +564,7 @@ def decrypt(input_file: str, shares_dir: str, manual_shares: bool, verbose: bool
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
 
-def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
+def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
     """Collects shares manually from user input."""
     click.echo("\n=== Manual Share Entry ===")
     click.echo("Enter share details when prompted. Enter 'done' when finished.")
@@ -600,7 +602,7 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
                     # Maybe it's hex encoded
                     raise ValueError("Incorrect data length for Base64")
                     
-            except (ValueError, base64.binascii.Error):
+            except (ValueError, binascii.Error):
                 # If Base64 fails, try hex
                 # Remove any whitespace or colons that might be in the hex string
                 hex_value = share_value.replace(":", "").replace(" ", "")
@@ -648,12 +650,16 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], dict]:
     # Final verification
     if len(shares) < 2:
         click.echo("Warning: Not enough shares provided. Minimum 2 shares required.")
+    
+    # Ensure metadata is not None before returning
+    if metadata is None:
+        raise ValueError("No metadata collected")
         
     return shares, metadata
 
 @click.command()
 @click.option('--shares-dir', '-s', required=True, type=click.Path(exists=True), help='Path to directory containing shares or ZIP archives')
-def verify(shares_dir: str):
+def verify(shares_dir: str) -> None:
     """Verifies share integrity."""
     try:
         shares_path = Path(shares_dir).absolute()

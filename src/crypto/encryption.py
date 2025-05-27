@@ -3,6 +3,7 @@ import time
 import hashlib
 # Using PyCryptodome (not deprecated PyCrypto) for AES-256-GCM encryption
 from Crypto.Cipher import AES
+from typing import Dict, Any, Optional
 
 from src import VERSION
 
@@ -11,7 +12,7 @@ class FileEncryptor:
         self.key = key
         self.version = VERSION
 
-    def _write_metadata(self, f, data_hash: str, metadata: dict = None) -> None:
+    def _write_metadata(self, f: Any, data_hash: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         """Writes metadata at the beginning of the file."""
         if metadata is None:
             metadata = {}
@@ -27,7 +28,7 @@ class FileEncryptor:
         f.write(len(metadata_bytes).to_bytes(4, 'big'))
         f.write(metadata_bytes)
 
-    def _read_metadata(self, f) -> dict:
+    def _read_metadata(self, f: Any) -> Dict[str, Any]:
         """Reads metadata from the beginning of the file."""
         try:
             metadata_len = int.from_bytes(f.read(4), 'big')
@@ -35,7 +36,7 @@ class FileEncryptor:
             
             try:
                 # First try with UTF-8 encoding
-                metadata = json.loads(metadata_bytes.decode('utf-8'))
+                metadata: Dict[str, Any] = json.loads(metadata_bytes.decode('utf-8'))
             except UnicodeDecodeError:
                 # Fallback to latin-1 encoding with error replacement if UTF-8 fails
                 try:
@@ -56,7 +57,7 @@ class FileEncryptor:
             # Last resort fallback for any other errors (like reading from corrupted file)
             return {'version': self.version}
 
-    def encrypt_file(self, input_path: str, output_path: str, metadata: dict = None) -> None:
+    def encrypt_file(self, input_path: str, output_path: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         """Encrypts a file with AES-256-GCM."""
         try:
             cipher = AES.new(self.key, AES.MODE_GCM)

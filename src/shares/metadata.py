@@ -1,16 +1,17 @@
 from src import VERSION
+from typing import Optional, Dict, Any
 
 class ShareMetadata:
     """Centralized management of share metadata."""
     
-    def __init__(self, version: str = VERSION, label: str = None, threshold: int = 3, total_shares: int = 5):
+    def __init__(self, version: str = VERSION, label: Optional[str] = None, threshold: int = 3, total_shares: int = 5):
         self.version = version
         self.label = label
         self.threshold = threshold
         self.total_shares = total_shares
         
     @classmethod
-    def from_share_info(cls, share_info: dict) -> 'ShareMetadata':
+    def from_share_info(cls, share_info: Dict[str, Any]) -> 'ShareMetadata':
         """Creates a ShareMetadata instance from share information."""
         # Look for version in different places to maintain compatibility with old files
         # 1. In tool_integrity.shares_tool_version (new format)
@@ -34,7 +35,7 @@ class ShareMetadata:
             total_shares=share_info.get('total_shares', 5)
         )
         
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Converts metadata to dictionary."""
         metadata = {
             'version': self.version,

@@ -7,7 +7,7 @@ from src.cli.interactive import interactive_mode
 @click.version_option(version=VERSION)
 @click.option('--interactive', '-i', is_flag=True, help='Launch interactive mode')
 @click.pass_context
-def cli(ctx, interactive):
+def cli(ctx: click.Context, interactive: bool) -> None:
     """Shamir's Secret Sharing Tool.
 
     A secure tool for file encryption and secret sharing using Shamir's Secret Sharing scheme.
