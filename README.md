@@ -13,18 +13,27 @@ Fractum is designed for organizations and individuals who need to securely store
 ![How Fractum splits your secrets into shares](diagram.png)
 
 ## Table of Contents
-- [Features](#features)
-- [How it works](#how-it-works)
-  - [Input and Output Files](#input-and-output-files)
-  - [Security Architecture](#security-architecture)
-- [Repository Layout](#repository-layout)
-- [Installation](#installation)
+- [Fractum](#fractum)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [How it works](#how-it-works)
+    - [Input and Output Files](#input-and-output-files)
+    - [Security Architecture](#security-architecture)
   - [The Docker way (recommended usage)](#the-docker-way-recommended-usage)
+    - [Prerequisites](#prerequisites)
+    - [Setup](#setup)
+    - [Usage](#usage)
+      - [Encrypting a file](#encrypting-a-file)
+      - [Decrypting a file](#decrypting-a-file)
+    - [Benefits to using Docker](#benefits-to-using-docker)
   - [Manual installation using venv](#manual-installation-using-venv)
-- [Usage](#usage)
-  - [Encrypting a file](#encrypting-a-file)
-  - [Decrypting a file](#decrypting-a-file)
-- [Contributing](#contributing)
+    - [1. Clone the repository](#1-clone-the-repository)
+    - [2. Bootstrap your environment](#2-bootstrap-your-environment)
+    - [3. Activate the virtual environment](#3-activate-the-virtual-environment)
+    - [4. Verify your installation](#4-verify-your-installation)
+    - [5. Try it out](#5-try-it-out)
+  - [Repository Layout](#repository-layout)
+  - [Contributing](#contributing)
 
 ## Features
 
@@ -311,5 +320,4 @@ fractum/
 
 ## Contributing
 If you want to contribute submit a GitHub pull request or open an issue. Thank you!
-
-Any contribution is better than no contribution :-) Submit a pull request or open an issue even if you are not sure or if you feel the contribution is not significant enough.
+Any contribution is better than no contribution :)
