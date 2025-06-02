@@ -4,7 +4,6 @@
 import unittest
 import tempfile
 import os
-import sys
 import json
 import base64
 import hashlib
@@ -13,12 +12,8 @@ import time
 import io
 import gc
 import psutil
-import ctypes
-import binascii
-import threading
 import statistics
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 from contextlib import redirect_stdout
 from Crypto.Cipher import AES
 
@@ -28,8 +23,7 @@ from src import (
     FileEncryptor,
     VERSION,
     get_enhanced_random_bytes,
-    SecureMemory,
-    cli
+    SecureMemory
 )
 
 # Colors for logs
@@ -313,8 +307,8 @@ class CryptographicSecurityTests(unittest.TestCase):
                     
                     # Simulate verbose CLI operation by printing information
                     print(f"Encrypted file: {encrypted_file}")
-                    print(f"Using label: test_label")
-                    print(f"Threshold: 2, Total shares: 3")
+                    print("Using label: test_label")
+                    print("Threshold: 2, Total shares: 3")
                     print(f"Share set ID: {hashlib.sha256(b'test').hexdigest()[:16]}")
                 
                 # Get the captured output
@@ -397,7 +391,7 @@ class SideChannelSecurityTests(unittest.TestCase):
             max_deviation = max(abs(t - avg_time) for t in timings)
             
             # Print timing statistics for debugging
-            log_test_step(f"Reconstruction time statistics (seconds):")
+            log_test_step("Reconstruction time statistics (seconds):")
             print(f"  Average: {avg_time:.6f}")
             print(f"  Min: {min(timings):.6f}")
             print(f"  Max: {max(timings):.6f}")

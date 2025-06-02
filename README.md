@@ -13,18 +13,27 @@ Fractum is designed for organizations and individuals who need to securely store
 ![How Fractum splits your secrets into shares](diagram.png)
 
 ## Table of Contents
-- [Features](#features)
-- [How it works](#how-it-works)
-  - [Input and Output Files](#input-and-output-files)
-  - [Security Architecture](#security-architecture)
-- [Repository Layout](#repository-layout)
-- [Installation](#installation)
+- [Fractum](#fractum)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [How it works](#how-it-works)
+    - [Input and Output Files](#input-and-output-files)
+    - [Security Architecture](#security-architecture)
   - [The Docker way (recommended usage)](#the-docker-way-recommended-usage)
+    - [Prerequisites](#prerequisites)
+    - [Setup](#setup)
+    - [Usage](#usage)
+      - [Encrypting a file](#encrypting-a-file)
+      - [Decrypting a file](#decrypting-a-file)
+    - [Benefits to using Docker](#benefits-to-using-docker)
   - [Manual installation using venv](#manual-installation-using-venv)
-- [Usage](#usage)
-  - [Encrypting a file](#encrypting-a-file)
-  - [Decrypting a file](#decrypting-a-file)
-- [Contributing](#contributing)
+    - [1. Clone the repository](#1-clone-the-repository)
+    - [2. Bootstrap your environment](#2-bootstrap-your-environment)
+    - [3. Activate the virtual environment](#3-activate-the-virtual-environment)
+    - [4. Verify your installation](#4-verify-your-installation)
+    - [5. Try it out](#5-try-it-out)
+  - [Repository Layout](#repository-layout)
+  - [Contributing](#contributing)
 
 ## Features
 
@@ -112,7 +121,7 @@ Each share archive contains:
 
 ## The Docker way (recommended usage)
 
-For ultra-secure operations, Fractum can run in a completely network-isolated Docker container.
+For ultra-secure operations, Fractum can run in a completely network-isolated Docker container. The primary benefit of this approach is that the `--network=none` flag provides users with confidence that the Fractum code cannot exfiltrate their secrets through any network connection. Additionally, this Docker setup can work inside a [TEE](https://www.halborn.com/blog/post/what-is-a-trusted-execution-environment-tee) using tools like [Enclaver.io](https://github.com/enclaver-io/enclaver) for even more advanced security scenarios.
 
 ### Prerequisites
 
@@ -125,10 +134,7 @@ For ultra-secure operations, Fractum can run in a completely network-isolated Do
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum
-```
-```
-git checkout tags/v1.1.0
+cd fractum && git checkout tags/v1.1.0
 ```
 
 2. **Create data folders**
@@ -208,7 +214,7 @@ The Docker approach provides several security benefits:
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum
+cd fractum && git checkout tags/v1.1.0
 ```
 
 ### 2. Bootstrap your environment
@@ -300,19 +306,18 @@ This command:
 ## Repository Layout
 ```
 fractum/
-├── packages/
-├── src/
-│   └── __init__.py
-├── tests/
-├── bootstrap-linux.sh
-├── bootstrap-macos.sh
-├── bootstrap-windows.ps1
-├── Dockerfile
-├── README.md
-└── setup.py
+├── packages/                    # Pre-downloaded Python packages for offline installation
+├── src/                         # Main application source code
+│   └── __init__.py             # Package initialization and version definition
+├── tests/                       # Unit tests and integration tests
+├── bootstrap-linux.sh           # Linux environment setup script
+├── bootstrap-macos.sh           # macOS environment setup script  
+├── bootstrap-windows.ps1        # Windows PowerShell setup script
+├── Dockerfile                   # Docker container configuration for secure execution
+├── README.md                    # Project documentation and usage instructions
+└── setup.py                     # Python package installation configuration
 ```
 
 ## Contributing
 If you want to contribute submit a GitHub pull request or open an issue. Thank you!
-
-Any contribution is better than no contribution :-) Submit a pull request or open an issue even if you are not sure or if you feel the contribution is not significant enough.
+Any contribution is better than no contribution :)

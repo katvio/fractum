@@ -1,10 +1,10 @@
 import string
-from typing import Union
+from typing import Union, List, Any
 from src.utils.integrity import get_enhanced_random_bytes
 
 class SecureMemory:
     @staticmethod
-    def secure_clear(data: Union[bytes, bytearray, str, list, memoryview]) -> None:
+    def secure_clear(data: Union[bytes, bytearray, str, List[Any], memoryview]) -> None:
         """Securely clears sensitive data from memory with multiple overwrite patterns.
         
         Args:
@@ -129,7 +129,7 @@ class SecureMemory:
 class SecureContext:
     """Context manager for securely handling sensitive data."""
     
-    def __init__(self, size: int = 32):
+    def __init__(self, size: int = 32) -> None:
         """Initialize secure context with memory buffer.
         
         Args:
@@ -146,7 +146,7 @@ class SecureContext:
             self.buffer[i] = random_bytes[i]
         return self.buffer
         
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit the context and securely clear the buffer."""
         SecureMemory.secure_clear(self.buffer)
         # The buffer object itself will be garbage collected, but we've cleared its contents

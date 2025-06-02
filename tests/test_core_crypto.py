@@ -4,26 +4,16 @@
 import unittest
 import tempfile
 import os
-import sys
 import json
-import base64
-import ctypes
-import gc
 import random
 import string
 import hashlib
-import time
-from pathlib import Path
-from io import StringIO
-from unittest.mock import patch, Mock, mock_open
 
 # Import from the src module
 from src import (
     ShareManager, 
     FileEncryptor, 
     SecureMemory, 
-    SecureContext,
-    ShareMetadata,
     get_enhanced_random_bytes
 )
 

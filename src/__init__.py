@@ -4,6 +4,13 @@
 import os
 import sys
 import click
+from src.crypto.memory import SecureMemory, SecureContext
+from src.crypto.encryption import FileEncryptor
+from src.shares.metadata import ShareMetadata
+from src.shares.manager import ShareManager
+from src.shares.archiver import ShareArchiver
+from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_bytes
+from src.cli import cli
 
 # Strict Python version check
 REQUIRED_PYTHON_VERSION = (3, 12, 10)
@@ -13,16 +20,19 @@ if sys.version_info[:3] != REQUIRED_PYTHON_VERSION:
 
 VERSION = "1.1.0"
 
-# Import public components
-from src.crypto.memory import SecureMemory, SecureContext
-from src.crypto.encryption import FileEncryptor
-from src.shares.metadata import ShareMetadata
-from src.shares.manager import ShareManager
-from src.shares.archiver import ShareArchiver
-from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_bytes
-
-# Import CLI entry point
-from src.cli import cli
+# Define what this module exports
+__all__ = [
+    'cli',
+    'SecureMemory',
+    'SecureContext',
+    'FileEncryptor',
+    'ShareMetadata',
+    'ShareManager',
+    'ShareArchiver',
+    'calculate_tool_integrity',
+    'get_enhanced_random_bytes',
+    'VERSION'
+]
 
 # Make the CLI available at the package level
 if __name__ == '__main__':

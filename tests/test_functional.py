@@ -4,28 +4,20 @@
 import unittest
 import tempfile
 import os
-import sys
 import shutil
-import subprocess
 import json
 import base64
 import hashlib
 import platform
 import random
-import time
 from pathlib import Path
-from unittest.mock import patch, Mock, MagicMock
-from io import StringIO
 import zipfile  # Add this import at the beginning, near other imports
 
 # Import from the src module
 from src import (
-    cli,
-    click,
     ShareManager,
     FileEncryptor,
     VERSION,
-    ShareMetadata,
     ShareArchiver
 )
 
@@ -601,7 +593,7 @@ class CompatibilityTests(unittest.TestCase):
                 'version': VERSION,
                 'platform': platform_name,
                 # Include a platform-specific path
-                'platform_path': f"C:{platform_separator}path{platform_separator}to{platform_separator}share" if platform_name == 'Windows' else f"/path/to/share"
+                'platform_path': f"C:{platform_separator}path{platform_separator}to{platform_separator}share" if platform_name == 'Windows' else "/path/to/share"
             }
             
             # Write share file

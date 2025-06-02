@@ -12,16 +12,13 @@ import random
 import time
 from pathlib import Path
 import struct
-import binascii
 import platform
-import locale
 
 # Import from the src module
 from src import (
     ShareManager,
     FileEncryptor,
-    VERSION,
-    ShareMetadata
+    VERSION
 )
 
 # Detect operating system
@@ -33,13 +30,13 @@ if IS_WINDOWS:
         # Essayer de configurer l'encodage UTF-8 pour stdout
         import sys
         sys.stdout.reconfigure(encoding='utf-8')
-    except:
+    except Exception as e:
         pass
     
     try:
         # Essayer de configurer l'environnement pour UTF-8
         os.environ["PYTHONIOENCODING"] = "utf-8"
-    except:
+    except Exception as e:
         pass
 
 # Colors for logs
@@ -489,7 +486,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                         
                         # If we get here and should_succeed is False, test fails
                         if not should_succeed:
-                            log_test_warning(f"Creation succeeded when failure was expected")
+                            log_test_warning("Creation succeeded when failure was expected")
                             self.fail(f"Should not succeed with threshold={threshold}, shares={shares}")
                         
                         # Try to generate shares
@@ -598,7 +595,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                         try:
                             encryptor.decrypt_file(str(encrypted_file), str(decrypted_file))
                             log_test_warning("Decryption succeeded when failure was expected")
-                            self.fail(f"Decryption should fail as we manually created an invalid encrypted file")
+                            self.fail("Decryption should fail as we manually created an invalid encrypted file")
                         except ValueError as e:
                             # Expected error: MAC check failed, hash mismatch, or other ValueError
                             expected_errors = ["mac check failed", "hash mismatch", "tag", "hash"]
@@ -728,7 +725,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                                 f.write(data[24:])  # rest of the file
                         
                         # Attempt to decrypt the tampered file - should fail with any exception
-                        log_test_step(f"Attempting to decrypt the corrupted file (expected failure)")
+                        log_test_step("Attempting to decrypt the corrupted file (expected failure)")
                         tampered_decrypted = self.test_dir / f"{file_path.name}.tampered.dec"
                         try:
                             # Try to decrypt the tampered file - we should get an exception
@@ -736,7 +733,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                             with self.assertRaises((Exception, BaseException),
                                                   msg=f"Decryption of tampered {desc} file should fail"):
                                 encryptor.decrypt_file(str(broken_path), str(tampered_decrypted))
-                            log_test_success(f"Decryption of corrupted file failed as expected")
+                            log_test_success("Decryption of corrupted file failed as expected")
                         except Exception as e:
                             # Test passed anyway, the file was supposed to fail
                             log_test_success(f"Corrupted file test properly detected an error: {str(e)}")

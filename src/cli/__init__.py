@@ -1,13 +1,12 @@
 import click
-from src import VERSION
 from src.cli.commands import encrypt, decrypt, verify
 from src.cli.interactive import interactive_mode
 
 @click.group(invoke_without_command=True)
-@click.version_option(version=VERSION)
+@click.option('--version', is_flag=True, help='Show the version')
 @click.option('--interactive', '-i', is_flag=True, help='Launch interactive mode')
 @click.pass_context
-def cli(ctx, interactive):
+def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
     """Shamir's Secret Sharing Tool.
 
     A secure tool for file encryption and secret sharing using Shamir's Secret Sharing scheme.
@@ -90,6 +89,12 @@ def cli(ctx, interactive):
         # Verify shares in a directory
         fractum verify -s ./shares
     """
+    if version:
+        # Import VERSION here to avoid circular import
+        from src import VERSION
+        click.echo(f"fractum version {VERSION}")
+        ctx.exit()
+        
     if ctx.invoked_subcommand is None:
         if interactive:
             interactive_mode()

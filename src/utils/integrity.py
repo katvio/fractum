@@ -1,9 +1,8 @@
 import os
 import time
 import hashlib
+from typing import Dict, Any
 from pathlib import Path
-
-from src import VERSION
 
 def get_enhanced_random_bytes(length: int = 32) -> bytes:
     """Combines multiple entropy sources for enhanced randomness.
@@ -14,6 +13,7 @@ def get_enhanced_random_bytes(length: int = 32) -> bytes:
     Returns:
         bytes: Cryptographically secure random bytes from mixed sources
     """
+    # Using PyCryptodome (not deprecated PyCrypto) for cryptographically secure random generation
     from Crypto.Random import get_random_bytes
     
     # Collect entropy from multiple sources
@@ -46,9 +46,12 @@ def get_enhanced_random_bytes(length: int = 32) -> bytes:
         
     return result
 
-def calculate_tool_integrity():
+def calculate_tool_integrity() -> Dict[str, Any]:
     """Calculates integrity hashes of the tool and its dependencies."""
-    integrity = {
+    # Import VERSION here to avoid circular import
+    from src import VERSION
+    
+    integrity: Dict[str, Any] = {
         'tool_hash': '',
         'packages_hash': {},
         'shares_tool_version': VERSION

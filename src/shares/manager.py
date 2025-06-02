@@ -2,10 +2,9 @@ import json
 import hashlib
 import base64
 from typing import List, Tuple
-from pathlib import Path
+# Using PyCryptodome (not deprecated PyCrypto) for Shamir's Secret Sharing
 from Crypto.Protocol.SecretSharing import Shamir
 
-from src import VERSION
 from src.shares.metadata import ShareMetadata
 
 class ShareManager:
@@ -19,6 +18,9 @@ class ShareManager:
         Raises:
             ValueError: If parameters are invalid
         """
+        # Import VERSION here to avoid circular import
+        from src import VERSION
+        
         if not isinstance(threshold, int) or threshold < 2:
             raise ValueError("Threshold must be a positive integer greater than 1")
         if not isinstance(total_shares, int) or total_shares < threshold:
@@ -74,8 +76,8 @@ class ShareManager:
         secret_part2 = prepared_secret[16:]
         
         # Generate shares for each part
-        shares1 = Shamir.split(self.threshold, self.total_shares, secret_part1)
-        shares2 = Shamir.split(self.threshold, self.total_shares, secret_part2)
+        shares1 = Shamir.split(self.threshold, self.total_shares, secret_part1, ssss=False)
+        shares2 = Shamir.split(self.threshold, self.total_shares, secret_part2, ssss=False)
         
         # Combine shares
         combined_shares = []
@@ -116,8 +118,8 @@ class ShareManager:
             shares2 = [(idx, share[16:]) for idx, share in shares]
             
             # Reconstruct each part
-            secret_part1 = Shamir.combine(shares1[:self.threshold])
-            secret_part2 = Shamir.combine(shares2[:self.threshold])
+            secret_part1 = Shamir.combine(shares1[:self.threshold], ssss=False)
+            secret_part2 = Shamir.combine(shares2[:self.threshold], ssss=False)
             
             # Combine parts
             return secret_part1 + secret_part2
@@ -146,9 +148,9 @@ class ShareManager:
                 
             # Test reconstruction with a subset
             test_shares = shares[:self.threshold]
-            Shamir.combine(test_shares)
+            Shamir.combine(test_shares, ssss=False)
             return True
-        except:
+        except Exception as e:
             return False
 
     @staticmethod
@@ -183,6 +185,10 @@ class ShareManager:
                     share_info['share_index'],
                     base64.b64decode(share_key)
                 ))
+        
+        # Ensure metadata is not None before returning
+        if metadata is None:
+            raise ValueError("No valid share files found")
         
         return shares, metadata
 

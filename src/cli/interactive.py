@@ -4,7 +4,7 @@ import json
 
 from src.cli.commands import encrypt, decrypt, verify
 
-def interactive_mode():
+def interactive_mode() -> None:
     """Interactive mode guiding the user step by step."""
     click.echo("\n=== Fractum Interactive Mode ===")
     
@@ -35,7 +35,7 @@ def interactive_mode():
             click.echo(f"\n=== {description} ===")
             
             try:
-                if operation():
+                if operation is not None and operation():
                     click.echo("\nOperation completed successfully!")
             except Exception as e:
                 click.echo(f"\nError: {str(e)}", err=True)
@@ -48,7 +48,7 @@ def interactive_mode():
             click.echo("Please enter a valid number.")
             continue
 
-def interactive_encrypt():
+def interactive_encrypt() -> bool:
     """Interactive mode for encryption."""
     try:
         # Ask for file to encrypt
@@ -92,7 +92,7 @@ def interactive_encrypt():
                                     share_info = json.load(f)
                                     if all(key in share_info for key in ['share_index', 'share_key' if 'share_key' in share_info else 'share', 'label']):
                                         share_files.append(file_path)
-                            except:
+                            except (json.JSONDecodeError, UnicodeDecodeError, IOError) as e:
                                 continue
             
             if not share_files:
@@ -111,7 +111,7 @@ def interactive_encrypt():
             # Read parameters from existing shares
             threshold = share_info.get('threshold', 3)
             total_shares = share_info.get('total_shares', 5)
-            click.echo(f"Existing shares parameters:")
+            click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
             
@@ -163,7 +163,7 @@ def interactive_encrypt():
         click.echo(f"\nError during encryption: {str(e)}", err=True)
         return False
 
-def interactive_decrypt():
+def interactive_decrypt() -> bool:
     """Interactive mode for decryption."""
     try:
         # Ask for file to decrypt
@@ -206,7 +206,7 @@ def interactive_decrypt():
         click.echo(f"\nError during decryption: {str(e)}", err=True)
         return False
 
-def interactive_verify():
+def interactive_verify() -> bool:
     """Interactive mode for verification."""
     try:
         # Ask for shares directory
