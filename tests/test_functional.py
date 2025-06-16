@@ -516,7 +516,7 @@ class CompatibilityTests(unittest.TestCase):
             # Create share info with variations but same version
             if i == 0:
                 # First format - standard
-                log_step(f"Creating share {i+1} with standard format")
+                log_step(f"Creating share {i + 1} with standard format")
                 share_info = {
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
@@ -528,7 +528,7 @@ class CompatibilityTests(unittest.TestCase):
                 }
             elif i == 1:
                 # Second format - with tool_integrity
-                log_step(f"Creating share {i+1} with tool_integrity field")
+                log_step(f"Creating share {i + 1} with tool_integrity field")
                 share_info = {
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
@@ -541,7 +541,7 @@ class CompatibilityTests(unittest.TestCase):
                 }
             else:
                 # Third format - legacy key name
-                log_step(f"Creating share {i+1} with legacy key name")
+                log_step(f"Creating share {i + 1} with legacy key name")
                 share_info = {
                     "share_index": idx,
                     "share": base64.b64encode(share_data).decode(),  # Old key name

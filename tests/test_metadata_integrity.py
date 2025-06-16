@@ -515,7 +515,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     )
 
                 if i == 0 or i == len(share_files) - 1:
-                    log_test_step(f"Verifying share {i+1}/{len(share_files)}")
+                    log_test_step(f"Verifying share {i + 1}/{len(share_files)}")
 
             log_test_success("Hash integrity verified for all shares")
             log_test_end(test_name)

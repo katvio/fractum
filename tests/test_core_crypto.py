@@ -124,7 +124,7 @@ class TestShareManager(unittest.TestCase):
                 f"Reconstruction failed with shares at indices {random_indices}",
             )
             log_success(
-                f"Combination {i+1}: Successfully reconstructed with shares at indices {random_indices}"
+                f"Combination {i + 1}: Successfully reconstructed with shares at indices {random_indices}"
             )
 
     def test_threshold_enforcement(self):

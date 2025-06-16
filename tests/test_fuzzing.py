@@ -885,9 +885,10 @@ class ParameterFuzzingTests(unittest.TestCase):
                                     decrypted_path.exists(),
                                     f"Decrypted {desc} file should exist",
                                 )
-                                with open(file_path, "rb") as f1, open(
-                                    decrypted_path, "rb"
-                                ) as f2:
+                                with (
+                                    open(file_path, "rb") as f1,
+                                    open(decrypted_path, "rb") as f2,
+                                ):
                                     self.assertEqual(
                                         f1.read(),
                                         f2.read(),
@@ -923,9 +924,10 @@ class ParameterFuzzingTests(unittest.TestCase):
                                     decrypted_path.exists(),
                                     f"Decrypted {desc} file should exist",
                                 )
-                                with open(file_path, "rb") as f1, open(
-                                    decrypted_path, "rb"
-                                ) as f2:
+                                with (
+                                    open(file_path, "rb") as f1,
+                                    open(decrypted_path, "rb") as f2,
+                                ):
                                     self.assertEqual(
                                         f1.read(),
                                         f2.read(),

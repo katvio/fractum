@@ -170,7 +170,7 @@ class EfficiencyTests(unittest.TestCase):
                     # Measure memory before operation
                     memory_before = process.memory_info().rss
 
-                    log_test_step(f"Iteration {i+1}/{iterations} for {size}")
+                    log_test_step(f"Iteration {i + 1}/{iterations} for {size}")
 
                     # Measure encryption time
                     start_time = time.perf_counter()
@@ -188,7 +188,7 @@ class EfficiencyTests(unittest.TestCase):
 
                     # Print progress for visibility
                     log_msg = (
-                        f"Encrypting {size} (iteration {i+1}/{iterations}): {encrypt_time:.2f} seconds, "
+                        f"Encrypting {size} (iteration {i + 1}/{iterations}): {encrypt_time:.2f} seconds, "
                         + f"memory: {memory_usage / (1024 * 1024):.2f} MB"
                     )
                     log_test_step(log_msg)
@@ -294,7 +294,7 @@ class EfficiencyTests(unittest.TestCase):
                         memory_before = process.memory_info().rss
 
                         log_test_step(
-                            f"Decryption - Iteration {i+1}/{iterations} for {size}"
+                            f"Decryption - Iteration {i + 1}/{iterations} for {size}"
                         )
 
                         # Measure decryption time
@@ -316,13 +316,13 @@ class EfficiencyTests(unittest.TestCase):
 
                             # Print progress for visibility
                             log_msg = (
-                                f"Decrypting {size} (iteration {i+1}/{iterations}): {decrypt_time:.2f} seconds, "
+                                f"Decrypting {size} (iteration {i + 1}/{iterations}): {decrypt_time:.2f} seconds, "
                                 + f"memory: {memory_usage / (1024 * 1024):.2f} MB"
                             )
                             log_test_step(log_msg)
                         except Exception as e:
                             log_test_warning(
-                                f"Error decrypting {size} (iteration {i+1}/{iterations}): {str(e)}"
+                                f"Error decrypting {size} (iteration {i + 1}/{iterations}): {str(e)}"
                             )
                             # Skip this iteration
                             continue
@@ -679,7 +679,7 @@ class EfficiencyTests(unittest.TestCase):
                 "Encryption memory usage is too high",
             )
             log_test_success(
-                f"Encryption memory usage OK: {encryption_memory/(1024*1024):.2f} MB < {max_encryption_memory/(1024*1024):.0f} MB"
+                f"Encryption memory usage OK: {encryption_memory / (1024 * 1024):.2f} MB < {max_encryption_memory / (1024 * 1024):.0f} MB"
             )
 
             self.assertLess(
@@ -688,7 +688,7 @@ class EfficiencyTests(unittest.TestCase):
                 "Share generation memory usage is too high",
             )
             log_test_success(
-                f"Share generation memory usage OK: {share_gen_memory/(1024*1024):.2f} MB < {max_share_gen_memory/(1024*1024):.0f} MB"
+                f"Share generation memory usage OK: {share_gen_memory / (1024 * 1024):.2f} MB < {max_share_gen_memory / (1024 * 1024):.0f} MB"
             )
 
             self.assertLess(
@@ -697,7 +697,7 @@ class EfficiencyTests(unittest.TestCase):
                 "Share reconstruction memory usage is too high",
             )
             log_test_success(
-                f"Share reconstruction memory usage OK: {share_recon_memory/(1024*1024):.2f} MB < {max_share_recon_memory/(1024*1024):.0f} MB"
+                f"Share reconstruction memory usage OK: {share_recon_memory / (1024 * 1024):.2f} MB < {max_share_recon_memory / (1024 * 1024):.0f} MB"
             )
 
             log_test_end(test_name)

@@ -274,9 +274,10 @@ class CryptographicSecurityTests(unittest.TestCase):
 
                 # Now test direct file comparison
                 log_test_step("Comparing encrypted files")
-                with open(encrypted_file1, "rb") as f1, open(
-                    encrypted_file2, "rb"
-                ) as f2:
+                with (
+                    open(encrypted_file1, "rb") as f1,
+                    open(encrypted_file2, "rb") as f2,
+                ):
                     content1 = f1.read()
                     content2 = f2.read()
 
@@ -312,9 +313,10 @@ class CryptographicSecurityTests(unittest.TestCase):
                     encryptor2.decrypt_file(encrypted_file2, decrypted_file2)
 
                     # Verify decrypted files match original
-                    with open(decrypted_file1, "rb") as df1, open(
-                        decrypted_file2, "rb"
-                    ) as df2:
+                    with (
+                        open(decrypted_file1, "rb") as df1,
+                        open(decrypted_file2, "rb") as df2,
+                    ):
                         self.assertEqual(
                             df1.read(),
                             test_content,
@@ -467,11 +469,11 @@ class SideChannelSecurityTests(unittest.TestCase):
 
                 if i == 0:
                     log_test_step(
-                        f"Trial {i+1}/{num_trials}: {timings[-1]:.6f} seconds"
+                        f"Trial {i + 1}/{num_trials}: {timings[-1]:.6f} seconds"
                     )
                 elif i == num_trials - 1:
                     log_test_step(
-                        f"Trial {i+1}/{num_trials}: {timings[-1]:.6f} seconds"
+                        f"Trial {i + 1}/{num_trials}: {timings[-1]:.6f} seconds"
                     )
 
             # Calculate statistics
@@ -561,7 +563,7 @@ class SideChannelSecurityTests(unittest.TestCase):
                 memory_increase = after_memory - before_memory
                 memory_increases.append(memory_increase)
                 log_test_step(
-                    f"Memory increase for {secret_size} bytes: {memory_increase/1024:.2f} KB"
+                    f"Memory increase for {secret_size} bytes: {memory_increase / 1024:.2f} KB"
                 )
 
             log_test_step("Checking correlations between size and memory usage")
@@ -833,9 +835,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             # 1. File with oversized metadata length
             log_test_step("Case 1: Oversized metadata length")
             oversized_length_file = self.test_dir / "oversized_length.enc"
-            with open(encrypted_file, "rb") as src, open(
-                oversized_length_file, "wb"
-            ) as dst:
+            with (
+                open(encrypted_file, "rb") as src,
+                open(oversized_length_file, "wb") as dst,
+            ):
                 # Read the original file
                 original_content = src.read()
 
@@ -850,9 +853,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             # 2. File with metadata containing control characters
             log_test_step("Case 2: Metadata with control characters")
             control_chars_file = self.test_dir / "control_chars.enc"
-            with open(encrypted_file, "rb") as src, open(
-                control_chars_file, "wb"
-            ) as dst:
+            with (
+                open(encrypted_file, "rb") as src,
+                open(control_chars_file, "wb") as dst,
+            ):
                 # Read the original file
                 original_content = src.read()
                 metadata_len = int.from_bytes(original_content[:4], "big")
@@ -873,9 +877,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             # 3. File with malicious version string - reading content as bytes here
             log_test_step("Case 3: Malicious version string")
             malicious_version_file = self.test_dir / "malicious_version.enc"
-            with open(encrypted_file, "rb") as src, open(
-                malicious_version_file, "wb"
-            ) as dst:
+            with (
+                open(encrypted_file, "rb") as src,
+                open(malicious_version_file, "wb") as dst,
+            ):
                 # Read the original file
                 original_content = src.read()
                 metadata_len = int.from_bytes(original_content[:4], "big")
@@ -931,9 +936,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
             # 5. File with invalid UTF-8 sequences in metadata
             log_test_step("Case 5: Invalid UTF-8 sequences in metadata")
             invalid_utf8_file = self.test_dir / "invalid_utf8.enc"
-            with open(encrypted_file, "rb") as src, open(
-                invalid_utf8_file, "wb"
-            ) as dst:
+            with (
+                open(encrypted_file, "rb") as src,
+                open(invalid_utf8_file, "wb") as dst,
+            ):
                 # Read the original file
                 original_content = src.read()
                 metadata_len = int.from_bytes(original_content[:4], "big")
@@ -944,7 +950,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 # Write back with invalid UTF-8
                 dst.write(len(invalid_utf8).to_bytes(4, "big"))
                 dst.write(invalid_utf8)
-                dst.write(original_content[4 + metadata_len:])
+                dst.write(original_content[4 + metadata_len :])
 
             test_cases.append(("Invalid UTF-8", invalid_utf8_file))
 
@@ -964,9 +970,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                         encryptor.decrypt_file(str(malicious_file), str(decrypted_file))
 
                         # If it succeeds, verify the content is correct
-                        with open(test_file, "rb") as f1, open(
-                            decrypted_file, "rb"
-                        ) as f2:
+                        with (
+                            open(test_file, "rb") as f1,
+                            open(decrypted_file, "rb") as f2,
+                        ):
                             self.assertEqual(
                                 f1.read(),
                                 f2.read(),

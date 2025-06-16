@@ -25,9 +25,9 @@ RESET = "\033[0m"
 
 def print_header(message):
     """Print a formatted header."""
-    print(f"\n{BOLD}{BLUE}{'='*80}{RESET}")
+    print(f"\n{BOLD}{BLUE}{'=' * 80}{RESET}")
     print(f"{BOLD}{BLUE}= {message}{RESET}")
-    print(f"{BOLD}{BLUE}{'='*80}{RESET}\n")
+    print(f"{BOLD}{BLUE}{'=' * 80}{RESET}\n")
 
 
 def print_result(success, message):
@@ -70,7 +70,7 @@ def run_tests():
     # Run each test file
     for i, test_file in enumerate(test_files):
         try:
-            print_header(f"[{i+1}/{len(test_files)}] RUNNING {test_file}")
+            print_header(f"[{i + 1}/{len(test_files)}] RUNNING {test_file}")
 
             # Import the test module
             test_module = importlib.import_module(test_file)
