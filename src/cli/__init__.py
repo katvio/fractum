@@ -1,10 +1,13 @@
 import click
-from src.cli.commands import encrypt, decrypt, verify
+
+from src.cli.commands import decrypt, encrypt, verify
 from src.cli.interactive import interactive_mode
+from src.config import VERSION
+
 
 @click.group(invoke_without_command=True)
-@click.option('--version', is_flag=True, help='Show the version')
-@click.option('--interactive', '-i', is_flag=True, help='Launch interactive mode')
+@click.option("--version", is_flag=True, help="Show the version")
+@click.option("--interactive", "-i", is_flag=True, help="Launch interactive mode")
 @click.pass_context
 def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
     """Shamir's Secret Sharing Tool.
@@ -90,17 +93,16 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
         fractum verify -s ./shares
     """
     if version:
-        # Import VERSION here to avoid circular import
-        from src import VERSION
         click.echo(f"fractum version {VERSION}")
         ctx.exit()
-        
+
     if ctx.invoked_subcommand is None:
         if interactive:
             interactive_mode()
         else:
             click.echo(ctx.get_help())
             ctx.exit()
+
 
 # Register commands
 cli.add_command(encrypt)
