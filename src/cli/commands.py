@@ -488,7 +488,7 @@ def decrypt(
                             elif "version" in share_info:
                                 version = share_info["version"]
                             else:
-                                from src import VERSION
+                                from src.config import VERSION
 
                                 version = VERSION
 
@@ -527,7 +527,7 @@ def decrypt(
                         elif "version" in share_info:
                             version = share_info["version"]
                         else:
-                            from src import VERSION
+                            from src.config import VERSION
 
                             version = VERSION
 
@@ -703,10 +703,29 @@ def decrypt(
 def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
     """Collects shares manually from user input."""
     click.echo("\n=== Manual Share Entry ===")
-    click.echo("Enter share details when prompted. Enter 'done' when finished.")
+    
+    # Get threshold and total shares first, at the beginning
+    threshold = click.prompt(
+        "Threshold (minimum number of shares needed)", type=int
+    )
+    total_shares = click.prompt("Total shares", type=int)
+
+    if threshold < 2 or threshold > total_shares or total_shares > 255:
+        raise ValueError(
+            "Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255."
+        )
+
+    from src.config import VERSION
+
+    metadata = {
+        "version": VERSION,
+        "threshold": threshold,
+        "total_shares": total_shares,
+    }
+    
+    click.echo("\nEnter share details when prompted. Enter 'done' when finished.")
 
     shares = []
-    metadata = None
 
     while True:
         # Get share index
@@ -759,27 +778,6 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
         except Exception as e:
             click.echo(f"Invalid share key value: {str(e)}. Please try again.")
             continue
-
-        # First share determines metadata
-        if not metadata:
-            threshold = click.prompt(
-                "Threshold (minimum number of shares needed)", type=int
-            )
-            total_shares = click.prompt("Total shares", type=int)
-
-            if threshold < 2 or threshold > total_shares or total_shares > 255:
-                click.echo(
-                    "Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255."
-                )
-                continue
-
-            from src import VERSION
-
-            metadata = {
-                "version": VERSION,
-                "threshold": threshold,
-                "total_shares": total_shares,
-            }
 
         # Add share to collection
         shares.append((share_index, share_data))
