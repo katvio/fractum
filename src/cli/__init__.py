@@ -5,7 +5,15 @@ from src.cli.interactive import interactive_mode
 from src.config import VERSION
 
 
-@click.group(invoke_without_command=True)
+class CustomGroup(click.Group):
+    """Custom Click Group that formats usage line as requested."""
+    
+    def format_usage(self, ctx, formatter):
+        """Override the usage format to show COMMAND <FILE> [OPTIONS]."""
+        formatter.write_usage(ctx.info_name, "COMMAND <FILE> [OPTIONS]")
+
+
+@click.group(cls=CustomGroup, invoke_without_command=True)
 @click.option("--version", is_flag=True, help="Show the version")
 @click.option("--interactive", "-i", is_flag=True, help="Launch interactive mode")
 @click.pass_context
@@ -17,10 +25,12 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
 
     Available commands:
 
-    encrypt:
+    encrypt <FILE>:
 
         Encrypts a file and generates shares using Shamir's Secret Sharing.
         Creates ZIP archives containing shares and necessary files for decryption.
+
+        Usage: fractum encrypt <FILE> [OPTIONS]
 
         Options:
 
@@ -40,10 +50,12 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
             --verbose, -v
             Enable verbose output for detailed operation information
 
-    decrypt:
+    decrypt <encrypted_file>:
 
         Decrypts a file using the provided shares.
         Can use either individual share files or ZIP archives.
+
+        Usage: fractum decrypt <encrypted_file> [OPTIONS]
 
         Options:
 
@@ -62,6 +74,8 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
 
         Verifies the integrity of shares and their compatibility.
         Checks both individual share files and ZIP archives.
+
+        Usage: fractum verify [OPTIONS]
 
         Options:
 
