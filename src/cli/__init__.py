@@ -1,6 +1,6 @@
 import click
 
-from src.cli.commands import decrypt, encrypt, verify
+from src.cli.commands import decrypt, encrypt
 from src.cli.interactive import interactive_mode
 from src.config import VERSION
 
@@ -70,19 +70,6 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
             --verbose, -v
             Enable verbose output for detailed operation information
 
-    verify:
-
-        Verifies the integrity of shares and their compatibility.
-        Checks both individual share files and ZIP archives.
-
-        Usage: fractum verify [OPTIONS]
-
-        Options:
-
-            --shares-dir, -s
-            Directory containing shares or ZIP archives to verify
-            (can be a single file or a directory)
-
     Global Options:
 
         --interactive, -i
@@ -102,9 +89,6 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
 
         # Decrypt by manually entering share values
         fractum decrypt secret.txt.enc -m
-
-        # Verify shares in a directory
-        fractum verify -s ./shares
     """
     if version:
         click.echo(f"fractum version {VERSION}")
@@ -121,4 +105,3 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
 # Register commands
 cli.add_command(encrypt)
 cli.add_command(decrypt)
-cli.add_command(verify)
