@@ -488,7 +488,7 @@ def decrypt(
                             elif "version" in share_info:
                                 version = share_info["version"]
                             else:
-                                from src import VERSION
+                                from src.config import VERSION
 
                                 version = VERSION
 
@@ -527,7 +527,7 @@ def decrypt(
                         elif "version" in share_info:
                             version = share_info["version"]
                         else:
-                            from src import VERSION
+                            from src.config import VERSION
 
                             version = VERSION
 
@@ -703,10 +703,29 @@ def decrypt(
 def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
     """Collects shares manually from user input."""
     click.echo("\n=== Manual Share Entry ===")
-    click.echo("Enter share details when prompted. Enter 'done' when finished.")
+    
+    # Get threshold and total shares first, at the beginning
+    threshold = click.prompt(
+        "Threshold (minimum number of shares needed)", type=int
+    )
+    total_shares = click.prompt("Total shares", type=int)
+
+    if threshold < 2 or threshold > total_shares or total_shares > 255:
+        raise ValueError(
+            "Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255."
+        )
+
+    from src.config import VERSION
+
+    metadata = {
+        "version": VERSION,
+        "threshold": threshold,
+        "total_shares": total_shares,
+    }
+    
+    click.echo("\nEnter share details when prompted. Enter 'done' when finished.")
 
     shares = []
-    metadata = None
 
     while True:
         # Get share index
@@ -760,27 +779,6 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
             click.echo(f"Invalid share key value: {str(e)}. Please try again.")
             continue
 
-        # First share determines metadata
-        if not metadata:
-            threshold = click.prompt(
-                "Threshold (minimum number of shares needed)", type=int
-            )
-            total_shares = click.prompt("Total shares", type=int)
-
-            if threshold < 2 or threshold > total_shares or total_shares > 255:
-                click.echo(
-                    "Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255."
-                )
-                continue
-
-            from src import VERSION
-
-            metadata = {
-                "version": VERSION,
-                "threshold": threshold,
-                "total_shares": total_shares,
-            }
-
         # Add share to collection
         shares.append((share_index, share_data))
         click.echo(
@@ -804,127 +802,3 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
         raise ValueError("No metadata collected")
 
     return shares, metadata
-
-
-@click.command()
-@click.option(
-    "--shares-dir",
-    "-s",
-    required=True,
-    type=click.Path(exists=True),
-    help="Path to directory containing shares or ZIP archives",
-)
-def verify(shares_dir: str) -> None:
-    """Verifies share integrity."""
-    try:
-        shares_path = Path(shares_dir).absolute()
-
-        # Check if it's an archive directory
-        if shares_path.is_dir():
-            # First look for ZIP archives
-            share_files = list(shares_path.glob("*.zip"))
-
-            # Then look for all potential share files by examining content
-            content_share_files = []
-            for file_path in shares_path.glob("*.*"):
-                if (
-                    file_path.is_file() and not file_path.suffix == ".zip"
-                ):  # Skip ZIP files which we already handled
-                    try:
-                        with open(file_path, "r") as f:
-                            share_info = json.load(f)
-                            # Check if this is a valid share file by looking for essential fields
-                            if all(
-                                key in share_info
-                                for key in [
-                                    "share_index",
-                                    (
-                                        "share_key"
-                                        if "share_key" in share_info
-                                        else "share"
-                                    ),
-                                    "label",
-                                ]
-                            ):
-                                content_share_files.append(file_path)
-                    except (json.JSONDecodeError, UnicodeDecodeError, IOError):
-                        # Not a valid JSON file, skip it
-                        continue
-
-            # Add the content-detected share files
-            if content_share_files:
-                share_files.extend(content_share_files)
-
-            if not share_files:
-                # Try to find any file that might be a share
-                all_files = list(shares_path.glob("*"))
-                share_files = [f for f in all_files if f.is_file()]
-                if not share_files:
-                    raise ValueError(f"No files found in directory {shares_path}")
-                else:
-                    click.echo(
-                        f"Found {len(share_files)} files in directory, but none match the expected share format"
-                    )
-                    click.echo(
-                        "Please ensure you're pointing to a directory containing valid share files or archives"
-                    )
-                    return
-        else:
-            # It's a single file (archive or share)
-            share_files = [shares_path]
-
-        # Process each file
-        for share_file in share_files:
-            if str(share_file).endswith(".zip"):
-                # Extract archive to temporary directory
-                temp_dir = Path(f"temp_share_{share_file.stem}")
-                temp_dir.mkdir(exist_ok=True)
-
-                try:
-                    with zipfile.ZipFile(share_file, "r") as zipf:
-                        zipf.extractall(temp_dir)
-
-                    # Look for share file
-                    share_files_in_zip = list(temp_dir.glob("share_*.txt"))
-                    if not share_files_in_zip:
-                        click.echo(
-                            f"No share file found in archive {share_file}", err=True
-                        )
-                        continue
-
-                    share_file = share_files_in_zip[0]
-                except Exception as e:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-                    click.echo(
-                        f"Error extracting archive {share_file}: {str(e)}", err=True
-                    )
-                    continue
-
-            try:
-                with open(share_file, "r") as f:
-                    share_info = json.load(f)
-                    share_data = base64.b64decode(
-                        share_info.get("share_key", share_info.get("share"))
-                    )
-                    computed_hash = hashlib.sha256(share_data).hexdigest()
-
-                    if computed_hash != share_info["share_integrity_hash"]:
-                        click.echo(f"Verification error for {share_file}", err=True)
-                    else:
-                        click.echo(f"Share {share_file} successfully verified")
-            except json.JSONDecodeError:
-                click.echo(f"Invalid JSON format in {share_file}", err=True)
-            except KeyError as e:
-                click.echo(
-                    f"Missing required field in {share_file}: {str(e)}", err=True
-                )
-            except Exception as e:
-                click.echo(f"Error processing {share_file}: {str(e)}", err=True)
-
-            # Clean up temporary directory if it was an archive
-            if str(share_file).endswith(".zip"):
-                shutil.rmtree(temp_dir, ignore_errors=True)
-
-    except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
-        sys.exit(1)

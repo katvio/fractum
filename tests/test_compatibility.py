@@ -222,7 +222,7 @@ class PythonVersionTests(unittest.TestCase):
         log_test_start(test_name)
 
         try:
-            # Check if the current version is 3.12.10 as specified
+            # Check if the current version is 3.12.11 as specified
             is_target_version = (
                 current_version.major == 3
                 and current_version.minor == 12
@@ -233,12 +233,12 @@ class PythonVersionTests(unittest.TestCase):
                 log_test_success(f"Running on target version: Python {python_version}")
             else:
                 log_test_warning(
-                    f"Running on Python {python_version}, not on target version 3.12.10"
+                    f"Running on Python {python_version}, not on target version 3.12.11"
                 )
                 # Skip this test if not running on the target version
                 if not is_target_version:
-                    log_test_skip("Test skipped because not on Python 3.12.10")
-                    self.skipTest("Not running on Python 3.12.10")
+                    log_test_skip("Test skipped because not on Python 3.12.11")
+                    self.skipTest("Not running on Python 3.12.11")
 
             log_test_step("Testing basic functionality")
             # Test basic functionality
@@ -285,7 +285,7 @@ class PythonVersionTests(unittest.TestCase):
                 self.assertEqual(
                     key,
                     reconstructed_key,
-                    "Key reconstruction should work on Python 3.12.10",
+                    "Key reconstruction should work on Python 3.12.11",
                 )
                 log_test_success(
                     f"Shamir's Secret Sharing works on Python {python_version}"
