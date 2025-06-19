@@ -3,7 +3,7 @@ from pathlib import Path
 
 import click
 
-from src.cli.commands import decrypt, encrypt, verify
+from src.cli.commands import decrypt, encrypt
 
 
 def interactive_mode() -> None:
@@ -14,8 +14,7 @@ def interactive_mode() -> None:
     operations = {
         1: ("Encrypt a file", interactive_encrypt),
         2: ("Decrypt a file", interactive_decrypt),
-        3: ("Verify shares", interactive_verify),
-        4: ("Quit", None),
+        3: ("Quit", None),
     }
 
     while True:
@@ -26,10 +25,10 @@ def interactive_mode() -> None:
         try:
             choice = click.prompt("Your choice", type=int)
             if choice not in operations:
-                click.echo("Invalid choice. Please enter a number between 1 and 4.")
+                click.echo("Invalid choice. Please enter a number between 1 and 3.")
                 continue
 
-            if choice == 4:  # Quit
+            if choice == 3:  # Quit
                 click.echo("\nGoodbye!")
                 break
 
@@ -271,28 +270,4 @@ def interactive_decrypt() -> bool:
 
     except Exception as e:
         click.echo(f"\nError during decryption: {str(e)}", err=True)
-        return False
-
-
-def interactive_verify() -> bool:
-    """Interactive mode for verification."""
-    try:
-        # Ask for shares directory
-        shares_dir = click.prompt(
-            "Full path of the directory containing shares", type=click.Path(exists=True)
-        )
-        # Convert to absolute path
-        shares_dir = str(Path(shares_dir).absolute())
-
-        # Confirm parameters
-        click.echo("\nVerification parameters:")
-        click.echo(f"Shares directory: {shares_dir}")
-
-        # Execute command via Click
-        ctx = click.get_current_context()
-        ctx.invoke(verify, shares_dir=shares_dir)
-        return True
-
-    except Exception as e:
-        click.echo(f"\nError during verification: {str(e)}", err=True)
         return False

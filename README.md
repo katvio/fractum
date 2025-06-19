@@ -227,7 +227,7 @@ Choose the script for your OS (no prior configuration needed):
   This script will:
   - Install required system tools (git, curl, wget, etc.)
   - Add deadsnakes PPA repository
-  - Install Python 3.12.10
+  - Install Python 3.12.11
   - Create a virtual environment
   - Install fractum in development mode
 
@@ -239,7 +239,7 @@ Choose the script for your OS (no prior configuration needed):
   - Install Xcode Command Line Tools
   - Install Homebrew (if not present)
   - Install pyenv
-  - Install Python 3.12.10
+  - Install Python 3.12.11
   - Create a virtual environment
   - Install fractum in development mode
 
@@ -255,7 +255,7 @@ Choose the script for your OS (no prior configuration needed):
      .\bootstrap-windows.ps1
      ```
   This script will:
-  - Install Python 3.12.10 (using winget or Chocolatey)
+  - Install Python 3.12.11 (using winget or Chocolatey)
   - Create a virtual environment
   - Install fractum CLI on your machine
 
@@ -271,7 +271,7 @@ Choose the script for your OS (no prior configuration needed):
 
 ### 4. Verify your installation
 ```bash
-python --version          # Should report Python 3.12.10
+python --version          # Should report Python 3.12.11
 pip list                  # Should list fractum (editable mode)
 fractum --help            # Show CLI usage
 ```
