@@ -1,33 +1,41 @@
 name: Create Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      commit_sha:
-        description: 'Commit SHA to create release from'
-        required: true
-        type: string
+  push:
+    tags:
+      - 'v*'  # Trigger on any tag starting with 'v'
 
 jobs:
-  create-release:
+  verify-and-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.commit_sha }}
 
-      - name: Get version from setup.py
+      - name: Verify GPG signature on tag
+        run: |
+          # Import public key for verification
+          echo "${{ secrets.GPG_PUBLIC_KEY }}" | gpg --import
+          
+          # Verify the tag is properly signed
+          git tag -v ${{ github.ref_name }}
+          
+          echo "✅ Tag signature verified"
+
+      - name: Get version from tag
         id: get_version
         run: |
-          VERSION=$(python setup.py --version)
+          VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Package repository
         run: |
           mkdir -p dist
-          zip -r dist/fractum-${{ steps.get_version.outputs.version }}.zip \
+          
+          # Create source package
+          zip -r dist/fractum-${{ steps.get_version.outputs.version }}-source.zip \
             src/ \
             packages/ \
             bootstrap-*.sh \
@@ -35,17 +43,66 @@ jobs:
             Dockerfile \
             setup.py \
             README.md \
-            LICENSE
+            LICENSE \
+            --exclude="*.pyc" \
+            --exclude="__pycache__/*" \
+            --exclude=".git/*"
+          
+          # Create checksums
+          cd dist
+          sha256sum fractum-${{ steps.get_version.outputs.version }}-source.zip > checksums.txt
+          
+      - name: Extract release notes from tag
+        id: release_notes
+        run: |
+          # Extract release notes from signed tag message
+          NOTES=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Release
-        id: create_release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.2.2
         with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          name: Release v${{ steps.get_version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          name: Fractum ${{ github.ref_name }}
+          body: |
+            ## 🔐 Security Verification
+            
+            **GPG Signature:** ✅ This release is cryptographically signed
+            **Key ID:** D009F6290DCFDAB6
+            **Signed by:** S.A.S.U. KATVIO (Fractum Release Signing)
+            
+            ### Verify Release Authenticity
+            ```bash
+            # Import KATVIO public key
+            curl -O https://fractum.katvio.com/fractum-signing-key.asc
+            gpg --import fractum-signing-key.asc
+            
+            # Verify tag signature
+            git tag -v ${{ github.ref_name }}
+            
+            # Verify package checksum
+            sha256sum -c checksums.txt
+            ```
+            
+            ## 📋 Release Notes
+            ${{ steps.release_notes.outputs.notes }}
+            
+            ## 📦 Download Options
+            - **Source Code:** Use git clone or download ZIP
+            - **Verification:** Always verify GPG signatures before use
+            
+          files: |
+            dist/*
           draft: false
           prerelease: false
-          generate_release_notes: false
           make_latest: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update website release info
+        run: |
+          echo "🚀 Released Fractum ${{ steps.get_version.outputs.version }}"
+          echo "Tag: ${{ github.ref_name }}"
+          echo "Signature verified: ✅"
