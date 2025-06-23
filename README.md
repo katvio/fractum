@@ -134,7 +134,7 @@ For ultra-secure operations, Fractum can run in a completely network-isolated Do
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum && git checkout tags/v1.2.0
+cd fractum && git checkout tags/v1.3.0
 ```
 
 2. **Create data folders**
@@ -214,7 +214,7 @@ The Docker approach provides several security benefits:
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum && git checkout tags/v1.2.0
+cd fractum && git checkout tags/v1.3.0
 ```
 
 ### 2. Bootstrap your environment
