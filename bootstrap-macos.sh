@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "==> fractum macOS bootstrap"
-echo "Installs Xcode CLI, Homebrew, Python 3.12.10, creates .venv and installs fractum"
+echo "Installs Xcode CLI, Homebrew, Python 3.12.11, creates .venv and installs fractum"
 
 # 1) Xcode CLI Tools
 echo "Step 1/5: Checking Xcode CLI Tools"
@@ -35,22 +35,22 @@ else
   echo "→ pyenv already installed"
 fi
 
-# 4) Python 3.12.10
-echo "Step 4/5: Checking Python 3.12.10 via pyenv"
-if ! pyenv versions | grep -q "3.12.10"; then
-  echo "→ pyenv installing Python 3.12.10..."
-  pyenv install 3.12.10
+# 4) Python 3.12.11
+echo "Step 4/5: Checking Python 3.12.11 via pyenv"
+if ! pyenv versions | grep -q "3.12.11"; then
+  echo "→ pyenv installing Python 3.12.11..."
+  pyenv install 3.12.11
 else
-  echo "→ Python 3.12.10 already installed in pyenv"
+  echo "→ Python 3.12.11 already installed in pyenv"
 fi
-pyenv local 3.12.10
-pyenv global 3.12.10
+pyenv local 3.12.11
+pyenv global 3.12.11
 PY="$HOME/.pyenv/shims/python"
 
 # Version check
 VER=$($PY --version 2>&1 | awk '{print $2}')
-if [[ "$VER" != "3.12.10" ]]; then
-  echo "ERROR: Python 3.12.10 required (found $VER)" >&2
+if [[ "$VER" != "3.12.11" ]]; then
+  echo "ERROR: Python 3.12.11 required (found $VER)" >&2
 fi
 echo "→ Using $PY ($VER)"
 

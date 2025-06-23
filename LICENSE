@@ -1,38 +1,504 @@
-Custom Proprietary Software License
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
 
-1. Definitions
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
-"The Author" refers to the individual or legal entity offering this License: SAS-KATVIO
-"The Software" refers to the collection of files and content contained in the repository where this License file is included, including but not limited to the source code, documentation, and associated materials hosted at the URL of the Repository.
-"Commercial Use" means any use of The Software for direct or indirect financial gain or commercial advantage.
+   1. Definitions.
 
-2. Grant of License
-The Author hereby grants you a revocable, non-exclusive, non-transferable, non-sublicensable, limited license to use, copy, and modify The Software solely for personal, non-commercial purposes, subject to the terms and conditions of this License.
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
 
-3. Restrictions
+      "Licensor" shall mean the copyright owner or entity granting the License.
 
-You may not use, copy, modify, or distribute The Software for any form of Commercial Use.
-You may not offer The Software for sale or lease, or distribute The Software over a network where it could be used by multiple devices or multiple users at the same time.
-You may not remove or alter any copyright, trademark, or other proprietary notices from any part of The Software.
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
 
-4. Contributions and Modifications
-If you contribute to The Software or make any modifications, you agree that such contributions and modifications will be subject to the same terms and conditions of this License, including all restrictions on commercial use.
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
 
-5. Termination
-This License and the rights granted hereunder will terminate automatically upon any breach by you of the terms of this License.
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
 
-6. Disclaimer of Warranty
-The Software is provided "as is," with all faults, and The Author makes no representations or warranties of any kind concerning the quality, safety, or suitability of The Software, either expressed or implied, including without limitation any implied warranties of merchantability, fitness for a particular purpose, or non-infringement.
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
 
-7. Limitation of Liability
-The Author shall not be liable for any damages, including any general, special, incidental, or consequential damages arising out of the use or inability to use The Software (including but not limited to loss of data, data being rendered inaccurate, or losses sustained by you or third parties).
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (which shall not include communication that is conspicuously
+      marked or otherwise designated in writing by the copyright owner
+      as "Not a Contribution").
 
-8. General
-This License does not grant you any rights to use The Author's trademarks or service marks.
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control
+      systems, and issue tracking systems that are managed by, or on behalf
+      of, the Licensor for the purpose of discussing and improving the Work,
+      but excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution".
 
-If any provision of this License is held to be unenforceable, such provision shall be reformed to the extent necessary to make it enforceable unless to do so would defeat the intent of the License, and the remaining provisions of this License shall remain in full force and effect.
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
 
-This License represents the entire agreement concerning the subject matter hereof and may be amended only by a writing signed by The Author.
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to use, reproduce, modify, publicly display,
+      publicly perform, sublicense, and distribute the Work and such
+      Derivative Works in Object or Source form.
 
-Copyright 2025 by SAS-KATVIO
-All rights reserved.
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License;
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files;
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" file as part of its
+          distribution, then any Derivative Works that You distribute
+          must include a readable copy of the attribution notices
+          contained within such NOTICE file, excluding those notices
+          that do not pertain to any part of the Derivative Works.
+
+      You may add Your own attribution notices within Derivative Works
+      that You distribute, alongside or as an addendum to the NOTICE text
+      from the Work, provided that such additional attribution notices
+      cannot be construed as modifying the License.
+
+      You may add Your own copyright notice to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate contributor agreement that You may have
+      executed with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this
+      License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Support. You may choose to offer, and charge
+      a fee for, warranty, support, indemnity or other liability
+      obligations and/or rights consistent with this License. However, in
+      accepting such obligations, You may act only on Your own behalf and
+      on Your sole responsibility, not on behalf of any other Contributor,
+      and only if You agree to indemnify, defend, and hold each Contributor
+      harmless for any liability incurred by, or claims asserted against,
+      such Contributor by reason of your accepting any such warranty
+      or support.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+================================================================================
+
+                             FRACTUM PROJECT LICENSE
+
+================================================================================
+
+Copyright 2025 S.A.S.U. KATVIO (France)
+Company URL: https://katvio.com
+Contact: contact@katvio.com
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+================================================================================
+
+                    TRADEMARK AND BRAND PROTECTION GUIDELINES
+
+================================================================================
+
+IMPORTANT NOTICE: This Apache License governs the use of the Fractum source code.
+Trademark rights are separate and are NOT covered by this license.
+
+TRADEMARK OWNERSHIP:
+The "Fractum" name, logos, and related trademarks are owned by S.A.S.U. KATVIO
+(a French company) and are protected separately from this software license.
+
+WHAT THIS LICENSE COVERS:
+✅ Source code, documentation, and software components
+✅ Patent rights related to the software implementation  
+✅ Right to use, modify, distribute, and create derivative works
+✅ Commercial use of the underlying software technology
+
+WHAT THIS LICENSE DOES NOT COVER:
+🚫 The "Fractum" name and trademark
+🚫 Official logos, branding, and design marks
+🚫 Right to distribute software using the "Fractum" name
+🚫 Right to claim official endorsement or association
+
+================================================================================
+
+                          DETAILED TRADEMARK USAGE GUIDELINES
+
+================================================================================
+
+1. PERMITTED USES (NO PERMISSION REQUIRED)
+
+   1.1 FACTUAL AND DESCRIPTIVE REFERENCES:
+   ✅ "This software is based on Fractum"
+   ✅ "Compatible with Fractum technology"
+   ✅ "Derived from the Fractum project"
+   ✅ "Uses Fractum's cryptographic implementation"
+   ✅ "Integrates with Fractum shares"
+
+   1.2 ACADEMIC AND RESEARCH:
+   ✅ Research papers and academic publications
+   ✅ Technical analysis and security audits
+   ✅ Educational materials and tutorials
+   ✅ Conference presentations and whitepapers
+   ✅ Thesis work and dissertations
+
+   1.3 JOURNALISTIC AND EDITORIAL:
+   ✅ News articles about Fractum
+   ✅ Product reviews and comparisons
+   ✅ Technology blogs and technical discussions
+   ✅ Software catalogues and directories
+   ✅ Documentation of security practices
+
+   1.4 TECHNICAL COMMUNICATION:
+   ✅ Bug reports and issue discussions
+   ✅ Feature requests and technical feedback  
+   ✅ Community forum discussions
+   ✅ Integration documentation
+   ✅ API and compatibility references
+
+   1.5 PERSONAL AND INTERNAL USE:
+   ✅ Individual deployments and modifications
+   ✅ Internal company use of the software
+   ✅ Private research and development
+   ✅ Educational and training purposes
+   ✅ Non-commercial community projects
+
+2. RESTRICTED USES (WRITTEN PERMISSION REQUIRED)
+
+   2.1 PRODUCT AND SERVICE NAMING:
+   🚫 Software products with "Fractum" in the name
+   🚫 Commercial services branded with "Fractum"
+   🚫 Company names including "Fractum"
+   🚫 Domain names containing "Fractum"
+   🚫 Social media handles using "Fractum"
+
+   2.2 OFFICIAL REPRESENTATION:
+   🚫 Claiming to be "official Fractum" anything
+   🚫 Implying endorsement by S.A.S.U. KATVIO
+   🚫 Using official logos or branding materials
+   🚫 Representing yourself as a Fractum representative
+   🚫 Creating "official" documentation or tutorials
+
+   2.3 COMMERCIAL DISTRIBUTION:
+   🚫 Distributing modified software as "Fractum"
+   🚫 Selling products or services under the Fractum brand
+   🚫 Offering commercial "Fractum" support or consulting
+   🚫 Creating commercial "Fractum" training or certification
+   🚫 Bundling software with "Fractum" branding
+
+3. GUIDELINES FOR FORKS AND DERIVATIVE WORKS
+
+   3.1 NAMING YOUR FORK OR DERIVATIVE:
+   When creating a modified version of Fractum software, you must:
+
+   ✅ REQUIRED - Choose a completely different name
+   ✅ REQUIRED - Clearly state it's based on Fractum in documentation
+   ✅ REQUIRED - Include attribution to the original Fractum project
+   ✅ REQUIRED - Link to the original repository: https://github.com/katvio/fractum
+   ✅ RECOMMENDED - Explain how your version differs from Fractum
+
+   3.2 ACCEPTABLE FORK NAMES:
+   ✅ "SecureShare" (with "Based on Fractum" attribution)
+   ✅ "CryptoSplit Pro" (with "Derived from Fractum" note)
+   ✅ "[YourCompany] Secret Manager" (with "Uses Fractum technology")
+   ✅ "Enterprise SSS Tool" (with "Built on Fractum framework")
+   ✅ "CloudVault" (with "Fractum-compatible encryption")
+
+   3.3 UNACCEPTABLE FORK NAMES:
+   ❌ "Fractum Pro", "Fractum Enterprise", "Fractum Plus"
+   ❌ "Better Fractum", "Super Fractum", "Fractum Advanced"
+   ❌ "Fractum-Fork", "MyFractum", "Fractum Community"
+   ❌ "Fractum Lite", "Open Fractum", "Free Fractum"
+   ❌ Any name suggesting official association
+
+   3.4 ATTRIBUTION REQUIREMENTS:
+   All forks and derivatives must include prominent attribution such as:
+   
+   "This software is based on Fractum, an open source project by S.A.S.U. KATVIO.
+   Original project: https://github.com/katvio/fractum
+   This derivative work is not affiliated with or endorsed by S.A.S.U. KATVIO."
+
+4. COMMERCIAL LICENSING AND PARTNERSHIPS
+
+   4.1 COMMERCIAL TRADEMARK LICENSING:
+   If you wish to use the "Fractum" name or trademarks in commercial contexts:
+   • Contact S.A.S.U. KATVIO for licensing arrangements
+   • Commercial licenses may be available for appropriate use cases
+   • Partnership opportunities may be considered for qualified organizations
+   • Revenue sharing or other commercial arrangements may be negotiated
+
+   4.2 COMMERCIAL SERVICES:
+   Acceptable without trademark license:
+   ✅ Offering support for "Fractum-based systems"
+   ✅ Providing consulting on "Fractum implementation"
+   ✅ Training on "how to use Fractum software"
+   ✅ Integration services for "Fractum-compatible solutions"
+
+   Requires trademark license:
+   🚫 "Fractum Support Services"
+   🚫 "Official Fractum Training"
+   🚫 "Fractum Consulting"
+   🚫 "Certified Fractum Solutions"
+
+5. ENFORCEMENT AND VIOLATION REPORTING
+
+   5.1 ENFORCEMENT APPROACH:
+   S.A.S.U. KATVIO takes a collaborative approach to trademark protection:
+   • We prefer education and cooperation over litigation
+   • Most issues can be resolved through friendly communication
+   • We provide reasonable time for compliance with trademark guidelines
+   • We consider the intent and scale of trademark usage
+
+   5.2 REPORTING VIOLATIONS:
+   If you discover potential trademark violations:
+   • Report to: contact@katvio.com
+   • Include: URLs, descriptions, and evidence of unauthorized use
+   • We investigate all reports and respond appropriately
+   • Community help in protecting the trademark is appreciated
+
+   5.3 COMPLIANCE ASSISTANCE:
+   If you're unsure about trademark usage:
+   • Contact us before proceeding with questionable uses
+   • We provide guidance for legitimate use cases
+   • Early consultation prevents problems later
+   • We support community growth within appropriate bounds
+
+6. DOMAIN NAMES AND ONLINE PRESENCE
+
+   6.1 DOMAIN NAME RESTRICTIONS:
+   🚫 Registering domains containing "fractum" as the primary term
+   🚫 Using confusingly similar domain variations
+   🚫 Creating websites that could be confused with official Fractum sites
+   
+   Examples of restricted domains:
+   ❌ fractum.org, fractum.net, fractumpro.com
+   ❌ fractum-enterprise.com, myfractum.com
+   ❌ fractum-support.com, fractum-downloads.com
+
+   6.2 SOCIAL MEDIA AND ONLINE HANDLES:
+   🚫 Social media accounts using "fractum" as the primary identifier
+   🚫 Creating accounts that imply official status
+   ✅ Accounts clearly identified as community, unofficial, or derivative projects
+
+7. INTERNATIONAL CONSIDERATIONS
+
+   7.1 GLOBAL TRADEMARK PROTECTION:
+   • S.A.S.U. KATVIO may seek trademark protection in multiple jurisdictions
+   • These guidelines apply worldwide, not just in France
+   • Local trademark laws may provide additional protections
+   • International users should respect trademark rights globally
+
+   7.2 LANGUAGE VARIATIONS:
+   • Trademark protection may extend to translations of "Fractum"
+   • Similar-sounding names in other languages may be restricted
+   • Contact us if you're unsure about international variations
+
+8. UPDATES AND MODIFICATIONS
+
+   8.1 POLICY UPDATES:
+   • These guidelines may be updated as the project evolves
+   • Updates will be announced through official channels
+   • Community input on trademark policy is welcome
+   • Changes will be made with reasonable notice when possible
+
+   8.2 GRANDFATHERING:
+   • Existing legitimate uses may be grandfathered with appropriate attribution
+   • Pre-existing community projects will be worked with cooperatively
+   • Good faith efforts to comply are appreciated and considered
+
+================================================================================
+
+                            CONTACT AND LICENSING INFORMATION
+
+================================================================================
+
+TRADEMARK CONTACT:
+For all trademark-related matters, licensing requests, and permission inquiries:
+
+S.A.S.U. KATVIO
+Email: contact@katvio.com
+Website: https://katvio.com
+Subject Line: "Fractum Trademark Inquiry"
+
+COMMERCIAL LICENSING:
+For commercial trademark licensing, partnership opportunities, or business 
+development inquiries, please contact us with:
+• Description of intended use
+• Business context and scale
+• Proposed timeline
+• Contact information
+
+COMMUNITY SUPPORT:
+We welcome community growth and development within these guidelines. When in 
+doubt, please ask! We prefer to provide guidance rather than enforce violations.
+
+RESPONSE TIME:
+We aim to respond to trademark inquiries within 5-10 business days. Complex 
+commercial licensing requests may require additional time for proper evaluation.
+
+================================================================================
+
+                          THIRD-PARTY NOTICES AND DISCLAIMERS
+
+================================================================================
+
+THIRD-PARTY COMPONENTS:
+This software includes or may include third-party libraries and components
+subject to their own licenses and terms:
+
+• PyCryptodome: BSD-2-Clause OR Apache-2.0 License
+• Python Standard Library: Python Software Foundation License
+• Additional dependencies: See requirements.txt for complete list
+
+CRYPTOGRAPHIC SOFTWARE NOTICE:
+This software contains cryptographic functionality. Use of this software may 
+be subject to export/import regulations in your jurisdiction. Users are 
+responsible for compliance with applicable laws including:
+• U.S. Export Administration Regulations (EAR)
+• EU Dual-Use Regulation
+• Other applicable export control laws
+
+SECURITY DISCLAIMER:
+While this software implements industry-standard cryptographic algorithms and 
+follows security best practices, no software is completely secure. Users should:
+• Understand the security model and its limitations
+• Follow documented security best practices
+• Regularly review and update security procedures
+• Consider professional security audits for critical applications
+• Test thoroughly in their specific environment
+
+LIABILITY LIMITATION FOR SECURITY SOFTWARE:
+In addition to the Apache License disclaimers, users acknowledge that security 
+software carries inherent risks. S.A.S.U. KATVIO provides no warranties 
+regarding the security, fitness, or suitability for any particular security 
+application. Users assume all risks associated with cryptographic operations.
+
+FRENCH LAW JURISDICTION:
+S.A.S.U. KATVIO is a French company. Trademark matters and disputes may be 
+subject to French jurisdiction and applicable French and European Union law.
+
+================================================================================
+
+                                   END OF LICENSE
+
+================================================================================
+
+For the most current version of this license and trademark policy, visit:
+https://github.com/katvio/fractum/blob/main/LICENSE
+
+Last updated: 20 june 2025
+S.A.S.U. KATVIO - All trademark rights reserved.

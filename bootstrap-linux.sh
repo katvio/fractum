@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "==> fractum Linux bootstrap"
-echo "Installs Python 3.12.10, creates .venv and installs fractum"
+echo "Installs Python 3.12.11, creates .venv and installs fractum"
 
 # 1) System repositories and tools
 if ! command -v git &>/dev/null \
@@ -19,7 +19,7 @@ else
 fi
 
 # 2) pyenv installation (for exact Python version control)
-echo "Step 2/4: Installing pyenv for exact Python 3.12.10 version"
+echo "Step 2/4: Installing pyenv for exact Python 3.12.11 version"
 PYENV_ROOT="$HOME/.pyenv"
 
 if [[ -d "$PYENV_ROOT" ]]; then
@@ -62,23 +62,23 @@ if ! grep -q 'pyenv init' ~/.bashrc; then
   echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 fi
 
-# 3) Install Python 3.12.10 with pyenv
-echo "Step 3/4: Installing Python 3.12.10 with pyenv"
-if ! pyenv versions | grep -q "3.12.10"; then
-  echo "→ Installing Python 3.12.10..."
-  pyenv install 3.12.10
+# 3) Install Python 3.12.11 with pyenv
+echo "Step 3/4: Installing Python 3.12.11 with pyenv"
+if ! pyenv versions | grep -q "3.12.11"; then
+  echo "→ Installing Python 3.12.11..."
+  pyenv install 3.12.11
 else
-  echo "→ Python 3.12.10 already installed via pyenv"
+  echo "→ Python 3.12.11 already installed via pyenv"
 fi
 
-# Use Python 3.12.10 for this project
-pyenv local 3.12.10
+# Use Python 3.12.11 for this project
+pyenv local 3.12.11
 PY=python
 
 # Final check
 ACTUAL=$($PY --version 2>&1 | awk '{print $2}')
-if [[ "$ACTUAL" != "3.12.10" ]]; then
-  echo "ERROR: Python 3.12.10 required (found $ACTUAL)" >&2
+if [[ "$ACTUAL" != "3.12.11" ]]; then
+  echo "ERROR: Python 3.12.11 required (found $ACTUAL)" >&2
   exit 1
 fi
 echo "→ Using $PY ($ACTUAL)"
