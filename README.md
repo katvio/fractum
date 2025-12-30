@@ -1,18 +1,20 @@
 # Fractum
 
-Fractum is designed for organizations and individuals who need to **securely store critical information**. It provides enterprise-grade **cold storage** with mathematical guarantees, eliminating single points of failure through distributed secret sharing.
+Fractum is designed for organizations and individuals who need to **securely long-term cold store critical information**.
 
-It is a fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined with AES-256-GCM file encryption. Split secrets (passwords, SSH keys, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup. Works with any file type without restrictions (documents, images, zip, databases, etc.).
+It provides enterprise-grade **cold storage** with mathematical guarantees, eliminating single points of failure through distributed secret sharing.
+
+Split secrets (passwords, SSH keys, seed, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup.
 
 ![How Fractum splits your secrets into shares](diagram.png)
 
 **💼 High-Value Use Cases:**
 
-- **Cryptocurrency wallet protection**: Seed phrases, private keys, hardware wallet backups
+- **Emergency recovery credentials**: Admin passwords, break-glass access credentials
 - **Backup encryption master keys**: Protect your backup infrastructure encryption keys
 - **Root CA private keys**: Certificate authority and PKI infrastructure protection
-- **Emergency recovery credentials**: Admin passwords, break-glass access credentials
 - **Password manager exports**: LastPass, Bitwarden, KeePass backup files
+- **Cryptocurrency wallet protection**: Seed phrases, private keys, hardware wallet backups
 - **Legal & financial documents**: Wills, contracts, tax records, insurance papers
 
 **⚡️ Distributed Architecture Benefits:**
@@ -23,12 +25,15 @@ It is a fully offline, portable CLI for Shamir's Secret Sharing (SSS) combined w
 - **No single point of failure**: Distributed trust across shares with threshold cryptography
 - **Zero-knowledge property**: K-1 shares reveal absolutely nothing about your secrets
 
-**🛡️ Enterprise Security Features:**
+**🛡️ Enterprise-grade Security:**
 
 - **Works completely offline**: perfect for air-gapped environments
-- **Memory protection**: Secure deletion and swap prevention
-- **FIPS 140-2 compatible**: Uses industry-standard algorithms
-- **Container-native**: Docker with security hardening and non-root execution
+- **Shamir's Secret Sharing (SSS)**: Same algorithm used by Trezor (SLIP-39), Coinbase, Ledger Recover, and ICANN DNSSEC root key ceremonies
+- **AES-256-GCM**: NSA Suite B approved, trusted by Signal, AWS, Google Cloud, and Apple for authenticated encryption
+- **Zero Novel Cryptography**: Battle-tested primitives with decades of academic scrutiny and real-world deployment
+- **Fully offline**: and portable CLI
+
+
 
 ## Table of Contents
 - [The Docker way (recommended usage)](#the-docker-way-recommended-usage)
@@ -58,7 +63,7 @@ Fractum can run in a completely network-isolated Docker container. The primary b
 git clone https://github.com/katvio/fractum.git
 ```
 ```
-cd fractum && git checkout tags/v1.2.0
+cd fractum && git checkout tags/v1.3.0
 ```
 
 2. **Create data folders**
