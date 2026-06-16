@@ -97,9 +97,39 @@ class SecureMemory:
         return SecureContext(size)
 
     @staticmethod
+    def _mlock(buf: bytearray) -> None:
+        """Pin buf to RAM to prevent swap. No-op on failure."""
+        try:
+            import ctypes
+            import ctypes.util
+            lib = ctypes.util.find_library("c")
+            if lib:
+                libc = ctypes.CDLL(lib, use_errno=True)
+                addr = ctypes.addressof((ctypes.c_char * len(buf)).from_buffer(buf))
+                libc.mlock(ctypes.c_void_p(addr), ctypes.c_size_t(len(buf)))
+        except Exception:
+            pass
+
+    @staticmethod
+    def _munlock(buf: bytearray) -> None:
+        """Unpin buf from RAM."""
+        try:
+            import ctypes
+            import ctypes.util
+            lib = ctypes.util.find_library("c")
+            if lib:
+                libc = ctypes.CDLL(lib, use_errno=True)
+                addr = ctypes.addressof((ctypes.c_char * len(buf)).from_buffer(buf))
+                libc.munlock(ctypes.c_void_p(addr), ctypes.c_size_t(len(buf)))
+        except Exception:
+            pass
+
+    @staticmethod
     def secure_bytes(length: int = 32) -> bytearray:
         """Creates a secure bytearray."""
-        return bytearray(get_enhanced_random_bytes(length))
+        buf = bytearray(get_enhanced_random_bytes(length))
+        SecureMemory._mlock(buf)
+        return buf
 
 
 class SecureContext:
@@ -120,9 +150,10 @@ class SecureContext:
         random_bytes = get_enhanced_random_bytes(self.size)
         for i in range(min(len(random_bytes), self.size)):
             self.buffer[i] = random_bytes[i]
+        SecureMemory._mlock(self.buffer)
         return self.buffer
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit the context and securely clear the buffer."""
+        SecureMemory._munlock(self.buffer)
         SecureMemory.secure_clear(self.buffer)
-        # The buffer object itself will be garbage collected, but we've cleared its contents

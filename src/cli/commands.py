@@ -56,6 +56,7 @@ def encrypt(
     full_metadata: bool,
 ) -> None:
     """Encrypts a file and generates shares."""
+    key = None
     try:
         # Replace spaces with underscores in label
         label = label.replace(" ", "_")
@@ -173,6 +174,8 @@ def encrypt(
 
             share_manager = ShareManager(threshold, shares)
             key = bytearray(share_manager.combine_shares(shares_data))
+            for _, share_bytes in shares_data:
+                SecureMemory.secure_clear(bytearray(share_bytes))
 
             # Get existing share_set_id
             with open(share_files[0], "r") as f:
@@ -257,12 +260,12 @@ def encrypt(
                 # Remove temporary share file
                 os.remove(share_file)
 
-        # Secure cleanup
-        SecureMemory.secure_clear(key)
-
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
+    finally:
+        if key is not None:
+            SecureMemory.secure_clear(key)
 
 
 def _extract_share_version(share_info: Dict[str, Any]) -> str:
@@ -315,30 +318,29 @@ def decrypt(
                     f"Using shares with parameters: threshold={metadata['threshold']}, total_shares={metadata['total_shares']}"
                 )
 
-            # Reconstruct key
+            # Reconstruct key and decrypt
             share_manager = ShareManager(
                 metadata["threshold"], metadata["total_shares"]
             )
-            key = bytearray(share_manager.combine_shares(shares_data))
+            with SecureMemory.secure_context(32) as key:
+                key[:] = share_manager.combine_shares(shares_data)
+                for _, share_bytes in shares_data:
+                    SecureMemory.secure_clear(bytearray(share_bytes))
 
-            # Decrypt file
-            output_file = (
-                input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
-            )
-            if Path(output_file).exists():
-                raise click.ClickException(
-                    f"Output file already exists: {output_file}\n"
-                    "Delete or rename it before decrypting."
+                # Decrypt file
+                output_file = (
+                    input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
                 )
-            encryptor = FileEncryptor(key)
-            encryptor.decrypt_file(input_file, output_file)
+                if Path(output_file).exists():
+                    raise click.ClickException(
+                        f"Output file already exists: {output_file}\n"
+                        "Delete or rename it before decrypting."
+                    )
+                encryptor = FileEncryptor(key)
+                encryptor.decrypt_file(input_file, output_file)
 
-            # Get absolute path of the decrypted file
             output_path = Path(output_file).absolute()
             click.echo(f"File successfully decrypted: {output_path}")
-
-            # Secure cleanup
-            SecureMemory.secure_clear(key)
             return
 
         # Original code for file-based shares
@@ -574,6 +576,8 @@ def decrypt(
                                 metadata["threshold"], metadata["total_shares"]
                             )
                             key = bytearray(share_manager.combine_shares(share_data))
+                            for _, share_bytes in share_data:
+                                SecureMemory.secure_clear(bytearray(share_bytes))
 
                             # Verify key against the full ciphertext with correct AAD
                             with open(input_file, "rb") as f:
@@ -597,6 +601,7 @@ def decrypt(
                                     click.echo(
                                         f"Key verification failed for label: {label}"
                                     )
+                                SecureMemory.secure_clear(key)
                                 continue
                         except Exception as e:
                             if verbose:
@@ -623,28 +628,27 @@ def decrypt(
 
         # Reconstruct key
         share_manager = ShareManager(threshold, total_shares)
-        key = bytearray(share_manager.combine_shares(share_data))
-        if verbose:
-            click.echo("Key reconstructed from shares")
+        with SecureMemory.secure_context(32) as key:
+            key[:] = share_manager.combine_shares(share_data)
+            for _, share_bytes in share_data:
+                SecureMemory.secure_clear(bytearray(share_bytes))
+            if verbose:
+                click.echo("Key reconstructed from shares")
 
-        # File decryption
-        output_file = (
-            input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
-        )
-        if Path(output_file).exists():
-            raise click.ClickException(
-                f"Output file already exists: {output_file}\n"
-                "Delete or rename it before decrypting."
+            # File decryption
+            output_file = (
+                input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
             )
-        encryptor = FileEncryptor(key)
-        encryptor.decrypt_file(input_file, output_file)
+            if Path(output_file).exists():
+                raise click.ClickException(
+                    f"Output file already exists: {output_file}\n"
+                    "Delete or rename it before decrypting."
+                )
+            encryptor = FileEncryptor(key)
+            encryptor.decrypt_file(input_file, output_file)
 
-        # Get absolute path of the decrypted file
         output_path = Path(output_file).absolute()
         click.echo(f"File successfully decrypted: {output_path}")
-
-        # Secure cleanup
-        SecureMemory.secure_clear(key)
 
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
