@@ -12,7 +12,6 @@ class SecureMemory:
             data: Data to securely clear, can be bytes, bytearray, str, list, or memoryview
         """
         import gc
-        import sys
 
         # Different overwrite patterns for multiple passes
         patterns = [
@@ -50,9 +49,6 @@ class SecureMemory:
             for pattern in patterns:
                 for i in range(len(data)):
                     data[i] = pattern
-                # Force Python to actually perform the memory writes
-                sys.stderr.write("")
-                sys.stderr.flush()
 
             # Final pass with zeros
             for i in range(len(data)):
@@ -67,9 +63,7 @@ class SecureMemory:
                 garbage = bytearray(data_len)
                 del garbage
 
-            # Force garbage collection multiple times
-            for _ in range(3):
-                gc.collect()
+            gc.collect()
 
         elif isinstance(data, list):
             # For lists containing sensitive data

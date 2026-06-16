@@ -11,7 +11,8 @@ class FileEncryptor:
         self.key = key
         self.version = VERSION
 
-    def _read_metadata(self, f: Any) -> Dict[str, Any]:
+    @staticmethod
+    def _read_metadata(f: Any) -> Dict[str, Any]:
         """Reads and parses metadata from an open .enc file (used for share_set_id routing)."""
         try:
             metadata_len = int.from_bytes(f.read(4), "big")
@@ -27,12 +28,12 @@ class FileEncryptor:
                     metadata_bytes.decode("latin-1", errors="replace")
                 )
             except json.JSONDecodeError:
-                return {"version": self.version}
+                return {"version": VERSION}
         except json.JSONDecodeError:
-            return {"version": self.version}
+            return {"version": VERSION}
 
         if "version" not in metadata:
-            metadata["version"] = self.version
+            metadata["version"] = VERSION
 
         return metadata
 
