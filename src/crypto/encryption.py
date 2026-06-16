@@ -1,63 +1,39 @@
-import hashlib
 import json
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
-# Using PyCryptodome (not deprecated PyCrypto) for AES-256-GCM encryption
 from Crypto.Cipher import AES
 from src.config import VERSION
 
 
 class FileEncryptor:
-    def __init__(self, key: bytes):
+    def __init__(self, key: Union[bytes, bytearray]):
         self.key = key
         self.version = VERSION
 
-    def _write_metadata(
-        self, f: Any, data_hash: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """Writes metadata at the beginning of the file."""
-        if metadata is None:
-            metadata = {}
-
-        # Ensure basic metadata is included
-        metadata.update(
-            {"version": self.version, "timestamp": int(time.time()), "hash": data_hash}
-        )
-
-        metadata_bytes = json.dumps(metadata, ensure_ascii=False).encode("utf-8")
-        f.write(len(metadata_bytes).to_bytes(4, "big"))
-        f.write(metadata_bytes)
-
     def _read_metadata(self, f: Any) -> Dict[str, Any]:
-        """Reads metadata from the beginning of the file."""
+        """Reads and parses metadata from an open .enc file (used for share_set_id routing)."""
         try:
             metadata_len = int.from_bytes(f.read(4), "big")
             metadata_bytes = f.read(metadata_len)
 
             try:
-                # First try with UTF-8 encoding
                 metadata: Dict[str, Any] = json.loads(metadata_bytes.decode("utf-8"))
             except UnicodeDecodeError:
-                # Fallback to latin-1 encoding with error replacement if UTF-8 fails
                 try:
                     metadata = json.loads(
                         metadata_bytes.decode("latin-1", errors="replace")
                     )
                 except json.JSONDecodeError:
-                    # If JSON decoding fails, provide default metadata
                     metadata = {"version": self.version}
             except json.JSONDecodeError:
-                # If JSON decoding fails, provide default metadata
                 metadata = {"version": self.version}
 
-            # Ensure version is included
             if "version" not in metadata:
                 metadata["version"] = self.version
 
             return metadata
         except Exception:
-            # Last resort fallback for any other errors (like reading from corrupted file)
             return {"version": self.version}
 
     def encrypt_file(
@@ -66,66 +42,68 @@ class FileEncryptor:
         output_path: str,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Encrypts a file with AES-256-GCM."""
+        """Encrypts a file with AES-256-GCM. Metadata is bound to the ciphertext via AAD."""
         try:
-            cipher = AES.new(self.key, AES.MODE_GCM)
-
             with open(input_path, "rb") as f:
                 data = f.read()
 
-            # Calculate data hash
-            data_hash = hashlib.sha256(data).hexdigest()
+            if metadata is None:
+                metadata = {}
+            metadata.update(
+                {
+                    "version": self.version,
+                    "timestamp": int(time.time()),
+                }
+            )
 
+            metadata_bytes = json.dumps(metadata, ensure_ascii=False).encode("utf-8")
+
+            # Finalize metadata before creating cipher — metadata_bytes are the AAD
+            cipher = AES.new(self.key, AES.MODE_GCM)
+            cipher.update(metadata_bytes)
             ciphertext, tag = cipher.encrypt_and_digest(data)
 
             with open(output_path, "wb") as f:
-                # Write metadata
-                if metadata is None:
-                    metadata = {}
-
-                # Ensure basic metadata is included
-                metadata.update(
-                    {
-                        "version": self.version,
-                        "timestamp": int(time.time()),
-                        "hash": data_hash,
-                    }
-                )
-
-                metadata_bytes = json.dumps(metadata, ensure_ascii=False).encode(
-                    "utf-8"
-                )
                 f.write(len(metadata_bytes).to_bytes(4, "big"))
                 f.write(metadata_bytes)
-
-                # Write encryption data
-                f.write(cipher.nonce)  # Write the 16-byte nonce
-                f.write(tag)  # Write the 16-byte tag
-                f.write(ciphertext)  # Write the encrypted data
+                f.write(cipher.nonce)
+                f.write(tag)
+                f.write(ciphertext)
         except Exception as e:
-            # Handle any exceptions that occur during encryption
             raise ValueError(f"Encryption failed: {str(e)}")
 
     def decrypt_file(self, input_path: str, output_path: str) -> None:
-        """Decrypts a file with AES-256-GCM."""
+        """Decrypts a file with AES-256-GCM, verifying metadata integrity via AAD."""
         try:
             with open(input_path, "rb") as f:
-                # Read metadata
-                metadata = self._read_metadata(f)
+                header = f.read(4)
+                if len(header) < 4:
+                    raise ValueError("Truncated .enc file — header incomplete")
+                metadata_len = int.from_bytes(header, "big")
+                if metadata_len > 65536:
+                    raise ValueError("Metadata length too large — suspect file")
 
-                # Version check
+                metadata_bytes = f.read(metadata_len)
+                if len(metadata_bytes) < metadata_len:
+                    raise ValueError("Truncated .enc file — metadata incomplete")
+
+                try:
+                    metadata = json.loads(metadata_bytes.decode("utf-8"))
+                except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                    raise ValueError(f"Corrupt metadata — json parse error: {e}")
+
                 if metadata.get("version", self.version) != self.version:
                     raise ValueError(
-                        f"Incompatible version: expected {self.version}, found {metadata.get('version', self.version)}"
+                        f"Incompatible version: expected {self.version}, "
+                        f"found {metadata.get('version')}"
                     )
 
-                # Read nonce and tag
                 nonce = f.read(16)
-                if not nonce or len(nonce) != 16:
+                if len(nonce) != 16:
                     raise ValueError("Invalid or missing nonce")
 
                 tag = f.read(16)
-                if not tag or len(tag) != 16:
+                if len(tag) != 16:
                     raise ValueError("Invalid or missing authentication tag")
 
                 ciphertext = f.read()
@@ -133,28 +111,16 @@ class FileEncryptor:
                     raise ValueError("No encrypted data found")
 
             cipher = AES.new(self.key, AES.MODE_GCM, nonce=nonce)
-            try:
-                data = cipher.decrypt_and_verify(ciphertext, tag)
+            cipher.update(metadata_bytes)
+            data = cipher.decrypt_and_verify(ciphertext, tag)
 
-                # Hash verification - only if hash is present in metadata
-                if "hash" in metadata:
-                    data_hash = hashlib.sha256(data).hexdigest()
-                    if data_hash != metadata["hash"]:
-                        raise ValueError("Data hash mismatch")
+            if len(data) == 0:
+                raise ValueError("Decrypted data is empty")
 
-                # Additional check: file should not be empty
-                if len(data) == 0:
-                    raise ValueError("Decrypted data is empty")
+            with open(output_path, "wb") as f:
+                f.write(data)
 
-                with open(output_path, "wb") as f:
-                    f.write(data)
-            except ValueError as e:
-                if "authentication tag" in str(e):
-                    raise ValueError("Incorrect key")
-                raise
         except (ValueError, IOError) as e:
-            # Provide more context with the specific error
             raise ValueError(f"Decryption failed: {str(e)}")
         except Exception as e:
-            # Catch any other unexpected errors
             raise ValueError(f"Unexpected error during decryption: {str(e)}")

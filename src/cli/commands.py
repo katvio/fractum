@@ -179,7 +179,7 @@ def encrypt(
                 )
 
             share_manager = ShareManager(threshold, shares)
-            key = share_manager.combine_shares(shares_data)
+            key = bytearray(share_manager.combine_shares(shares_data))
 
             # Get existing share_set_id
             with open(share_files[0], "r") as f:
@@ -193,7 +193,7 @@ def encrypt(
         else:
             # Generate new shares
             # Generate new key with enhanced entropy
-            key = get_enhanced_random_bytes(32)
+            key = bytearray(get_enhanced_random_bytes(32))
 
             # Generate a unique set identifier hash for this group of shares
             # Using enhanced entropy for share_set_id generation
@@ -314,7 +314,7 @@ def decrypt(
             share_manager = ShareManager(
                 metadata["threshold"], metadata["total_shares"]
             )
-            key = share_manager.combine_shares(shares_data)
+            key = bytearray(share_manager.combine_shares(shares_data))
 
             # Decrypt file
             output_file = (
@@ -590,7 +590,7 @@ def decrypt(
                             share_manager = ShareManager(
                                 metadata["threshold"], metadata["total_shares"]
                             )
-                            key = share_manager.combine_shares(share_data)
+                            key = bytearray(share_manager.combine_shares(share_data))
 
                             # Try to decrypt with this key
                             output_file = (
@@ -654,7 +654,7 @@ def decrypt(
 
         # Reconstruct key
         share_manager = ShareManager(threshold, total_shares)
-        key = share_manager.combine_shares(share_data)
+        key = bytearray(share_manager.combine_shares(share_data))
         if verbose:
             click.echo("Key reconstructed from shares")
 

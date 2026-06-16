@@ -971,7 +971,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                             "incorrect key",
                             "nonce",
                             "version",
-                            "incompatible",  # Added keywords for version errors
+                            "incompatible",
+                            "mac",      # GCM authentication tag failure
+                            "corrupt",  # Corrupted metadata
+                            "truncat",  # Truncated file
                         ]
 
                         error_message = str(e).lower()
