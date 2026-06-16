@@ -189,7 +189,17 @@ class ShareManager:
                 if not share_key:
                     raise ValueError(f"No share key found in {share_file}")
 
-                shares.append((share_info["share_index"], base64.b64decode(share_key)))
+                share_data = base64.b64decode(share_key)
+                expected_hash = share_info.get("hash")
+                if expected_hash:
+                    computed = hashlib.sha256(share_data).hexdigest()
+                    if computed != expected_hash:
+                        raise ValueError(
+                            f"Share {share_info.get('share_index', '?')} in {share_file} "
+                            "is corrupted (hash mismatch). Contact the share holder."
+                        )
+
+                shares.append((share_info["share_index"], share_data))
 
         # Ensure metadata is not None before returning
         if metadata is None:

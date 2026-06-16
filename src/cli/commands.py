@@ -518,6 +518,7 @@ def decrypt(
 
                         shares_by_label[label] = {
                             "shares": [],
+                            "share_set_ids": [],  # parallel list — tracks set_id per share for N5 filtering
                             "metadata": {
                                 "version": version,
                                 "label": label,
@@ -536,6 +537,7 @@ def decrypt(
                     shares_by_label[label]["shares"].append(
                         (share_info["share_index"], base64.b64decode(share_key))
                     )
+                    shares_by_label[label]["share_set_ids"].append(share_set_id)
             except Exception as e:
                 if verbose:
                     click.echo(f"Error processing {share_file}: {str(e)}")
@@ -585,52 +587,49 @@ def decrypt(
             if input_label is None:
                 # If no exact match, try all available labels until one works
                 if shares_by_label:
-                    # Try each label until one works
                     for label in shares_by_label:
                         try:
                             if verbose:
                                 click.echo(f"Trying shares with label: {label}")
 
-                            share_data = shares_by_label[label]["shares"]
+                            all_shares = shares_by_label[label]["shares"]
+                            set_ids = shares_by_label[label].get("share_set_ids", [])
+
+                            # Filter by extracted_share_set_id to avoid mixing shares from different sets (N5)
+                            if extracted_share_set_id and set_ids:
+                                filtered = [
+                                    s for s, sid in zip(all_shares, set_ids)
+                                    if sid == extracted_share_set_id
+                                ]
+                                share_data = filtered if filtered else all_shares
+                            else:
+                                share_data = all_shares
+
                             metadata = shares_by_label[label]["metadata"]
 
-                            # Try to reconstruct key
                             share_manager = ShareManager(
                                 metadata["threshold"], metadata["total_shares"]
                             )
                             key = bytearray(share_manager.combine_shares(share_data))
 
-                            # Try to decrypt with this key
-                            output_file = (
-                                input_file[:-4]
-                                if input_file.endswith(".enc")
-                                else input_file + ".dec"
-                            )
-                            encryptor = FileEncryptor(key)
-
-                            # Try to decrypt a small portion of the file to verify the key
+                            # Verify key against the full ciphertext with correct AAD
                             with open(input_file, "rb") as f:
-                                # Skip metadata
-                                metadata_len = int.from_bytes(f.read(4), "big")
-                                f.read(metadata_len)
-
-                                # Read a small portion of the encrypted data
+                                probe_meta_len = int.from_bytes(f.read(4), "big")
+                                probe_meta_bytes = f.read(probe_meta_len)
                                 nonce = f.read(16)
                                 tag = f.read(16)
-                                ciphertext = f.read(32)  # Just read a small portion
+                                ciphertext = f.read()
 
-                            # Try to decrypt this small portion
                             cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+                            cipher.update(probe_meta_bytes)
                             try:
                                 cipher.decrypt_and_verify(ciphertext, tag)
-                                # If we get here, the key is correct
                                 if verbose:
                                     click.echo(
                                         f"Successfully verified key with label: {label}"
                                     )
                                 break
                             except ValueError:
-                                # Key is incorrect, try next label
                                 if verbose:
                                     click.echo(
                                         f"Key verification failed for label: {label}"
@@ -641,7 +640,6 @@ def decrypt(
                                 click.echo(f"Error trying label {label}: {str(e)}")
                             continue
                     else:
-                        # If we get here, none of the labels worked
                         raise ValueError(
                             "No compatible shares found. None of the available shares could decrypt the file."
                         )

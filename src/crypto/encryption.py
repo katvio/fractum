@@ -16,25 +16,25 @@ class FileEncryptor:
         try:
             metadata_len = int.from_bytes(f.read(4), "big")
             metadata_bytes = f.read(metadata_len)
+        except (OSError, IOError) as e:
+            raise ValueError(f"Cannot read .enc header: {e}")
 
+        try:
+            metadata: Dict[str, Any] = json.loads(metadata_bytes.decode("utf-8"))
+        except UnicodeDecodeError:
             try:
-                metadata: Dict[str, Any] = json.loads(metadata_bytes.decode("utf-8"))
-            except UnicodeDecodeError:
-                try:
-                    metadata = json.loads(
-                        metadata_bytes.decode("latin-1", errors="replace")
-                    )
-                except json.JSONDecodeError:
-                    metadata = {"version": self.version}
+                metadata = json.loads(
+                    metadata_bytes.decode("latin-1", errors="replace")
+                )
             except json.JSONDecodeError:
-                metadata = {"version": self.version}
-
-            if "version" not in metadata:
-                metadata["version"] = self.version
-
-            return metadata
-        except Exception:
+                return {"version": self.version}
+        except json.JSONDecodeError:
             return {"version": self.version}
+
+        if "version" not in metadata:
+            metadata["version"] = self.version
+
+        return metadata
 
     def encrypt_file(
         self,
