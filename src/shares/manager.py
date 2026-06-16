@@ -132,33 +132,6 @@ class ShareManager:
         except Exception as e:
             raise ValueError(f"Error reconstructing secret: {str(e)}")
 
-    def verify_shares(self, shares: List[Tuple[int, bytes]]) -> bool:
-        """Verifies share validity without revealing the secret.
-
-        Args:
-            shares (List[Tuple[int, bytes]]): List of shares to verify
-
-        Returns:
-            bool: True if shares are valid, False otherwise
-        """
-        if not isinstance(shares, list):
-            return False
-        if len(shares) < self.threshold:
-            return False
-
-        try:
-            # share_index verification
-            indices = set(idx for idx, _ in shares)
-            if len(indices) != len(shares):
-                return False
-
-            # Test reconstruction with a subset
-            test_shares = shares[: self.threshold]
-            Shamir.combine(test_shares, ssss=False)
-            return True
-        except Exception as e:
-            return False
-
     @staticmethod
     def load_shares(
         share_files: List[str],
@@ -207,27 +180,3 @@ class ShareManager:
 
         return shares, metadata
 
-    def save_share(self, share: Tuple[int, bytes], label: str) -> str:
-        """Saves a share to a file."""
-        idx, share_data = share
-        filename = f"share_{idx}.txt"
-
-        metadata = ShareMetadata(
-            version=self.version,
-            label=label,
-            threshold=self.threshold,
-            total_shares=self.total_shares,
-        )
-        metadata.validate()
-
-        share_info = {
-            **metadata.to_dict(),
-            "share_index": idx,
-            "share_key": base64.b64encode(share_data).decode(),
-            "hash": hashlib.sha256(share_data).hexdigest(),
-        }
-
-        with open(filename, "w") as f:
-            json.dump(share_info, f, indent=2)
-
-        return filename

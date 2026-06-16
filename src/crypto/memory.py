@@ -1,4 +1,3 @@
-import string
 from typing import Any, List, Union
 
 from src.utils.integrity import get_enhanced_random_bytes
@@ -102,32 +101,6 @@ class SecureMemory:
             A context manager for secure memory usage
         """
         return SecureContext(size)
-
-    @staticmethod
-    def secure_string() -> str:
-        """Creates a secure string."""
-        # Use cryptographically secure random bytes instead of random.choices
-        random_bytes = get_enhanced_random_bytes(32)
-        # Convert to alphanumeric characters
-        charset = string.ascii_letters + string.digits
-        # Map bytes to characters (without bias)
-        result = ""
-        for byte in random_bytes:
-            # Ensure no modulo bias by rejecting values above the largest multiple of len(charset)
-            max_value = 256 - (256 % len(charset))
-            if byte < max_value:
-                result += charset[byte % len(charset)]
-                if len(result) >= 32:  # We want a 32-character result
-                    break
-
-        # If we don't have enough characters (unlikely), append more
-        while len(result) < 32:
-            more_bytes = get_enhanced_random_bytes(8)
-            for byte in more_bytes:
-                if byte < max_value and len(result) < 32:
-                    result += charset[byte % len(charset)]
-
-        return result
 
     @staticmethod
     def secure_bytes(length: int = 32) -> bytearray:
