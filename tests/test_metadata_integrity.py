@@ -316,18 +316,16 @@ class TestShareMetadata(unittest.TestCase):
                 empty_label_metadata.validate()
             log_test_success("Empty label correctly rejected")
 
-            log_test_step("Testing with None label")
-            # Test with None label
+            log_test_step("Testing with None label (minimal-metadata mode — valid)")
+            # None label is valid in minimal-metadata mode (N10): share files omit label by design
             none_label_metadata = ShareMetadata(
                 version=self.version,
-                label=None,  # None label
+                label=None,
                 threshold=self.threshold,
                 total_shares=self.total_shares,
             )
-
-            with self.assertRaises(ValueError, msg="Should reject None label"):
-                none_label_metadata.validate()
-            log_test_success("None label correctly rejected")
+            none_label_metadata.validate()  # must not raise
+            log_test_success("None label accepted (minimal-metadata mode)")
 
             log_test_end(test_name)
         except Exception as e:

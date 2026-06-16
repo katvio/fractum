@@ -177,11 +177,11 @@ class ShareManager:
                     current_metadata = ShareMetadata.from_share_info(share_info)
                     if metadata.version != current_metadata.version:
                         raise ValueError(f"Incompatible version in {share_file}")
-                    if metadata.label != current_metadata.label:
+                    if metadata.label and current_metadata.label and metadata.label != current_metadata.label:
                         raise ValueError(f"Incompatible label in {share_file}")
                     if metadata.threshold != current_metadata.threshold:
                         raise ValueError(f"Incompatible threshold in {share_file}")
-                    if metadata.total_shares != current_metadata.total_shares:
+                    if metadata.total_shares and current_metadata.total_shares and metadata.total_shares != current_metadata.total_shares:
                         raise ValueError(f"Incompatible total shares in {share_file}")
 
                 # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility

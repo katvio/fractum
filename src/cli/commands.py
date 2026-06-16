@@ -39,6 +39,12 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
     help="Directory containing existing shares",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Verbose mode")
+@click.option(
+    "--full-metadata",
+    is_flag=True,
+    default=False,
+    help="Write label, total_shares and share_set_id to share files (less private, useful for debugging)",
+)
 def encrypt(
     input_file: str,
     threshold: int,
@@ -46,6 +52,7 @@ def encrypt(
     label: str,
     existing_shares: str,
     verbose: bool,
+    full_metadata: bool,
 ) -> None:
     """Encrypts a file and generates shares."""
     try:
@@ -144,19 +151,23 @@ def encrypt(
             if verbose:
                 click.echo(f"Found {len(share_files)} valid share files")
 
-            # Read label from first share
+            # Read label from first share (may be absent in minimal-metadata shares)
             with open(share_files[0], "r") as f:
                 share_info = json.load(f)
-                existing_label = share_info["label"]
+                existing_label = share_info.get("label")
 
-            click.echo(f"\nExisting shares found with label: {existing_label}")
-            click.echo("You must use the same label for compatibility")
-            label = existing_label
-            click.echo(f"Label used: {label}")
+            if existing_label:
+                click.echo(f"\nExisting shares found with label: {existing_label}")
+                click.echo("You must use the same label for compatibility")
+                label = existing_label
+                click.echo(f"Label used: {label}")
+            else:
+                click.echo("\nExisting shares found (no label — minimal metadata mode)")
+                click.echo(f"Using provided label: {label}")
 
             # Read parameters from existing shares
-            threshold = share_info.get("threshold", 3)
-            total_shares = share_info.get("total_shares", 5)
+            threshold = share_info.get("threshold", threshold)
+            total_shares = share_info.get("total_shares", shares)
             click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
@@ -164,15 +175,15 @@ def encrypt(
             share_files_str = [str(f) for f in share_files]
             shares_data, metadata = ShareManager.load_shares(share_files_str)
 
-            # Verify metadata compatibility
-            if metadata.label != label:
+            # Verify metadata compatibility (only when label is present in both)
+            if metadata.label and metadata.label != label:
                 raise ValueError(
                     f"Share label mismatch: expected {label}, found {metadata.label}"
                 )
 
             # Use original parameters from metadata
             threshold = metadata.threshold
-            shares = metadata.total_shares
+            shares = metadata.total_shares or shares
 
             if verbose:
                 click.echo(
@@ -218,22 +229,22 @@ def encrypt(
             new_share_files: List[str] = []
             for idx, share in share_data:
                 share_file = f"share_{idx}.txt"
+                share_info_dict: Dict[str, Any] = {
+                    "share_index": idx,
+                    "share_key": base64.b64encode(share).decode(),
+                    "threshold": threshold,
+                    "hash": hashlib.sha256(share).hexdigest(),
+                }
+                if full_metadata:
+                    share_info_dict.update({
+                        "label": label,
+                        "total_shares": shares,
+                        "share_set_id": share_set_id,
+                        "tool_integrity": tool_integrity,
+                        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                    })
                 with open(share_file, "w") as f:
-                    json.dump(
-                        {
-                            "share_index": idx,
-                            "share_key": base64.b64encode(share).decode(),
-                            "label": label,
-                            "share_integrity_hash": hashlib.sha256(share).hexdigest(),
-                            "threshold": threshold,
-                            "total_shares": shares,
-                            "tool_integrity": tool_integrity,
-                            "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-                            "share_set_id": share_set_id,  # Add the share set ID to identify related shares
-                        },
-                        f,
-                        indent=2,
-                    )
+                    json.dump(share_info_dict, f, indent=2)
                 new_share_files.append(share_file)
 
             if verbose:
@@ -452,7 +463,7 @@ def decrypt(
             try:
                 with open(share_file, "r") as f:
                     share_info = json.load(f)
-                    label = share_info["label"]
+                    label = share_info.get("label", "_unlabeled")
                     share_set_id = share_info.get("share_set_id", None)
 
                     # If share has a set_id, store by set_id

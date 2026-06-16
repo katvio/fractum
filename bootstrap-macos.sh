@@ -7,6 +7,27 @@ HOMEBREW_INSTALLER_COMMIT="b953a44e39533dae3c3bb60bbd80138a73c360ec"
 HOMEBREW_INSTALLER_URL="https://raw.githubusercontent.com/Homebrew/install/${HOMEBREW_INSTALLER_COMMIT}/install.sh"
 HOMEBREW_INSTALLER_SHA256="2863708cb516c5d0bcdfff97dc13bffb61db93f7acc6ae559a5598a57ce11091"
 
+# Verify offline packages before installation (M6)
+verify_packages() {
+  local pkg_dir="${1:-packages}"
+  echo "→ Verifying package integrity..."
+
+  if [ -f "${pkg_dir}/CHECKSUMS.sha256.asc" ]; then
+    echo "→ Verifying GPG signature on packages (key D009F6290DCFDAB6)..."
+    gpg --verify "${pkg_dir}/CHECKSUMS.sha256.asc" "${pkg_dir}/CHECKSUMS.sha256" \
+      || { echo "ERROR: Invalid GPG signature on packages — installation aborted"; exit 1; }
+    echo "  ✓ GPG signature valid"
+  else
+    echo "  WARNING: ${pkg_dir}/CHECKSUMS.sha256.asc not found — skipping GPG verification"
+    echo "           For production use, obtain the .asc from a trusted Katvio release."
+  fi
+
+  echo "→ Verifying SHA-256 hashes..."
+  (cd "${pkg_dir}" && shasum -a 256 --check CHECKSUMS.sha256 --strict --quiet) \
+    || { echo "ERROR: Package hash mismatch — files may be corrupted or tampered"; exit 1; }
+  echo "  ✓ Package hashes verified"
+}
+
 install_homebrew() {
   local tmp
   tmp=$(mktemp /tmp/brew-install.XXXXXX.sh)
@@ -83,7 +104,13 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -e .
+
+if [ -f "packages/CHECKSUMS.sha256" ]; then
+  verify_packages packages
+  pip install --no-index --find-links=packages -e .
+else
+  pip install -e .
+fi
 
 echo "✅ macOS bootstrap complete!"
 echo "👉 Run 'source .venv/bin/activate' to enter the environment."
