@@ -11,7 +11,7 @@ COPY packages/ /app/packages/
 RUN pip install --no-cache-dir -e .
 
 # Create data directory and shares directory with proper permissions
-RUN mkdir -p /data /app/shares && chmod 777 /data /app/shares
+RUN mkdir -p /data /app/shares && chmod 750 /data /app/shares
 
 # Create non-root user
 RUN adduser --disabled-password --gecos "" fractumuser

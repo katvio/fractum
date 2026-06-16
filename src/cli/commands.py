@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -320,6 +321,11 @@ def decrypt(
             output_file = (
                 input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
             )
+            if Path(output_file).exists():
+                raise click.ClickException(
+                    f"Output file already exists: {output_file}\n"
+                    "Delete or rename it before decrypting."
+                )
             encryptor = FileEncryptor(key)
             encryptor.decrypt_file(input_file, output_file)
 
@@ -418,12 +424,12 @@ def decrypt(
 
         # Process each file and group by set_id and label
         for share_file in share_files:
-            if str(share_file).endswith(".zip"):
-                # Extract archive to temporary directory
-                temp_dir = Path(f"temp_share_{share_file.stem}")
-                temp_dir.mkdir(exist_ok=True)
-
+            temp_dir = None
+            is_zip = str(share_file).endswith(".zip")
+            if is_zip:
+                # Extract archive to a secure temporary directory
                 try:
+                    temp_dir = Path(tempfile.mkdtemp(prefix="fractum_share_"))
                     with zipfile.ZipFile(share_file, "r") as zipf:
                         zipf.extractall(temp_dir)
 
@@ -432,13 +438,15 @@ def decrypt(
                     if not share_files_in_zip:
                         if verbose:
                             click.echo(f"No share file found in archive {share_file}")
+                        shutil.rmtree(temp_dir, ignore_errors=True)
                         continue
 
                     share_file = share_files_in_zip[0]
                 except Exception as e:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    if temp_dir:
+                        shutil.rmtree(temp_dir, ignore_errors=True)
                     if verbose:
-                        click.echo(f"Error extracting archive {share_file}: {str(e)}")
+                        click.echo(f"Error extracting archive: {str(e)}")
                     continue
 
             try:
@@ -534,7 +542,7 @@ def decrypt(
                 continue
 
             # Clean up temporary directory if it was an archive
-            if str(share_file).endswith(".zip"):
+            if is_zip and temp_dir:
                 shutil.rmtree(temp_dir, ignore_errors=True)
 
         if verbose:
@@ -662,6 +670,11 @@ def decrypt(
         output_file = (
             input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
         )
+        if Path(output_file).exists():
+            raise click.ClickException(
+                f"Output file already exists: {output_file}\n"
+                "Delete or rename it before decrypting."
+            )
         encryptor = FileEncryptor(key)
         encryptor.decrypt_file(input_file, output_file)
 
