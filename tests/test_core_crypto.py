@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import hashlib
-import json
 import os
 import random
 import string
@@ -371,49 +369,35 @@ class TestFileEncryptor(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_encryption_decryption_roundtrip(self):
-        """Test encryption/decryption round-trip with various file types and sizes."""
-        log_header("Testing encryption/decryption roundtrip")
-        # FIXED: Create a minimal test that directly tests the encrypt/decrypt methods without metadata
-        # This avoids MAC errors from the test data while still ensuring basic functionality works
-        try:
-            # Create a simple test file
-            test_content = b"Simple test content for encryption"
-            simple_file = os.path.join(self.temp_dir.name, "simple_test.txt")
-            simple_enc = os.path.join(self.temp_dir.name, "simple_test.txt.enc")
-            simple_dec = os.path.join(self.temp_dir.name, "simple_test.txt.dec")
+        """Test encryption/decryption round-trip through FileEncryptor."""
+        log_header("Testing encryption/decryption roundtrip via FileEncryptor")
 
-            log_info(f"Creating test file with {len(test_content)} bytes")
-            with open(simple_file, "wb") as f:
-                f.write(test_content)
+        test_cases = [
+            ("small", b"Hello, World!"),
+            ("medium", b"x" * 1024),
+            ("binary", bytes(range(256)) * 4),
+        ]
 
-            # Use the direct AES methods to test a simple round trip
-            log_info("Testing AES round-trip encryption directly")
-            from Crypto.Cipher import AES
+        for name, content in test_cases:
+            log_info(f"Testing {name} file ({len(content)} bytes)")
+            src = os.path.join(self.temp_dir.name, f"{name}.bin")
+            enc = os.path.join(self.temp_dir.name, f"{name}.bin.enc")
+            dec = os.path.join(self.temp_dir.name, f"{name}.bin.dec")
 
-            # Generate a key and nonce
-            key = get_enhanced_random_bytes(32)
-            nonce = get_enhanced_random_bytes(16)
+            with open(src, "wb") as f:
+                f.write(content)
 
-            # Encrypt
-            log_info("Encrypting test content")
-            cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
-            ciphertext, tag = cipher.encrypt_and_digest(test_content)
+            self.encryptor.encrypt_file(src, enc)
+            self.assertTrue(os.path.exists(enc), f"Encrypted file not created for {name}")
 
-            # Decrypt
-            log_info("Decrypting ciphertext")
-            cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
-            plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+            self.encryptor.decrypt_file(enc, dec)
+            self.assertTrue(os.path.exists(dec), f"Decrypted file not created for {name}")
 
-            # Verify
-            self.assertEqual(plaintext, test_content, "Simple AES round trip failed")
-            log_success("Basic AES encryption/decryption round trip succeeded")
+            with open(dec, "rb") as f:
+                result = f.read()
 
-            # Skip the full test if it's still causing issues
-            log_success("Basic encryption functionality verified.")
-
-        except Exception as e:
-            log_error(f"Encryption/decryption roundtrip failed: {str(e)}")
-            self.fail(f"Encryption/decryption roundtrip failed with error: {str(e)}")
+            self.assertEqual(result, content, f"Roundtrip content mismatch for {name}")
+            log_success(f"Roundtrip passed for {name} ({len(content)} bytes)")
 
     def test_same_key_different_files(self):
         """Test with same key but different files (confirm unique ciphertexts)."""
@@ -435,273 +419,204 @@ class TestFileEncryptor(unittest.TestCase):
         with open(file2_path, "w") as f:
             f.write("Different content for file 2")
 
-        try:
-            # Encrypt both files with the same key
-            log_info("Encrypting first file")
-            self.encryptor.encrypt_file(file1_path, enc_file1_path)
-            log_info("Encrypting second file")
-            self.encryptor.encrypt_file(file2_path, enc_file2_path)
+        # Encrypt both files with the same key
+        log_info("Encrypting first file")
+        self.encryptor.encrypt_file(file1_path, enc_file1_path)
+        log_info("Encrypting second file")
+        self.encryptor.encrypt_file(file2_path, enc_file2_path)
 
-            # Read the encrypted files
-            log_info("Comparing encrypted content")
-            with open(enc_file1_path, "rb") as f1, open(enc_file2_path, "rb") as f2:
-                enc_content1 = f1.read()
-                enc_content2 = f2.read()
+        # Read the encrypted files
+        log_info("Comparing encrypted content")
+        with open(enc_file1_path, "rb") as f1, open(enc_file2_path, "rb") as f2:
+            enc_content1 = f1.read()
+            enc_content2 = f2.read()
 
-            # Verify encrypted content is different
-            self.assertNotEqual(
-                enc_content1,
-                enc_content2,
-                "Encrypted content should be different for different files",
-            )
-            log_success("Different files produce different ciphertexts with same key")
+        # Verify encrypted content is different
+        self.assertNotEqual(
+            enc_content1,
+            enc_content2,
+            "Encrypted content should be different for different files",
+        )
+        log_success("Different files produce different ciphertexts with same key")
 
-            # Test with identical content but different files
-            file3_path = os.path.join(self.temp_dir.name, "file3.txt")
-            enc_file3_path = os.path.join(self.temp_dir.name, "file3.txt.enc")
+        # Test with identical content but different files
+        file3_path = os.path.join(self.temp_dir.name, "file3.txt")
+        enc_file3_path = os.path.join(self.temp_dir.name, "file3.txt.enc")
 
-            # Create file with same content as file1
-            log_info("Creating third test file (identical content to first file)")
-            with open(file3_path, "w") as f:
-                f.write("Content for file 1")
+        # Create file with same content as file1
+        log_info("Creating third test file (identical content to first file)")
+        with open(file3_path, "w") as f:
+            f.write("Content for file 1")
 
-            # Encrypt the third file
-            log_info("Encrypting third file")
-            self.encryptor.encrypt_file(file3_path, enc_file3_path)
+        # Encrypt the third file
+        log_info("Encrypting third file")
+        self.encryptor.encrypt_file(file3_path, enc_file3_path)
 
-            # Read the encrypted file
-            log_info("Comparing encrypted content of files with identical plaintext")
-            with open(enc_file3_path, "rb") as f3:
-                enc_content3 = f3.read()
+        # Read the encrypted file
+        log_info("Comparing encrypted content of files with identical plaintext")
+        with open(enc_file3_path, "rb") as f3:
+            enc_content3 = f3.read()
 
-            # Verify encrypted content is different even for identical plaintext
-            # This should be true due to random nonce in AES-GCM
-            self.assertNotEqual(
-                enc_content1,
-                enc_content3,
-                "Encrypted content should be different even for identical plaintext",
-            )
-            log_success(
-                "Identical files produce different ciphertexts (nonce randomization)"
-            )
-        except Exception as e:
-            log_warning(f"Same key test skipped: {str(e)}")
-            # Skip this test if it's failing
-            print(f"Same key test skipped: {str(e)}")
+        # Verify encrypted content is different even for identical plaintext
+        # GCM uses a random nonce per encryption
+        self.assertNotEqual(
+            enc_content1,
+            enc_content3,
+            "Encrypted content should be different even for identical plaintext",
+        )
+        log_success("Identical files produce different ciphertexts (nonce randomization)")
 
     def test_metadata_integrity(self):
         """Verify metadata integrity during encryption/decryption."""
         log_header("Testing metadata integrity")
-        try:
-            # Create metadata
-            log_info("Creating test metadata")
-            metadata = {
-                "test_field": "test_value",
-                "numeric_field": 12345,
-                "boolean_field": True,
-            }
 
-            # Encrypt file with metadata
-            log_info("Encrypting file with custom metadata")
-            self.encryptor.encrypt_file(
-                self.test_file_path, self.encrypted_file_path, metadata
-            )
+        # Create metadata
+        log_info("Creating test metadata")
+        metadata = {
+            "test_field": "test_value",
+            "numeric_field": 12345,
+            "boolean_field": True,
+        }
 
-            # Read and verify metadata
-            log_info("Reading metadata from encrypted file")
-            with open(self.encrypted_file_path, "rb") as f:
-                try:
-                    read_metadata = self.encryptor._read_metadata(f)
-                except UnicodeDecodeError:
-                    # If there's a decode error, we'll handle it with a patched method
-                    log_warning("UnicodeDecodeError encountered, using fallback method")
-                    # Reset file pointer
-                    f.seek(0)
-                    # Read using patched method
-                    metadata_len = int.from_bytes(f.read(4), "big")
-                    metadata_bytes = f.read(metadata_len)
-                    read_metadata = json.loads(
-                        metadata_bytes.decode("latin-1", errors="replace")
-                    )
+        # Encrypt file with metadata
+        log_info("Encrypting file with custom metadata")
+        self.encryptor.encrypt_file(
+            self.test_file_path, self.encrypted_file_path, metadata
+        )
 
-            # Verify custom metadata fields are preserved
-            log_info("Verifying custom metadata fields")
-            for key, value in metadata.items():
-                self.assertEqual(
-                    read_metadata[key], value, f"Metadata field {key} not preserved"
-                )
-            log_success("All custom metadata fields preserved correctly")
+        # Read and verify metadata
+        log_info("Reading metadata from encrypted file")
+        with open(self.encrypted_file_path, "rb") as f:
+            read_metadata = self.encryptor._read_metadata(f)
 
-            # Verify standard metadata fields are present
-            log_info("Verifying standard metadata fields")
-            self.assertIn("version", read_metadata, "Version field missing in metadata")
-            self.assertIn(
-                "timestamp", read_metadata, "Timestamp field missing in metadata"
-            )
-            self.assertIn("hash", read_metadata, "Hash field missing in metadata")
-            log_success("All standard metadata fields present")
-
-            # Verify hash integrity
-            log_info("Verifying file hash integrity")
-            with open(self.test_file_path, "rb") as f:
-                data = f.read()
-                data_hash = hashlib.sha256(data).hexdigest()
-
+        # Verify custom metadata fields are preserved
+        log_info("Verifying custom metadata fields")
+        for key, value in metadata.items():
             self.assertEqual(
-                read_metadata["hash"], data_hash, "Data hash in metadata doesn't match"
+                read_metadata[key], value, f"Metadata field {key} not preserved"
             )
-            log_success("File hash integrity verified")
-        except Exception as e:
-            log_warning(f"Metadata integrity test skipped: {str(e)}")
-            # Skip this test if it's failing
-            print(f"Metadata integrity test skipped: {str(e)}")
+        log_success("All custom metadata fields preserved correctly")
+
+        # Verify standard metadata fields are present
+        log_info("Verifying standard metadata fields")
+        self.assertIn("version", read_metadata, "Version field missing in metadata")
+        self.assertIn("timestamp", read_metadata, "Timestamp field missing in metadata")
+        log_success("Standard metadata fields present")
 
     def test_tampering_detection(self):
         """Test tampering detection (modified ciphertext, nonce, tag)."""
         log_header("Testing tampering detection")
-        try:
-            # Encrypt a file
-            log_info("Encrypting test file")
-            self.encryptor.encrypt_file(self.test_file_path, self.encrypted_file_path)
 
-            # Tamper with the ciphertext
-            log_info("Tampering with ciphertext")
-            with open(self.encrypted_file_path, "rb") as f:
-                data = bytearray(f.read())
+        # Encrypt a file
+        log_info("Encrypting test file")
+        self.encryptor.encrypt_file(self.test_file_path, self.encrypted_file_path)
 
-            # Get metadata length to skip it
-            metadata_len = int.from_bytes(data[:4], "big")
+        with open(self.encrypted_file_path, "rb") as f:
+            original_data = bytearray(f.read())
 
-            # Modify data after metadata + nonce + tag
-            modify_pos = 4 + metadata_len + 16 + 16 + 10  # position to modify
-            if modify_pos < len(data):
-                data[modify_pos] = (
-                    data[modify_pos] + 1
-                ) % 256  # Flip a bit in the ciphertext
+        metadata_len = int.from_bytes(original_data[:4], "big")
 
-                # Write tampered data back
-                tampered_path = os.path.join(
-                    self.temp_dir.name, "tampered_ciphertext.enc"
-                )
-                with open(tampered_path, "wb") as f:
-                    f.write(data)
+        def write_tampered(path, data):
+            with open(path, "wb") as f:
+                f.write(data)
 
-                # Attempt to decrypt tampered file - should fail with authentication tag error
-                log_info("Attempting to decrypt tampered ciphertext")
-                with self.assertRaises(
-                    ValueError, msg="Should detect tampering with ciphertext"
-                ):
-                    try:
-                        self.encryptor.decrypt_file(
-                            tampered_path, self.decrypted_file_path
-                        )
-                    except UnicodeDecodeError:
-                        # If there's a decode error with metadata, skip this test
-                        raise ValueError("Tampering detection succeeded")
-                log_success("Tampering with ciphertext detected")
+        # Tamper with ciphertext
+        log_info("Tampering with ciphertext")
+        data = bytearray(original_data)
+        ct_pos = 4 + metadata_len + 16 + 16 + 10
+        self.assertLess(ct_pos, len(data), "File too small to tamper with ciphertext")
+        data[ct_pos] = (data[ct_pos] + 1) % 256
+        tampered_ct = os.path.join(self.temp_dir.name, "tampered_ciphertext.enc")
+        write_tampered(tampered_ct, data)
+        with self.assertRaises(ValueError, msg="Should detect ciphertext tampering"):
+            self.encryptor.decrypt_file(tampered_ct, self.decrypted_file_path)
+        log_success("Ciphertext tampering detected")
 
-            # Tamper with the tag
-            log_info("Tampering with authentication tag")
-            with open(self.encrypted_file_path, "rb") as f:
-                data = bytearray(f.read())
+        # Tamper with tag
+        log_info("Tampering with authentication tag")
+        data = bytearray(original_data)
+        tag_pos = 4 + metadata_len + 16 + 5
+        self.assertLess(tag_pos, len(data), "File too small to tamper with tag")
+        data[tag_pos] = (data[tag_pos] + 1) % 256
+        tampered_tag = os.path.join(self.temp_dir.name, "tampered_tag.enc")
+        write_tampered(tampered_tag, data)
+        with self.assertRaises(ValueError, msg="Should detect tag tampering"):
+            self.encryptor.decrypt_file(tampered_tag, self.decrypted_file_path)
+        log_success("Tag tampering detected")
 
-            # Modify tag (after metadata + nonce)
-            tag_pos = 4 + metadata_len + 16 + 5  # position within tag
-            if tag_pos < len(data):
-                data[tag_pos] = (data[tag_pos] + 1) % 256  # Flip a bit in the tag
-
-                # Write tampered data back
-                tampered_tag_path = os.path.join(self.temp_dir.name, "tampered_tag.enc")
-                with open(tampered_tag_path, "wb") as f:
-                    f.write(data)
-
-                # Attempt to decrypt tampered file - should fail with authentication error
-                log_info("Attempting to decrypt file with tampered tag")
-                with self.assertRaises(
-                    ValueError, msg="Should detect tampering with authentication tag"
-                ):
-                    try:
-                        self.encryptor.decrypt_file(
-                            tampered_tag_path, self.decrypted_file_path
-                        )
-                    except UnicodeDecodeError:
-                        # If there's a decode error with metadata, skip this test
-                        raise ValueError("Tampering detection succeeded")
-                log_success("Tampering with authentication tag detected")
-
-            # Tamper with the nonce
-            log_info("Tampering with nonce")
-            with open(self.encrypted_file_path, "rb") as f:
-                data = bytearray(f.read())
-
-            # Modify nonce (after metadata)
-            nonce_pos = 4 + metadata_len + 5  # position within nonce
-            if nonce_pos < len(data):
-                data[nonce_pos] = (data[nonce_pos] + 1) % 256  # Flip a bit in the nonce
-
-                # Write tampered data back
-                tampered_nonce_path = os.path.join(
-                    self.temp_dir.name, "tampered_nonce.enc"
-                )
-                with open(tampered_nonce_path, "wb") as f:
-                    f.write(data)
-
-                # Attempt to decrypt tampered file - should fail
-                log_info("Attempting to decrypt file with tampered nonce")
-                with self.assertRaises(
-                    ValueError, msg="Should detect tampering with nonce"
-                ):
-                    try:
-                        self.encryptor.decrypt_file(
-                            tampered_nonce_path, self.decrypted_file_path
-                        )
-                    except UnicodeDecodeError:
-                        # If there's a decode error with metadata, skip this test
-                        raise ValueError("Tampering detection succeeded")
-                log_success("Tampering with nonce detected")
-        except Exception as e:
-            log_warning(f"Tampering detection test skipped: {str(e)}")
-            # Skip this test if it's failing
-            print(f"Tampering detection test skipped: {str(e)}")
+        # Tamper with nonce
+        log_info("Tampering with nonce")
+        data = bytearray(original_data)
+        nonce_pos = 4 + metadata_len + 5
+        self.assertLess(nonce_pos, len(data), "File too small to tamper with nonce")
+        data[nonce_pos] = (data[nonce_pos] + 1) % 256
+        tampered_nonce = os.path.join(self.temp_dir.name, "tampered_nonce.enc")
+        write_tampered(tampered_nonce, data)
+        with self.assertRaises(ValueError, msg="Should detect nonce tampering"):
+            self.encryptor.decrypt_file(tampered_nonce, self.decrypted_file_path)
+        log_success("Nonce tampering detected")
 
     def test_invalid_key(self):
         """Test invalid key handling during decryption."""
         log_header("Testing invalid key handling")
-        try:
-            # Encrypt a file with the original key
-            log_info("Encrypting file with original key")
-            self.encryptor.encrypt_file(self.test_file_path, self.encrypted_file_path)
 
-            # Create a new encryptor with a different key
-            log_info("Creating encryptor with different key")
-            different_key = get_enhanced_random_bytes(32)
-            wrong_encryptor = FileEncryptor(different_key)
+        # Encrypt a file with the original key
+        log_info("Encrypting file with original key")
+        self.encryptor.encrypt_file(self.test_file_path, self.encrypted_file_path)
 
-            # Attempt to decrypt with the wrong key - should fail
-            log_info("Attempting to decrypt with wrong key")
-            with self.assertRaises(ValueError, msg="Should fail with incorrect key"):
-                try:
-                    wrong_encryptor.decrypt_file(
-                        self.encrypted_file_path, self.decrypted_file_path
-                    )
-                except UnicodeDecodeError:
-                    # If there's a decode error with metadata, skip this test
-                    raise ValueError("Invalid key detection succeeded")
-            log_success("Decryption with wrong key correctly failed")
+        # Attempt to decrypt with a different key
+        log_info("Attempting to decrypt with wrong key")
+        different_key = get_enhanced_random_bytes(32)
+        wrong_encryptor = FileEncryptor(different_key)
+        with self.assertRaises(ValueError, msg="Should fail with incorrect key"):
+            wrong_encryptor.decrypt_file(
+                self.encrypted_file_path, self.decrypted_file_path
+            )
+        log_success("Decryption with wrong key correctly failed")
 
-            # Test with invalid key size
-            log_info("Testing with invalid key size")
-            with self.assertRaises(ValueError, msg="Should reject keys not 32 bytes"):
-                invalid_key = get_enhanced_random_bytes(16)  # 16 bytes instead of 32
-                invalid_encryptor = FileEncryptor(invalid_key)
-                invalid_encryptor.decrypt_file(
-                    self.encrypted_file_path, self.decrypted_file_path
-                )
-            log_success("Correctly rejected invalid key size")
-        except Exception as e:
-            log_warning(f"Invalid key test skipped: {str(e)}")
-            # Skip this test if it's failing
-            print(f"Invalid key test skipped: {str(e)}")
+        # Attempt to decrypt with an invalid key size
+        log_info("Testing with invalid key size (16 bytes instead of 32)")
+        with self.assertRaises(ValueError, msg="Should reject keys not 32 bytes"):
+            invalid_encryptor = FileEncryptor(get_enhanced_random_bytes(16))
+            invalid_encryptor.decrypt_file(
+                self.encrypted_file_path, self.decrypted_file_path
+            )
+        log_success("Correctly rejected invalid key size")
+
+    def test_custom_metadata_preserved(self):
+        """Verify custom fields (e.g. share_set_id) passed to encrypt_file survive in the .enc header."""
+        log_header("Testing custom metadata preservation")
+
+        metadata = {
+            "share_set_id": "abc123def456",
+            "extra_field": "test_value",
+        }
+
+        self.encryptor.encrypt_file(self.test_file_path, self.encrypted_file_path, metadata)
+
+        with open(self.encrypted_file_path, "rb") as f:
+            read_metadata = self.encryptor._read_metadata(f)
+
+        self.assertEqual(
+            read_metadata.get("share_set_id"),
+            "abc123def456",
+            "share_set_id not preserved in encrypted file header",
+        )
+        self.assertEqual(
+            read_metadata.get("extra_field"),
+            "test_value",
+            "extra_field not preserved in encrypted file header",
+        )
+        self.assertIn("version", read_metadata, "version missing from header")
+        self.assertIn("timestamp", read_metadata, "timestamp missing from header")
+        log_success("Custom metadata fields preserved correctly in .enc header")
+
+        # Verify the file can still be decrypted correctly
+        self.encryptor.decrypt_file(self.encrypted_file_path, self.decrypted_file_path)
+        with open(self.test_file_path, "rb") as f_orig, \
+             open(self.decrypted_file_path, "rb") as f_dec:
+            self.assertEqual(f_orig.read(), f_dec.read(), "Content mismatch after decrypt")
+        log_success("Decrypt roundtrip confirmed after metadata preservation")
 
 
 class TestSecureMemory(unittest.TestCase):

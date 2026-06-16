@@ -226,7 +226,7 @@ class PythonVersionTests(unittest.TestCase):
             is_target_version = (
                 current_version.major == 3
                 and current_version.minor == 12
-                and current_version.micro == 10
+                and current_version.micro == 11
             )
 
             if is_target_version:

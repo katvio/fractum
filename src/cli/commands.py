@@ -242,34 +242,11 @@ def encrypt(
         output_file = f"{input_file}.enc"
         encryptor = FileEncryptor(key)
 
-        # Add share_set_id to metadata before encryption
         metadata_dict = {
-            "version": share_manager.version,
-            "timestamp": int(time.time()),
             "share_set_id": share_set_id if "share_set_id" in locals() else None,
         }
 
-        # Calculate data hash
-        with open(input_file, "rb") as f:
-            file_data = f.read()
-        data_hash = hashlib.sha256(file_data).hexdigest()
-
-        # Encrypt the file with metadata
-        with open(input_file, "rb") as f_in, open(output_file, "wb") as f_out:
-            # Write metadata
-            encryptor._write_metadata(f_out, data_hash, metadata_dict)
-
-            # Read the input file
-            data = f_in.read()
-
-            # Encrypt the data
-            cipher = AES.new(key, AES.MODE_GCM)
-            ciphertext, tag = cipher.encrypt_and_digest(data)
-
-            # Write encryption data
-            f_out.write(cipher.nonce)
-            f_out.write(tag)
-            f_out.write(ciphertext)
+        encryptor.encrypt_file(input_file, output_file, metadata_dict)
 
         if verbose:
             click.echo(f"Encrypted file: {output_file}")

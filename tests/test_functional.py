@@ -977,6 +977,12 @@ class ErrorHandlingTests(unittest.TestCase):
                     test_denied_file = inaccessible_dir / "should_fail.txt"
 
                     # This should fail with permission error
+                    # Skip when running as root: root bypasses filesystem permissions
+                    if os.getuid() == 0:
+                        self.skipTest(
+                            "Skipped: running as root — chmod has no effect (see M2)"
+                        )
+
                     with self.assertRaises(
                         PermissionError, msg="Should fail with permission issues"
                     ):

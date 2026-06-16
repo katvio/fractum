@@ -8,3 +8,7 @@ __pycache__
 .venv
 data
 shares/
+
+# Tooling local — ne pas committer
+.claude/
+_bmad/
