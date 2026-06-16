@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Pinned pyenv-installer — verify SHA-256 before upgrading
+# Update: curl -fsSL "$PYENV_INSTALLER_URL" | sha256sum
+PYENV_INSTALLER_COMMIT="63a9e6a216796aeba2535a3bac8e79ba5d95166d"
+PYENV_INSTALLER_URL="https://github.com/pyenv/pyenv-installer/raw/${PYENV_INSTALLER_COMMIT}/bin/pyenv-installer"
+PYENV_INSTALLER_SHA256="4b0adf623a6205727163eb98610b6c5e63f23b99183948b874d867cd9b30ef13"
+
+install_pyenv_via_script() {
+  local tmp
+  tmp=$(mktemp /tmp/pyenv-installer.XXXXXX.sh)
+  trap "rm -f '$tmp'" RETURN
+  echo "→ Downloading pyenv-installer (commit ${PYENV_INSTALLER_COMMIT:0:12})..."
+  curl -fsSL -o "$tmp" "$PYENV_INSTALLER_URL"
+  echo "→ Verifying SHA-256..."
+  echo "${PYENV_INSTALLER_SHA256}  ${tmp}" | sha256sum --check --strict
+  echo "→ Running pyenv installer..."
+  bash "$tmp"
+}
+
 echo "==> fractum Linux bootstrap"
 echo "Installs Python 3.12.11, creates .venv and installs fractum"
 
@@ -32,7 +50,7 @@ if [[ -d "$PYENV_ROOT" ]]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       rm -rf "$PYENV_ROOT"
       echo "→ Installing pyenv..."
-      curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+      install_pyenv_via_script
     else
       echo "Please remove $PYENV_ROOT manually and run this script again."
       exit 1
@@ -40,7 +58,7 @@ if [[ -d "$PYENV_ROOT" ]]; then
   fi
 else
   echo "→ Installing pyenv..."
-  curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+  install_pyenv_via_script
 fi
 
 # Add pyenv to PATH for this session

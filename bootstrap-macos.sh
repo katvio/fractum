@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Pinned Homebrew installer — verify SHA-256 before upgrading
+# Update: curl -fsSL "$HOMEBREW_INSTALLER_URL" | sha256sum
+HOMEBREW_INSTALLER_COMMIT="b953a44e39533dae3c3bb60bbd80138a73c360ec"
+HOMEBREW_INSTALLER_URL="https://raw.githubusercontent.com/Homebrew/install/${HOMEBREW_INSTALLER_COMMIT}/install.sh"
+HOMEBREW_INSTALLER_SHA256="2863708cb516c5d0bcdfff97dc13bffb61db93f7acc6ae559a5598a57ce11091"
+
+install_homebrew() {
+  local tmp
+  tmp=$(mktemp /tmp/brew-install.XXXXXX.sh)
+  trap "rm -f '$tmp'" RETURN
+  echo "→ Downloading Homebrew installer (commit ${HOMEBREW_INSTALLER_COMMIT:0:12})..."
+  curl -fsSL -o "$tmp" "$HOMEBREW_INSTALLER_URL"
+  echo "→ Verifying SHA-256..."
+  echo "${HOMEBREW_INSTALLER_SHA256}  ${tmp}" | sha256sum --check --strict
+  echo "→ Running Homebrew installer..."
+  NONINTERACTIVE=1 bash "$tmp"
+}
+
 echo "==> fractum macOS bootstrap"
 echo "Installs Xcode CLI, Homebrew, Python 3.12.11, creates .venv and installs fractum"
 
@@ -19,7 +37,7 @@ fi
 echo "Step 2/5: Checking Homebrew"
 if ! command -v brew &>/dev/null; then
   echo "→ Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  install_homebrew
   echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.bash_profile
   eval "$(/opt/homebrew/bin/brew shellenv)"
 else
