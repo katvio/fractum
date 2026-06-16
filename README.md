@@ -1,182 +1,88 @@
 # Fractum
 
-Fractum is designed for organizations and individuals who need to **securely long-term cold store critical information**.
+Fractum lets you **split any sensitive file into encrypted shares** and reconstruct it only when enough shares are pooled — fully offline, no cloud, no single point of failure.
 
-It provides enterprise-grade **cold storage** with mathematical guarantees, eliminating single points of failure through distributed secret sharing.
-
-Split secrets (passwords, SSH keys, seed, etc.) into shares and reconstruct them later—securely, cross-platform, with minimal setup.
+Designed for **long-term cold storage** of critical secrets: seed phrases, root CA keys, break-glass credentials, legal documents.
 
 ![How Fractum splits your secrets into shares](diagram.png)
 
-**💼 High-Value Use Cases:**
+**When to use it:**
 
-- **Emergency recovery credentials**: Admin passwords, break-glass access credentials
-- **Backup encryption master keys**: Protect your backup infrastructure encryption keys
-- **Root CA private keys**: Certificate authority and PKI infrastructure protection
-- **Password manager exports**: LastPass, Bitwarden, KeePass backup files
-- **Cryptocurrency wallet protection**: Seed phrases, private keys, hardware wallet backups
-- **Legal & financial documents**: Wills, contracts, tax records, insurance papers
+- Cryptocurrency wallet protection (seed phrases, private keys, hardware wallet backups)
+- Emergency recovery credentials (admin passwords, break-glass access)
+- Backup encryption master keys
+- Root CA / PKI private keys
+- Legal & financial documents (wills, contracts, tax records)
 
-**⚡️ Distributed Architecture Benefits:**
+**Why distributed?**
 
-- **Bus Factor Protection**: Write a Will and instructions for family members - they can pool shares to recover your assets
-- **Theft/Loss Protection**: House fire, kidnapping/hostage situations, or lost hardware wallet - shares remain secure because you cannot be forced to access distant physical locations immediately
-- **Geographic distribution**: Store shares across multiple locations (family, friends, safe deposit boxes)
-- **No single point of failure**: Distributed trust across shares with threshold cryptography
-- **Zero-knowledge property**: K-1 shares reveal absolutely nothing about your secrets
+- Fewer than K shares reveal **nothing** — information-theoretic security (same as Trezor SLIP-39, ICANN DNSSEC ceremonies)
+- No single point of failure: distribute shares across people, locations, or media
+- Works completely offline — air-gapped environments supported
 
-**🛡️ Enterprise-grade Security:**
+## How it works
 
-- **Works completely offline**: perfect for air-gapped environments
-- **Shamir's Secret Sharing (SSS)**: Same algorithm used by Trezor (SLIP-39), Coinbase, Ledger Recover, and ICANN DNSSEC root key ceremonies
-- **AES-256-GCM**: NSA Suite B approved, trusted by Signal, AWS, Google Cloud, and Apple for authenticated encryption
-- **Zero Novel Cryptography**: Battle-tested primitives with decades of academic scrutiny and real-world deployment
-- **Fully offline**: and portable CLI
+Fractum encrypts your file with AES-256-GCM using a random 256-bit key, then splits that key into N shares via Shamir's Secret Sharing. Any K shares reconstruct the key and decrypt the file; fewer than K learn nothing. No novel cryptography — only battle-tested primitives.
 
+📚 **[Full documentation](https://fractum.katvio.com/)**
 
+---
 
-## Table of Contents
-- [The Docker way (recommended usage)](#the-docker-way-recommended-usage)
-- [How it works](#how-it-works)
-- [Security Architecture](#security-architecture)
-- [Complete Security Architecture Details](https://fractum.katvio.com/security-architecture/)
-  - [Setup](#setup)
-  - [Usage](#usage)
-    - [Encrypting a file](#encrypting-a-file)
-    - [Decrypting a file](#decrypting-a-file)
-- [Manual installation using venv](https://fractum.katvio.com/manual-installation/)
-- [Contributing](#contributing)
-- [License](#license)
-- [Complete Documentation](https://fractum.katvio.com/)
-- [Security Best Practices](https://fractum.katvio.com/security-best-practices/)
+## Quick start — Docker (recommended)
 
-## The Docker way (recommended usage)
+Docker is the recommended way to run Fractum. The `--network=none` flag guarantees the container cannot exfiltrate your secrets over the network.
 
-Fractum can run in a completely network-isolated Docker container. The primary benefit of this approach is that the `--network=none` flag provides users with confidence that the Fractum code cannot exfiltrate their secrets through any network connection. Additionally, this Docker setup can work inside a [TEE](https://www.halborn.com/blog/post/what-is-a-trusted-execution-environment-tee) using tools like [Enclaver.io](https://github.com/enclaver-io/enclaver) for even more advanced security scenarios.
+📚 **[Complete Docker guide](https://fractum.katvio.com/docker-usage/)**
 
-📚 **[Complete Docker Usage Guide](https://fractum.katvio.com/docker-usage/)**
+**Setup**
 
-### Setup
-
-1. **Clone the repository**
-```
+```bash
 git clone https://github.com/katvio/fractum.git
-```
-```
 cd fractum && git checkout tags/v1.3.0
-```
-
-2. **Create data folders**
-```
-mkdir -p data
-```
-
-3. **Build the Docker image**
-```
+mkdir -p data shares
 docker build -t fractum-secure .
 ```
-4. **Place the file to be encrypted in the data folder**
-```
-mv /path/to/your/passwords-export.csv data/
-```
 
-This step is essential as the Docker container can only access files within the mounted data directory
+**Encrypt**
 
-### Usage
-
-#### Encrypting a file
-
-```
+```bash
 docker run --rm -it \
   --network=none \
   -v "$(pwd)/data:/data" \
   -v "$(pwd)/shares:/app/shares" \
   fractum-secure encrypt /data/passwords-export.csv \
-  --threshold 3 \
-  --shares 5 \
-  --label "bitwarden-backup" \
-  -v
-```
-Expected output:
-
-```
-Using label: bitwarden-backup
-Using existing shares directory
-Generated share set ID: 708c547f308b39a9
-Generated shares: 5
-Encrypted file: /data/passwords-export.csv.enc
-Created archive: /app/shares/share_1.zip
-Created archive: /app/shares/share_2.zip
-Created archive: /app/shares/share_3.zip
-Created archive: /app/shares/share_4.zip
-Created archive: /app/shares/share_5.zip
+  --threshold 3 --shares 5 --label "bitwarden-backup"
 ```
 
-#### Decrypting a file
+**Decrypt**
 
-```
+```bash
 docker run --rm -it \
   --network=none \
   -v "$(pwd)/data:/data" \
   -v "$(pwd)/shares:/app/shares" \
   fractum-secure decrypt /data/passwords-export.csv.enc \
   --shares-dir /app/shares
-
-> File successfully decrypted: /data/passwords-export.csv
 ```
 
-For more detailed Docker usage instructions and security considerations, see our [Docker Usage Guide](https://fractum.katvio.com/docker-usage/).
+📚 **[All CLI options](https://fractum.katvio.com/encrypting-files/)** · **[Decrypting guide](https://fractum.katvio.com/decrypting-files/)** · **[Manual install](https://fractum.katvio.com/manual-installation/)**
 
-## How it works
+---
 
-Fractum transforms your sensitive files into distributed, encrypted shares using mathematically proven cryptographic techniques. Here's the technical process:
+## Security
 
-📚 **[Complete Documentation](https://fractum.katvio.com/)** | 🔍 **[Security Architecture Details](https://fractum.katvio.com/security-architecture/)**
+🔍 **[Security Architecture](https://fractum.katvio.com/security-architecture/)** · 🛡️ **[Security Best Practices](https://fractum.katvio.com/security-best-practices/)**
 
-### Input and Output Files
-
-**Input:**
-
-- Your sensitive file (any type: documents, images, databases, etc.)
-- Optional: Existing shares for key reuse
-
-**Output:**
-
-- Encrypted file with `.enc` extension
-- Multiple self-contained share archives (ZIP files)
-- Each share contains: share data, encrypted file, complete Fractum application, and bootstrap scripts
-
-📚 **Learn more:** [Encrypting Files Guide](https://fractum.katvio.com/encrypting-files/) | [Decrypting Files Guide](https://fractum.katvio.com/decrypting-files/) | [Security Best Practices](https://fractum.katvio.com/security-best-practices/)
-
-## Security Architecture
-
-Fractum's security architecture combines **AES-256-GCM encryption** with **Shamir's Secret Sharing** to provide information-theoretic security for long-term cold storage.
-
-🔍 **[Complete Security Architecture Details](https://fractum.katvio.com/security-architecture/)**
-
-**Core Security Features:**
-
-- **AES-256-GCM**: Authenticated encryption with 256-bit keys and unique nonces
-- **Threshold cryptography**: Configurable K-of-N security model using finite field arithmetic
-- **Memory protection**: Automatic clearing with secure deletion and swap prevention
-- **Air-gapped design**: No network dependencies during cryptographic operations
-- **Multi-layer integrity**: GCM authentication tags + SHA-256 hashing + metadata validation
-
-**Standards Compliance:**
-
-- ✅ FIPS 140-2 compatible algorithms
-- ✅ NIST recommended key sizes
-- ✅ Information-theoretic security guarantees
+---
 
 ## Contributing
-If you want to contribute submit a GitHub pull request or open an issue. Thank you!
-Any contribution is better than no contribution :)
 
-📚 **[Contributing Guide](https://fractum.katvio.com/contributing/)** | 🔒 **[Security Best Practices](https://fractum.katvio.com/security-best-practices/)**
+Submit a pull request or open an issue.
+
+📚 **[Contributing Guide](https://fractum.katvio.com/contributing/)**
 
 ## License
 
-Fractum is licensed under a Custom Proprietary Software License that permits personal, non-commercial use. Commercial use is not permitted under this license. 
+Fractum is licensed under a Custom Proprietary Software License that permits personal, non-commercial use. Commercial use is not permitted.
 
 📄 **[View Full License](LICENSE)**
-
