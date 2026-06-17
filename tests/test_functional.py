@@ -17,6 +17,7 @@ from pathlib import Path
 from src.config import VERSION
 from src.crypto import FileEncryptor
 from src.shares import ShareArchiver, ShareManager
+from fixtures import BITWARDEN_VAULT_EXPORT, HARDWARE_WALLET_SEED, PAYROLL_EXPORT
 
 # ANSI color codes for colored output
 GREEN = "\033[92m"
@@ -75,8 +76,8 @@ class CLIEndToEndTests(unittest.TestCase):
         self.large_file = self.test_dir / "large.bin"
 
         # Create content for small file
-        with open(self.small_file, "w") as f:
-            f.write("This is a small test file for encryption and decryption.")
+        with open(self.small_file, "wb") as f:
+            f.write(BITWARDEN_VAULT_EXPORT)
         log_step(f"Created small test file ({self.small_file.name})")
 
         # Create medium file (50KB)
@@ -104,8 +105,8 @@ class CLIEndToEndTests(unittest.TestCase):
         log_header("Testing encryption and decryption of small file")
 
         # Create content in a file we can test with
-        test_content = b"Test content for encryption and verification"
-        test_file = self.test_dir / "test_simple.txt"
+        test_content = PAYROLL_EXPORT
+        test_file = self.test_dir / "payroll_q4_2025.csv"
         with open(test_file, "wb") as f:
             f.write(test_content)
         log_step(f"Created test file with {len(test_content)} bytes")
@@ -113,7 +114,7 @@ class CLIEndToEndTests(unittest.TestCase):
         # Generate a key and shares directly
         threshold = 3
         total_shares = 5
-        label = "test_simple"
+        label = "salary_export_2025"
         test_key = os.urandom(32)
         log_info(
             f"Generated random key and set parameters: threshold={threshold}, total_shares={total_shares}"
@@ -163,8 +164,8 @@ class CLIEndToEndTests(unittest.TestCase):
         # Encrypt the file and decrypt it with the reconstructed key
         log_step("Encrypting file with original key")
         from src.crypto import FileEncryptor
-        encrypted_file = self.test_dir / "test_simple.txt.enc"
-        decrypted_file = self.test_dir / "test_simple.dec"
+        encrypted_file = self.test_dir / "payroll_q4_2025.csv.enc"
+        decrypted_file = self.test_dir / "payroll_q4_2025.dec"
         FileEncryptor(test_key).encrypt_file(str(test_file), str(encrypted_file))
         self.assertTrue(encrypted_file.exists(), "Encrypted file not created")
         log_success("File encrypted")

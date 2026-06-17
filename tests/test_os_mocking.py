@@ -80,7 +80,7 @@ class WindowsMlockDegradationTests(unittest.TestCase):
             with SecureMemory.secure_context(32) as buf:
                 self.assertIsInstance(buf, bytearray)
                 self.assertEqual(len(buf), 32)
-                buf[:] = b"SENSITIVE_KEY_DATA_WINDOWS_TEST!"
+                buf[:] = b"GH_TOKEN:ghp_prod_XX_2025_key!!!"
                 captured = bytearray(buf)
 
         # After context exit, buffer must be zeroed
@@ -131,7 +131,7 @@ class WindowsMlockDegradationTests(unittest.TestCase):
                 src = Path(tmp) / "plain.bin"
                 enc = Path(tmp) / "plain.bin.enc"
                 dec = Path(tmp) / "plain.bin.dec"
-                src.write_bytes(b"content to encrypt on Windows simulation")
+                src.write_bytes(b"RESTRICTED: employee_contracts_2025.zip")
 
                 FileEncryptor(key).encrypt_file(str(src), str(enc))
                 FileEncryptor(key).decrypt_file(str(enc), str(dec))
@@ -147,7 +147,7 @@ class WindowsMlockDegradationTests(unittest.TestCase):
         with patch("ctypes.util.find_library", return_value=None):
             try:
                 with SecureMemory.secure_context(32) as buf:
-                    buf[:] = b"SECRET_THAT_MUST_VANISH_ON_WIN!!"
+                    buf[:] = b"jwt_prod_2025:katvio_master_key!"
                     captured = buf
                     raise RuntimeError("simulated Windows exception")
             except RuntimeError:
@@ -201,7 +201,7 @@ class MacOSLibcTests(unittest.TestCase):
              patch("ctypes.CDLL", return_value=mock_libc):
             captured = None
             with SecureMemory.secure_context(32) as buf:
-                buf[:] = b"SECRET_DATA_MACOS_SIMULATION_!!!"
+                buf[:] = b"keychain:prod-api-key-2025@acme!"
                 captured = buf
 
         self.assertIsNotNone(captured)
@@ -328,7 +328,7 @@ class CrossOSPathHandlingTests(unittest.TestCase):
         src = spaced / "my file.txt"
         enc = spaced / "my file.txt.enc"
         dec = spaced / "my file.txt.dec"
-        src.write_bytes(b"content in a spaced path")
+        src.write_bytes(b"CONFIDENTIAL: contract acme corp 2025.pdf")
 
         FileEncryptor(key).encrypt_file(str(src), str(enc))
         FileEncryptor(key).decrypt_file(str(enc), str(dec))
@@ -467,7 +467,7 @@ class CrossOSZipExtractionTests(unittest.TestCase):
         key = get_enhanced_random_bytes(32)
         src = self.tmp_dir / "payload.bin"
         enc = self.tmp_dir / "payload.bin.enc"
-        src.write_bytes(b"zip test payload content")
+        src.write_bytes(b"RESTRICTED: hr_export_q4_2025.csv")
         from src.crypto import FileEncryptor
         FileEncryptor(key).encrypt_file(str(src), str(enc))
         src.unlink()

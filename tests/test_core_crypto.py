@@ -11,6 +11,12 @@ from src.crypto import FileEncryptor
 from src.crypto.memory import SecureMemory
 from src.shares import ShareManager
 from src.utils import get_enhanced_random_bytes
+from fixtures import (
+    BITWARDEN_VAULT_EXPORT,
+    ENV_CREDENTIALS,
+    HARDWARE_WALLET_SEED,
+    QUARTERLY_REPORT,
+)
 
 # ANSI color codes for colored output
 GREEN = "\033[92m"
@@ -54,8 +60,8 @@ class TestShareManager(unittest.TestCase):
         log_header("Setting up ShareManager tests")
         self.threshold = 3
         self.total_shares = 5
-        self.test_secret = b"TopSecretTestData12345"
-        self.label = "TestLabel"
+        self.test_secret = b"prod-enc-key:Hx7$Kw2@Nm9!v5"
+        self.label = "bitwarden_backup_jan_2025"
         self.manager = ShareManager(self.threshold, self.total_shares)
         log_info(
             f"Created ShareManager with threshold={self.threshold}, total_shares={self.total_shares}"
@@ -200,13 +206,13 @@ class TestShareManager(unittest.TestCase):
         """Verify shares from different secret inputs don't reveal information."""
         log_header("Testing information leakage between different secrets")
         # Generate shares for two different secrets
-        secret1 = b"TopSecretData1"
-        secret2 = b"TopSecretData2"
+        secret1 = b"api-svc-alpha:Zx9#mK2@vL5!n"
+        secret2 = b"api-svc-beta:Ry8!nP0qR3zT$Wk"
 
         log_info("Generating shares for first secret")
-        shares1 = self.manager.generate_shares(secret1, "Label1")
+        shares1 = self.manager.generate_shares(secret1, "hardware_wallet_alpha_seed")
         log_info("Generating shares for second secret")
-        shares2 = self.manager.generate_shares(secret2, "Label2")
+        shares2 = self.manager.generate_shares(secret2, "hardware_wallet_beta_seed")
 
         # Try to reconstruct by mixing shares from different secrets
         log_info("Attempting reconstruction with mixed shares from different secrets")
@@ -219,7 +225,7 @@ class TestShareManager(unittest.TestCase):
             self.assertNotEqual(
                 mixed_result[: len(secret1)],
                 secret1,
-                "Mixed shares should not reveal first secret",
+                "Mixed shares must not reveal the service_alpha credential",
             )
             self.assertNotEqual(
                 mixed_result[: len(secret2)],
@@ -299,7 +305,7 @@ class TestShareManager(unittest.TestCase):
 
         # Test too long secret
         log_info("Testing too long secret")
-        too_long_secret = b"x" * 33  # 33 bytes, exceeding 32-byte limit
+        too_long_secret = b"prod-db-password-2025-over-limit!"  # 33 bytes, exceeding 32-byte limit
         with self.assertRaises(ValueError, msg="Should reject secret > 32 bytes"):
             self.manager.generate_shares(too_long_secret, self.label)
         log_success("Correctly rejected secret > 32 bytes")
@@ -334,8 +340,8 @@ class TestFileEncryptor(unittest.TestCase):
         self.decrypted_file_path = os.path.join(self.temp_dir.name, "test_file.txt.dec")
 
         # Create a test file with random content
-        with open(self.test_file_path, "w") as f:
-            f.write("This is a test file with some content for encryption testing.")
+        with open(self.test_file_path, "wb") as f:
+            f.write(QUARTERLY_REPORT)
         log_info(f"Created test file at {self.test_file_path}")
 
     def tearDown(self):
@@ -348,9 +354,9 @@ class TestFileEncryptor(unittest.TestCase):
         log_header("Testing encryption/decryption roundtrip via FileEncryptor")
 
         test_cases = [
-            ("small", b"Hello, World!"),
-            ("medium", b"x" * 1024),
-            ("binary", bytes(range(256)) * 4),
+            ("bitwarden_vault", BITWARDEN_VAULT_EXPORT),
+            ("env_credentials", ENV_CREDENTIALS),
+            ("binary_wallet_backup", bytes(range(256)) * 4),
         ]
 
         for name, content in test_cases:
@@ -695,7 +701,7 @@ class TestSecureMemory(unittest.TestCase):
             log_success("Secure buffer created with correct size and type")
 
             # Write sensitive data to buffer
-            sensitive_data = b"SENSITIVE_DATA_FOR_TESTING_1234"
+            sensitive_data = b"stripe_sk_live_XXXXXXXXXXXXXXXX"
             for i in range(min(len(sensitive_data), len(secure_buffer))):
                 secure_buffer[i] = sensitive_data[i]
             log_info("Wrote sensitive data to buffer")

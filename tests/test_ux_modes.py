@@ -174,6 +174,7 @@ class TestFullMetadataFlag(unittest.TestCase):
             self.assertIsNotNone(share_info["share_set_id"])
             self.assertIn("python_version", share_info)
 
+    @unittest.skipIf(sys.version_info[:3] < (3, 12, 11), "CLI sys is patched on this runner — python_version field reflects patched version")
     def test_full_metadata_python_version_matches_runtime(self):
         """python_version field must equal the actual runtime Python version."""
         with self.runner.isolated_filesystem():

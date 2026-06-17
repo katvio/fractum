@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 
@@ -23,6 +24,12 @@ from src.config import VERSION
 from src.crypto import FileEncryptor
 from src.shares import ShareManager
 from src.utils import get_enhanced_random_bytes
+from fixtures import (
+    BREAK_GLASS_CREDENTIALS,
+    ENV_CREDENTIALS,
+    HARDWARE_WALLET_SEED,
+    ROOT_CA_PRIVATE_KEY,
+)
 
 
 def _write_share(path: Path, idx: int, share_data: bytes, **extra) -> None:
@@ -219,7 +226,7 @@ class TestCLIErrorOutput(unittest.TestCase):
         key = get_enhanced_random_bytes(32)
         src = self.tmp_dir / "plain.txt"
         enc = self.tmp_dir / "plain.txt.enc"
-        src.write_bytes(b"payload content for CLI error tests")
+        src.write_bytes(ENV_CREDENTIALS)
         FileEncryptor(key).encrypt_file(str(src), str(enc))
         src.unlink()  # remove so CLI output path is free
 
@@ -236,10 +243,10 @@ class TestCLIErrorOutput(unittest.TestCase):
     def test_encrypt_invalid_threshold_exits_1_with_error(self):
         """CLI encrypt with threshold=1 must exit 1 and print an error."""
         dummy = self.tmp_dir / "file.txt"
-        dummy.write_text("x")
+        dummy.write_text("CONFIDENTIAL: production access credentials")
         result = self.runner.invoke(
             encrypt,
-            [str(dummy), "--threshold", "1", "--shares", "3", "--label", "t"],
+            [str(dummy), "--threshold", "1", "--shares", "3", "--label", "break_glass_creds"],
         )
         self.assertNotEqual(result.exit_code, 0)
         combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
@@ -251,10 +258,10 @@ class TestCLIErrorOutput(unittest.TestCase):
     def test_encrypt_threshold_exceeds_shares_exits_1(self):
         """Threshold > shares must cause exit 1 with a readable error."""
         dummy = self.tmp_dir / "file.txt"
-        dummy.write_text("x")
+        dummy.write_text("CONFIDENTIAL: production access credentials")
         result = self.runner.invoke(
             encrypt,
-            [str(dummy), "--threshold", "5", "--shares", "3", "--label", "t"],
+            [str(dummy), "--threshold", "5", "--shares", "3", "--label", "break_glass_creds"],
         )
         self.assertNotEqual(result.exit_code, 0)
 
@@ -361,7 +368,7 @@ class TestSecureContextOnException(unittest.TestCase):
 
         try:
             with SecureMemory.secure_context(32) as buf:
-                buf[:] = b"SENSITIVE_KEY_VALUE_MUST_VANISH!"
+                buf[:] = b"sk_fake_XXXXXXXXXXXXXXXXXXXXXXXX"
                 captured_buffer = buf  # keep reference outside the context
                 raise RuntimeError("simulated mid-decryption error")
         except RuntimeError:
@@ -379,7 +386,7 @@ class TestSecureContextOnException(unittest.TestCase):
 
         captured = None
         with SecureMemory.secure_context(32) as buf:
-            buf[:] = b"NORMAL_EXIT_KEY_VALUE_TEST_HERE!"
+            buf[:] = b"jwt-secret:prod2025@katvio.io!!!"
             captured = buf
 
         self.assertTrue(
@@ -405,11 +412,11 @@ class TestEdgeCaseErrors(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _make_enc_and_shares(self, label="edge", threshold=3, n=5):
+    def _make_enc_and_shares(self, label="root_ca_backup", threshold=3, n=5):
         key = get_enhanced_random_bytes(32)
         src = self.tmp_dir / "src.bin"
         enc = self.tmp_dir / "src.bin.enc"
-        src.write_bytes(b"edge-case error test payload")
+        src.write_bytes(ROOT_CA_PRIVATE_KEY)
         FileEncryptor(key).encrypt_file(str(src), str(enc))
         src.unlink()
         mgr = ShareManager(threshold, n)
@@ -423,6 +430,7 @@ class TestEdgeCaseErrors(unittest.TestCase):
 
     # ── permission errors ────────────────────────────────────────────────────
 
+    @unittest.skipIf(sys.platform == "win32", "chmod has no effect on Windows")
     def test_decrypt_unreadable_enc_file_exits_1(self):
         """CLI decrypt must exit 1 when the .enc file has no read permission."""
         enc_path, share_paths, _, _ = self._make_enc_and_shares()
@@ -441,10 +449,11 @@ class TestEdgeCaseErrors(unittest.TestCase):
         finally:
             os.chmod(enc_path, 0o644)
 
+    @unittest.skipIf(sys.platform == "win32", "chmod has no effect on Windows")
     def test_encrypt_input_file_unreadable_exits_1(self):
         """CLI encrypt must exit 1 when the input file has no read permission."""
         src = self.tmp_dir / "secret.bin"
-        src.write_bytes(b"unreadable")
+        src.write_bytes(BREAK_GLASS_CREDENTIALS)
         os.chmod(str(src), 0o000)
         try:
             result = self.runner.invoke(
@@ -575,7 +584,7 @@ class TestEdgeCaseErrors(unittest.TestCase):
         key_a = get_enhanced_random_bytes(32)
         src_a = self.tmp_dir / "file_a.bin"
         enc_a = self.tmp_dir / "file_a.bin.enc"
-        src_a.write_bytes(b"content of file A")
+        src_a.write_bytes(HARDWARE_WALLET_SEED)
         FileEncryptor(key_a).encrypt_file(str(src_a), str(enc_a))
 
         mgr_a = ShareManager(3, 5)
@@ -635,7 +644,7 @@ class TestEdgeCaseErrors(unittest.TestCase):
         from unittest.mock import patch
 
         src = self.tmp_dir / "src.bin"
-        src.write_bytes(b"python version test")
+        src.write_bytes(ENV_CREDENTIALS)
 
         # namedtuple inherits from tuple so comparison with (3, 12, 11) works correctly
         _VersionInfo = namedtuple("version_info", ["major", "minor", "micro", "releaselevel", "serial"])

@@ -392,8 +392,8 @@ class TestIntegrityVerification(unittest.TestCase):
         """Setup test environment."""
         self.threshold = 3
         self.total_shares = 5
-        self.test_secret = b"TopSecretTestData12345"
-        self.label = "TestLabel"
+        self.test_secret = b"prod-enc-key:Hx7$Kw2@Nm9!v5"
+        self.label = "bitwarden_backup_jan_2025"
         self.manager = ShareManager(self.threshold, self.total_shares)
 
         # Create temporary directory for test files

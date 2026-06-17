@@ -3,6 +3,7 @@
 """
 File corruption tests — axe 4 of the coverage audit.
 
+
 Each test crafts a deterministic .enc file corruption and verifies that
 FileEncryptor.decrypt_file raises ValueError with a specific, actionable
 message. No random bytes — every corruption is reproducible.
@@ -26,6 +27,7 @@ from src.config import VERSION
 from src.crypto import FileEncryptor
 from src.shares import ShareManager
 from src.utils import get_enhanced_random_bytes
+from fixtures import BITWARDEN_VAULT_EXPORT
 
 
 class FileCorruptionBase(unittest.TestCase):
@@ -35,7 +37,7 @@ class FileCorruptionBase(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp.name)
         self.key = get_enhanced_random_bytes(32)
-        self.plaintext = b"corruption test payload - deterministic"
+        self.plaintext = BITWARDEN_VAULT_EXPORT
         self.encryptor = FileEncryptor(self.key)
 
         src = self.tmp_dir / "plain.bin"

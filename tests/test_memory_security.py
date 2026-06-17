@@ -26,6 +26,13 @@ from src.crypto import FileEncryptor
 from src.crypto.memory import SecureContext, SecureMemory
 from src.shares import ShareManager
 from src.utils import get_enhanced_random_bytes
+from fixtures import (
+    BITWARDEN_VAULT_EXPORT,
+    BREAK_GLASS_CREDENTIALS,
+    ENV_CREDENTIALS,
+    HARDWARE_WALLET_SEED,
+    PAYROLL_EXPORT,
+)
 
 
 # ── mlock — Linux /proc verification ─────────────────────────────────────────
@@ -93,14 +100,14 @@ class TestSecureClearCompleteness(unittest.TestCase):
 
     def test_secure_clear_zeros_all_bytes(self):
         """Every byte of a bytearray must be 0 after secure_clear."""
-        buf = bytearray(b"SENSITIVE_KEY_DATA_MUST_DISAPPEAR")
+        buf = bytearray(b'DATABASE_URL=postgres://app:Zx9#mQ2@prod:5432/acme')
         SecureMemory.secure_clear(buf)
         self.assertTrue(all(b == 0 for b in buf),
                         f"Non-zero byte found after secure_clear: {bytes(buf[:8]).hex()}...")
 
     def test_secure_clear_zeros_via_external_reference(self):
         """A second variable pointing to the same bytearray must also see zeros."""
-        buf = bytearray(b"SECRET_KEY_VALUE_EXTERNAL_REFTEST")
+        buf = bytearray(b'STRIPE_SECRET_KEY=sk_live_XXXXXXXXXXXXXXXXXXXXX')
         alias = buf  # second reference, same object
         SecureMemory.secure_clear(buf)
         self.assertTrue(all(b == 0 for b in alias),
@@ -108,7 +115,7 @@ class TestSecureClearCompleteness(unittest.TestCase):
 
     def test_secure_clear_on_memoryview_does_not_crash(self):
         """secure_clear on a memoryview must not raise, even though it clears a copy."""
-        buf = bytearray(b"SECRET_DATA_FOR_MEMORYVIEW_TEST!")
+        buf = bytearray(b'GH_TOKEN=ghp_XXXXXXXXXXXXXXXXXXXXXXXXX')
         view = memoryview(buf)
         SecureMemory.secure_clear(view)  # must not raise
 
@@ -129,7 +136,7 @@ class TestSecureClearCompleteness(unittest.TestCase):
         """Buffer must be all-zero after normal SecureContext exit."""
         captured = None
         with SecureMemory.secure_context(32) as buf:
-            buf[:] = b"CONTEXT_NORMAL_EXIT_KEY_VALUE!!!"
+            buf[:] = b"jwt-secret:prod2025@katvio.io!!!"
             captured = buf
         self.assertTrue(all(b == 0 for b in captured))
 
@@ -138,7 +145,7 @@ class TestSecureClearCompleteness(unittest.TestCase):
         captured = None
         try:
             with SecureMemory.secure_context(32) as buf:
-                buf[:] = b"CONTEXT_EXCEPTION_KEY_VALUE!!!!!"
+                buf[:] = b"aes256-enc-key:backup@prod-2025!"
                 captured = buf
                 raise RuntimeError("simulated mid-operation failure")
         except RuntimeError:
@@ -160,7 +167,7 @@ class TestKeyNotInTraceback(unittest.TestCase):
 
         try:
             with SecureMemory.secure_context(32) as buf:
-                buf[:] = b"SENSITIVE_KEY_FOR_TRACEBACK_TEST"
+                buf[:] = b"prod-api-token:v2_xxxxxxxxxxx@!!"
                 captured_buf = buf
                 raise ValueError("deliberate error inside secure_context")
         except ValueError:
@@ -182,7 +189,7 @@ class TestKeyNotInTraceback(unittest.TestCase):
 
     def test_key_not_in_exception_str_after_secure_context(self):
         """The exception message must not contain the key bytes as hex or base64."""
-        sentinel = b"UNIQUEKEYSENTINEL12345678901234X"  # 32 bytes, unique pattern
+        sentinel = b"KATVIO_PROD_SECRET_KEY_2025_v2_!"  # 32 bytes, unique pattern
         sentinel_hex = sentinel.hex()
         sentinel_b64 = base64.b64encode(sentinel).decode()
 
@@ -216,7 +223,7 @@ class TestKeyNotInErrorMessages(unittest.TestCase):
 
         src = self.tmp_dir / "plain.bin"
         self.enc = self.tmp_dir / "plain.bin.enc"
-        src.write_bytes(b"key-leak test payload")
+        src.write_bytes(BITWARDEN_VAULT_EXPORT)
         self.encryptor.encrypt_file(str(src), str(self.enc))
         src.unlink()
 
@@ -317,7 +324,7 @@ class TestNoTempFilesLeaked(unittest.TestCase):
         key = get_enhanced_random_bytes(32)
         src = self.tmp_dir / "src.bin"
         enc = self.tmp_dir / "src.bin.enc"
-        src.write_bytes(b"no temp file test")
+        src.write_bytes(PAYROLL_EXPORT)
         FileEncryptor(key).encrypt_file(str(src), str(enc))
         after = self._snapshot_tmp()
         new_files = after - before
@@ -330,7 +337,7 @@ class TestNoTempFilesLeaked(unittest.TestCase):
         src = self.tmp_dir / "src.bin"
         enc = self.tmp_dir / "src.bin.enc"
         out = self.tmp_dir / "out.bin"
-        src.write_bytes(b"no temp file decrypt test")
+        src.write_bytes(HARDWARE_WALLET_SEED)
         FileEncryptor(key).encrypt_file(str(src), str(enc))
 
         before = self._snapshot_tmp()
@@ -347,7 +354,7 @@ class TestNoTempFilesLeaked(unittest.TestCase):
         src = self.tmp_dir / "src.bin"
         enc = self.tmp_dir / "src.bin.enc"
         out = self.tmp_dir / "out.bin"
-        src.write_bytes(b"no temp file on error test")
+        src.write_bytes(ENV_CREDENTIALS)
         FileEncryptor(key).encrypt_file(str(src), str(enc))
 
         before = self._snapshot_tmp()
@@ -367,7 +374,7 @@ class TestNoTempFilesLeaked(unittest.TestCase):
         src = self.tmp_dir / "src.bin"
         enc = self.tmp_dir / "src.bin.enc"
         out = self.tmp_dir / "out.bin"
-        src.write_bytes(b"output file guard test")
+        src.write_bytes(BREAK_GLASS_CREDENTIALS)
         FileEncryptor(key).encrypt_file(str(src), str(enc))
 
         try:
