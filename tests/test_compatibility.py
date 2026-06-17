@@ -504,5 +504,33 @@ class MinimalDependencyTests(unittest.TestCase):
             raise e
 
 
+class BootstrapScriptTests(unittest.TestCase):
+    """Verify that bootstrap scripts are syntactically valid."""
+
+    REPO_ROOT = Path(__file__).resolve().parent.parent
+
+    @unittest.skipIf(platform.system() == "Windows", "bash not available on Windows")
+    def test_linux_bootstrap_syntax(self):
+        """bootstrap-linux.sh must pass bash -n (no syntax errors)."""
+        import subprocess
+        script = self.REPO_ROOT / "bootstrap-linux.sh"
+        if not script.exists():
+            self.skipTest("bootstrap-linux.sh not found")
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0,
+                         f"bash -n reported errors:\n{result.stderr}")
+
+    @unittest.skipIf(platform.system() == "Windows", "bash not available on Windows")
+    def test_macos_bootstrap_syntax(self):
+        """bootstrap-macos.sh must pass bash -n (no syntax errors)."""
+        import subprocess
+        script = self.REPO_ROOT / "bootstrap-macos.sh"
+        if not script.exists():
+            self.skipTest("bootstrap-macos.sh not found")
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0,
+                         f"bash -n reported errors:\n{result.stderr}")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -357,6 +357,7 @@ class TestFileEncryptor(unittest.TestCase):
             ("bitwarden_vault", BITWARDEN_VAULT_EXPORT),
             ("env_credentials", ENV_CREDENTIALS),
             ("binary_wallet_backup", bytes(range(256)) * 4),
+            ("single_byte", b"\x42"),
         ]
 
         for name, content in test_cases:
@@ -379,6 +380,34 @@ class TestFileEncryptor(unittest.TestCase):
 
             self.assertEqual(result, content, f"Roundtrip content mismatch for {name}")
             log_success(f"Roundtrip passed for {name} ({len(content)} bytes)")
+
+    def test_empty_file_encrypt_raises_or_decrypts_empty(self):
+        """Encrypting an empty file must either round-trip cleanly or raise a clear ValueError.
+
+        AES-256-GCM supports zero-length plaintext, but the current implementation
+        raises 'No encrypted data found' on decrypt. This test documents the behavior
+        and will catch any regression (silent data corruption) or future fix.
+        """
+        src = os.path.join(self.temp_dir.name, "empty.bin")
+        enc = os.path.join(self.temp_dir.name, "empty.bin.enc")
+        dec = os.path.join(self.temp_dir.name, "empty.bin.dec")
+
+        with open(src, "wb") as f:
+            f.write(b"")
+
+        self.encryptor.encrypt_file(src, enc)
+        self.assertTrue(os.path.exists(enc), "Encrypted file must be created even for empty input")
+
+        try:
+            self.encryptor.decrypt_file(enc, dec)
+            # If decrypt succeeds, roundtrip must be lossless
+            with open(dec, "rb") as f:
+                result = f.read()
+            self.assertEqual(result, b"", "Roundtrip of empty file must return empty bytes")
+        except ValueError as e:
+            # Acceptable: current implementation raises on empty ciphertext
+            self.assertIn("data", str(e).lower(),
+                          f"ValueError for empty file must mention data, got: {e}")
 
     def test_same_key_different_files(self):
         """Test with same key but different files (confirm unique ciphertexts)."""
