@@ -32,7 +32,7 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
 @click.option(
     "--shares", "-n", required=True, type=int, help="Total number of shares to generate"
 )
-@click.option("--label", "-l", required=True, help="Label to identify shares")
+@click.option("--label", "-l", default=None, help="Label to identify shares (default: input filename)")
 @click.option(
     "--existing-shares",
     "-e",
@@ -58,6 +58,8 @@ def encrypt(
     """Encrypts a file and generates shares."""
     key = None
     try:
+        if label is None:
+            label = Path(input_file).stem
         # Replace spaces with underscores in label
         label = label.replace(" ", "_")
         if verbose:
@@ -673,24 +675,19 @@ def decrypt(
 def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
     """Collects shares manually from user input."""
     click.echo("\n=== Manual Share Entry ===")
-    
-    # Get threshold and total shares first, at the beginning
+
+    # Threshold is cryptographically required to reconstruct the secret correctly
+    # (Shamir reconstruction with fewer shares than the original threshold silently
+    # yields the wrong key). total_shares is not needed for reconstruction, so it
+    # is no longer asked here.
     threshold = click.prompt(
         "Threshold (minimum number of shares needed)", type=int
     )
-    total_shares = click.prompt("Total shares", type=int)
+    if threshold < 2:
+        raise ValueError("Invalid parameters. Threshold must be >= 2.")
 
-    if threshold < 2 or threshold > total_shares or total_shares > 255:
-        raise ValueError(
-            "Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255."
-        )
+    metadata: Dict[str, Any] = {"version": VERSION, "threshold": threshold}
 
-    metadata = {
-        "version": VERSION,
-        "threshold": threshold,
-        "total_shares": total_shares,
-    }
-    
     click.echo("\nEnter share details when prompted. Enter 'done' when finished.")
 
     shares = []
@@ -754,19 +751,18 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
         )
 
         # Check if we have enough shares
-        if len(shares) >= metadata["threshold"]:
+        if len(shares) >= threshold:
             if click.confirm(
                 "You have enough shares for reconstruction. Proceed with decryption?",
                 default=None,
             ):
                 break
 
-    # Final verification
     if len(shares) < 2:
-        click.echo("Warning: Not enough shares provided. Minimum 2 shares required.")
+        raise ValueError("Not enough shares provided. Minimum 2 shares required.")
 
-    # Ensure metadata is not None before returning
-    if metadata is None:
-        raise ValueError("No metadata collected")
+    # total_shares is only used for ShareManager's >= threshold validation,
+    # never for reconstruction — derive it instead of asking the user.
+    metadata["total_shares"] = len(shares)
 
     return shares, metadata

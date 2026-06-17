@@ -249,7 +249,7 @@ class TestCLIErrorOutput(unittest.TestCase):
             [str(dummy), "--threshold", "1", "--shares", "3", "--label", "break_glass_creds"],
         )
         self.assertNotEqual(result.exit_code, 0)
-        combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+        combined = result.output or ""
         self.assertTrue(
             any(kw in combined.lower() for kw in ["error", "threshold", "invalid"]),
             f"No error message in output: {combined!r}",
@@ -293,7 +293,7 @@ class TestCLIErrorOutput(unittest.TestCase):
             decrypt,
             [enc_path, "--shares-dir", str(shares_dir)],
         )
-        combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+        combined = result.output or ""
         self.assertNotEqual(result.exit_code, 0, f"Should fail, output: {combined}")
         self.assertTrue(
             any(kw in combined for kw in [str(corrupted_idx), "corrupt", "hash", corrupted_name]),
@@ -349,7 +349,7 @@ class TestCLIErrorOutput(unittest.TestCase):
             [enc_path, "--shares-dir", str(shares_dir)],
             catch_exceptions=False,
         )
-        combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+        combined = result.output or ""
         self.assertNotEqual(result.exit_code, 0)
         self.assertTrue(
             any(kw in combined.lower() for kw in ["exists", "already", "plain.txt"]),
@@ -521,7 +521,7 @@ class TestEdgeCaseErrors(unittest.TestCase):
             )
             # Must not exit 0 and silently produce wrong output
             # (either fails or recovers gracefully — but never corrupt plaintext without error)
-            combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+            combined = result.output or ""
             if result.exit_code == 0:
                 # If CLI recovered somehow, that's OK as long as output file contains correct data
                 pass
@@ -659,7 +659,7 @@ class TestEdgeCaseErrors(unittest.TestCase):
                 [str(src), "--threshold", "2", "--shares", "3", "--label", "pyver"],
             )
 
-        combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+        combined = result.output or ""
         self.assertNotEqual(result.exit_code, 0,
                             f"Should fail on old Python, got: {combined!r}")
         self.assertTrue(

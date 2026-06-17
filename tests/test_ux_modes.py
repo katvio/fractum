@@ -442,10 +442,12 @@ class TestManualSharesMode(unittest.TestCase):
 
         Prompts in order:
           1. threshold
-          2. total_shares
-          3. (loop) share_index / share_key / [y] to proceed when enough, or 'done'
+          2. (loop) share_index / share_key / [y] to proceed when enough, or 'done'
+
+        `total` is accepted for call-site compatibility but no longer consumed —
+        total_shares is derived from the number of shares collected, not asked.
         """
-        lines = [str(threshold), str(total)]
+        lines = [str(threshold)]
         for i, (idx, b64) in enumerate(shares_b64):
             lines.append(str(idx))
             lines.append(b64)
@@ -520,7 +522,6 @@ class TestManualSharesMode(unittest.TestCase):
         # First provide bad index, then valid ones
         user_input = "\n".join([
             "2",              # threshold
-            "3",              # total
             "abc",            # invalid index → re-prompt
             str(shares[0][0]),
             valid_b64,
@@ -551,7 +552,6 @@ class TestManualSharesMode(unittest.TestCase):
 
         user_input = "\n".join([
             "3",
-            "5",
             str(shares[0][0]),
             base64.b64encode(shares[0][1]).decode(),
             "done",
@@ -562,7 +562,7 @@ class TestManualSharesMode(unittest.TestCase):
             [str(enc), "--manual-shares"],
             input=user_input,
         )
-        combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+        combined = result.output or ""
         self.assertTrue(
             any(kw in combined.lower() for kw in ["warning", "not enough", "minimum", "error"]),
             f"Should warn about insufficient shares: {combined!r}",
@@ -577,13 +577,13 @@ class TestManualSharesMode(unittest.TestCase):
         FileEncryptor(key).encrypt_file(str(src), str(enc))
         src.unlink()
 
-        user_input = "\n".join(["1", "3"]) + "\n"
+        user_input = "1\n"
         result = self.runner.invoke(
             decrypt,
             [str(enc), "--manual-shares"],
             input=user_input,
         )
-        combined = (result.output or "") + (result.stderr if hasattr(result, "stderr") else "")
+        combined = result.output or ""
         self.assertNotEqual(result.exit_code, 0, f"Should fail with threshold=1: {combined}")
 
     def test_manual_shares_confirmation_prompt_at_threshold(self):
