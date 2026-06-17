@@ -479,7 +479,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
                     "label": self.label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": self.threshold,
                     "total_shares": self.total_shares,
                     "tool_integrity": calculate_tool_integrity(),
@@ -508,7 +508,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     # Compare with stored hash
                     self.assertEqual(
                         calculated_hash,
-                        share_info["share_integrity_hash"],
+                        share_info["hash"],
                         f"Integrity hash mismatch for {share_file}",
                     )
 
@@ -541,7 +541,7 @@ class TestIntegrityVerification(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": self.label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "tool_integrity": calculate_tool_integrity(),
@@ -592,13 +592,19 @@ class TestIntegrityVerification(unittest.TestCase):
                 # Compare with stored hash - should be different
                 self.assertNotEqual(
                     calculated_hash,
-                    tampered_info["share_integrity_hash"],
+                    tampered_info["hash"],
                     "Tampering not detected - hash still matches",
                 )
 
             log_test_success(
                 "Tampering correctly detected (calculated hash differs from stored hash)"
             )
+
+            log_test_step("Verifying load_shares raises ValueError on tampered share")
+            with self.assertRaises(ValueError, msg="load_shares must reject a tampered hash"):
+                ShareManager.load_shares([tampered_file])
+            log_test_success("load_shares correctly rejected tampered share via hash check")
+
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -630,7 +636,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
                     "label": self.label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": self.threshold,
                     "total_shares": self.total_shares,
                     "tool_integrity": calculate_tool_integrity(),
@@ -746,20 +752,20 @@ class TestIntegrityVerification(unittest.TestCase):
             # Compare with stored hash - should be different
             self.assertNotEqual(
                 calculated_hash,
-                hash_info["share_integrity_hash"],
+                hash_info["hash"],
                 "Hash should not match for tampered data",
             )
             log_test_success("Hash integrity correctly verified - tampering detected")
+
+            log_test_step("Verifying load_shares raises ValueError on hash mismatch (production path)")
+            with self.assertRaises(ValueError, msg="load_shares must reject a share with mismatched hash"):
+                ShareManager.load_shares([tampered_hash_file])
+            log_test_success("load_shares correctly rejects tampered hash via production path")
 
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
             raise e
-
-        # NOTE: The following test verifies that our verification logic would detect tampering,
-        # even if the ShareManager.load_shares method might not include this specific check.
-        # In a production implementation, you would want to add explicit integrity verification
-        # to the load_shares method.
 
 
 if __name__ == "__main__":

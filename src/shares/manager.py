@@ -65,7 +65,7 @@ class ShareManager:
         Raises:
             ValueError: If the secret is invalid
         """
-        if not isinstance(secret, bytes):
+        if not isinstance(secret, (bytes, bytearray)):
             raise ValueError("Secret must be in bytes")
         if not isinstance(label, str) or not label:
             raise ValueError("Label must be a non-empty string")
@@ -114,9 +114,14 @@ class ShareManager:
             )
 
         # share_index verification
-        indices = set(idx for idx, _ in shares)
-        if len(indices) != len(shares):
-            raise ValueError("Duplicate indices detected")
+        all_indices = [idx for idx, _ in shares]
+        seen = set()
+        duplicates = {idx for idx in all_indices if idx in seen or seen.add(idx)}
+        if duplicates:
+            raise ValueError(
+                f"Duplicate share indices detected: {sorted(duplicates)}. "
+                "Each share must be unique."
+            )
 
         try:
             # Split shares into two parts
@@ -130,7 +135,10 @@ class ShareManager:
             # Combine parts
             return secret_part1 + secret_part2
         except Exception as e:
-            raise ValueError(f"Error reconstructing secret: {str(e)}")
+            raise ValueError(
+                f"Secret reconstruction failed: {str(e)}. "
+                "Verify that all shares belong to the same encryption run and are not corrupted."
+            )
 
     @staticmethod
     def load_shares(
@@ -141,7 +149,7 @@ class ShareManager:
         metadata = None
 
         for share_file in share_files:
-            with open(share_file, "r") as f:
+            with open(share_file, "r", encoding="utf-8") as f:
                 share_info = json.load(f)
 
                 if metadata is None:

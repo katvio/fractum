@@ -90,7 +90,7 @@ def encrypt(
             for file_path in existing_shares_path.glob("*.*"):
                 if file_path.is_file():
                     try:
-                        with open(file_path, "r") as f:
+                        with open(file_path, "r", encoding="utf-8") as f:
                             share_info = json.load(f)
                             # Check if this is a valid share file by looking for essential fields
                             if "share_index" in share_info and (
@@ -112,7 +112,7 @@ def encrypt(
                     if potential_files:
                         for file_path in potential_files:
                             try:
-                                with open(file_path, "r") as f:
+                                with open(file_path, "r", encoding="utf-8") as f:
                                     share_info = json.load(f)
                                     if "share_index" in share_info and (
                                         "share_key" in share_info or "share" in share_info
@@ -134,7 +134,7 @@ def encrypt(
                 click.echo(f"Found {len(share_files)} valid share files")
 
             # Read label from first share (may be absent in minimal-metadata shares)
-            with open(share_files[0], "r") as f:
+            with open(share_files[0], "r", encoding="utf-8") as f:
                 share_info = json.load(f)
                 existing_label = share_info.get("label")
 
@@ -178,7 +178,7 @@ def encrypt(
                 SecureMemory.secure_clear(bytearray(share_bytes))
 
             # Get existing share_set_id
-            with open(share_files[0], "r") as f:
+            with open(share_files[0], "r", encoding="utf-8") as f:
                 share_info = json.load(f)
                 share_set_id = share_info.get("share_set_id", None)
 
@@ -388,7 +388,7 @@ def decrypt(
                 file_path.is_file() and not file_path.suffix == ".zip"
             ):  # Skip ZIP files which we already handled
                 try:
-                    with open(file_path, "r") as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         share_info = json.load(f)
                         # Check if this is a valid share file by looking for essential fields
                         if "share_index" in share_info and (
@@ -449,13 +449,31 @@ def decrypt(
                     continue
 
             try:
-                with open(share_file, "r") as f:
+                with open(share_file, "r", encoding="utf-8") as f:
                     share_info = json.load(f)
                     label = share_info.get("label", "_unlabeled")
                     share_set_id = share_info.get("share_set_id", None)
 
                     # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
                     share_key = share_info.get("share_key", share_info.get("share"))
+
+                    if not share_key:
+                        if verbose:
+                            click.echo(f"No share key found in {share_file}")
+                        continue
+
+                    share_data = base64.b64decode(share_key)
+
+                    # Hash integrity check — raises immediately (not swallowed) so the
+                    # user knows exactly which share is corrupted.
+                    expected_hash = share_info.get("hash")
+                    if expected_hash:
+                        computed = hashlib.sha256(share_data).hexdigest()
+                        if computed != expected_hash:
+                            raise ValueError(
+                                f"Share {share_info.get('share_index', '?')} in {share_file} "
+                                "is corrupted (hash mismatch). Contact the share holder."
+                            )
 
                     # If share has a set_id, store by set_id
                     if share_set_id:
@@ -472,11 +490,8 @@ def decrypt(
                                 },
                             }
 
-                        if not share_key:
-                            raise ValueError(f"No share key found in {share_file}")
-
                         shares_by_set_id[share_set_id]["shares"].append(
-                            (share_info["share_index"], base64.b64decode(share_key))
+                            (share_info["share_index"], share_data)
                         )
 
                     # Also store by label for backward compatibility
@@ -494,16 +509,16 @@ def decrypt(
                             },
                         }
 
-                    if not share_key:
-                        if verbose:
-                            click.echo(f"No share key found in {share_file}")
-                        continue
-
                     shares_by_label[label]["shares"].append(
-                        (share_info["share_index"], base64.b64decode(share_key))
+                        (share_info["share_index"], share_data)
                     )
                     shares_by_label[label]["share_set_ids"].append(share_set_id)
+            except ValueError:
+                # Validation errors (hash mismatch, missing key) must propagate so
+                # the user gets an actionable message naming the corrupted share.
+                raise
             except Exception as e:
+                # Parse errors (bad JSON, encoding issues) → skip this file silently.
                 if verbose:
                     click.echo(f"Error processing {share_file}: {str(e)}")
                 continue

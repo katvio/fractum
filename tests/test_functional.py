@@ -138,7 +138,7 @@ class CLIEndToEndTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": threshold,
                 "total_shares": total_shares,
                 "version": VERSION,
@@ -160,11 +160,20 @@ class CLIEndToEndTests(unittest.TestCase):
         self.assertEqual(reconstructed_key, test_key, "Key reconstruction failed")
         log_success("Successfully reconstructed the original key")
 
-        # Skip file encryption/decryption which is causing metadata encoding issues
-        # This test verifies the core functionality of share creation and reconstruction
-        log_info(
-            "Skipping file encryption/decryption due to potential metadata encoding issues"
-        )
+        # Encrypt the file and decrypt it with the reconstructed key
+        log_step("Encrypting file with original key")
+        from src.crypto import FileEncryptor
+        encrypted_file = self.test_dir / "test_simple.txt.enc"
+        decrypted_file = self.test_dir / "test_simple.dec"
+        FileEncryptor(test_key).encrypt_file(str(test_file), str(encrypted_file))
+        self.assertTrue(encrypted_file.exists(), "Encrypted file not created")
+        log_success("File encrypted")
+
+        log_step("Decrypting with reconstructed key")
+        FileEncryptor(reconstructed_key).decrypt_file(str(encrypted_file), str(decrypted_file))
+        with open(decrypted_file, "rb") as f:
+            self.assertEqual(f.read(), test_content, "Decrypted content mismatch")
+        log_success("Full encrypt/decrypt cycle verified with reconstructed key")
         log_header("Test completed successfully")
 
     def test_different_threshold_combinations(self):
@@ -218,7 +227,7 @@ class CLIEndToEndTests(unittest.TestCase):
                         "share_index": idx,
                         "share_key": base64.b64encode(share_data).decode(),
                         "label": label,
-                        "share_integrity_hash": share_hash,
+                        "hash": share_hash,
                         "threshold": threshold,
                         "total_shares": total_shares,
                         "version": VERSION,
@@ -317,7 +326,7 @@ class CLIEndToEndTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": threshold,
                 "total_shares": total_shares,
                 "version": VERSION,
@@ -421,7 +430,7 @@ class CLIEndToEndTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": threshold,
                 "total_shares": total_shares,
                 "version": VERSION,
@@ -521,7 +530,7 @@ class CompatibilityTests(unittest.TestCase):
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
                     "label": label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": threshold,
                     "total_shares": total_shares,
                     "version": current_version,
@@ -533,7 +542,7 @@ class CompatibilityTests(unittest.TestCase):
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
                     "label": label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": threshold,
                     "total_shares": total_shares,
                     "version": current_version,
@@ -546,7 +555,7 @@ class CompatibilityTests(unittest.TestCase):
                     "share_index": idx,
                     "share": base64.b64encode(share_data).decode(),  # Old key name
                     "label": label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": threshold,
                     "total_shares": total_shares,
                     "version": current_version,
@@ -641,7 +650,7 @@ class CompatibilityTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": threshold,
                 "total_shares": total_shares,
                 "version": VERSION,
@@ -850,7 +859,7 @@ class ErrorHandlingTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": self.label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "version": VERSION,
@@ -1024,7 +1033,7 @@ class ErrorHandlingTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": self.label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "version": VERSION,
