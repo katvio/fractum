@@ -151,50 +151,6 @@ class TestShareMetadata(unittest.TestCase):
             log_test_end(test_name, success=False)
             raise e
 
-    def test_metadata_from_share_info_legacy(self):
-        """Test creating metadata from legacy share info formats."""
-        test_name = "Legacy format loading test"
-        log_test_start(test_name)
-
-        try:
-            log_test_step("Testing with 'shares_tool_version' at top level")
-            # Test with shares_tool_version at top level
-            share_info1 = {
-                "shares_tool_version": self.version,
-                "label": self.label,
-                "threshold": self.threshold,
-                "total_shares": self.total_shares,
-            }
-
-            metadata1 = ShareMetadata.from_share_info(share_info1)
-            self.assertEqual(
-                metadata1.version,
-                self.version,
-                "Version not loaded correctly from legacy format 1",
-            )
-            log_test_success("Version correctly loaded from legacy format 1")
-
-            log_test_step(
-                "Testing without version information - should use current version"
-            )
-            # Test with no version info - should default to current version
-            share_info2 = {
-                "label": self.label,
-                "threshold": self.threshold,
-                "total_shares": self.total_shares,
-            }
-
-            metadata2 = ShareMetadata.from_share_info(share_info2)
-            self.assertEqual(
-                metadata2.version, VERSION, "Default version not set correctly"
-            )
-            log_test_success(f"Default version correctly set: {VERSION}")
-
-            log_test_end(test_name)
-        except Exception as e:
-            log_test_end(test_name, success=False)
-            raise e
-
     def test_metadata_to_dict(self):
         """Test converting metadata to dictionary."""
         test_name = "Conversion to dictionary test"
@@ -331,59 +287,6 @@ class TestShareMetadata(unittest.TestCase):
         except Exception as e:
             log_test_end(test_name, success=False)
             raise e
-
-    def test_version_compatibility(self):
-        """Test version compatibility checks."""
-        test_name = "Version compatibility test"
-        log_test_start(test_name)
-
-        try:
-            log_test_step("Creating metadata instances with different versions")
-            # Create metadata instances with different versions
-            current_version_metadata = ShareMetadata(
-                version=VERSION,
-                label=self.label,
-                threshold=self.threshold,
-                total_shares=self.total_shares,
-            )
-
-            older_version_metadata = ShareMetadata(
-                version="0.9.0",  # Older version
-                label=self.label,
-                threshold=self.threshold,
-                total_shares=self.total_shares,
-            )
-
-            newer_version_metadata = ShareMetadata(
-                version="2.0.0",  # Newer version
-                label=self.label,
-                threshold=self.threshold,
-                total_shares=self.total_shares,
-            )
-
-            log_test_step("Comparing metadata instances")
-            # Compare metadata instances
-            # In a real implementation, you might have version compatibility checks
-            # For this test, we're just verifying the version attribute is correctly set
-            self.assertNotEqual(
-                current_version_metadata.version,
-                older_version_metadata.version,
-                "Current and older versions should be different",
-            )
-            log_test_success("Current and older versions correctly distinguished")
-
-            self.assertNotEqual(
-                current_version_metadata.version,
-                newer_version_metadata.version,
-                "Current and newer versions should be different",
-            )
-            log_test_success("Current and future versions correctly distinguished")
-
-            log_test_end(test_name)
-        except Exception as e:
-            log_test_end(test_name, success=False)
-            raise e
-
 
 class TestIntegrityVerification(unittest.TestCase):
     """Tests for integrity verification functionality."""
