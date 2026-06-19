@@ -7,11 +7,22 @@ This script executes all unit test files and displays a results report.
 """
 
 import importlib
+import os
+import platform
 import sys
 import time
 import unittest
 from collections import defaultdict
 from pathlib import Path
+
+# Force UTF-8 on Windows so the checkmark/cross symbols below don't crash
+# the default cp1252 console encoding (seen on native Windows CI runners).
+if platform.system() == "Windows":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+    os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # ANSI color codes
 GREEN = "\033[92m"
