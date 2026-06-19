@@ -11,25 +11,30 @@ on:
 jobs:
   verify-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - name: Validate tag format
         run: |
-          TAG="${{ github.event.inputs.tag }}"
+          TAG="${GITHUB_EVENT_INPUTS_TAG}"
           if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "❌ Invalid tag format. Expected format: v1.2.3"
             exit 1
           fi
           echo "✅ Tag format is valid: $TAG"
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
       - name: Verify tag exists
         run: |
-          TAG="${{ github.event.inputs.tag }}"
+          TAG="${GITHUB_EVENT_INPUTS_TAG}"
           if ! git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "❌ Tag '$TAG' does not exist in the repository"
             echo "Available tags:"
@@ -37,14 +42,18 @@ jobs:
             exit 1
           fi
           echo "✅ Tag '$TAG' exists"
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
       - name: Checkout specific tag
         run: |
-          git checkout ${{ github.event.inputs.tag }}
+          git checkout ${GITHUB_EVENT_INPUTS_TAG}
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
       - name: Verify GPG signature on tag
         run: |
-          TAG="${{ github.event.inputs.tag }}"
+          TAG="${GITHUB_EVENT_INPUTS_TAG}"
           
           # Force fetch the complete tag object (not just commit reference)
           echo "=== Fetching Tag Object ==="
@@ -72,21 +81,25 @@ jobs:
           
           # Cleanup
           rm /tmp/pubkey.asc
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
       - name: Get version from tag
         id: get_version
         run: |
-          TAG="${{ github.event.inputs.tag }}"
+          TAG="${GITHUB_EVENT_INPUTS_TAG}"
           VERSION=${TAG#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
       - name: Package repository
         run: |
           mkdir -p dist
           
           # Create source package
-          zip -r dist/fractum-${{ steps.get_version.outputs.version }}-source.zip \
+          zip -r dist/fractum-${STEPS_GET_VERSION_OUTPUTS_VERSION}-source.zip \
             src/ \
             packages/ \
             bootstrap-*.sh \
@@ -101,17 +114,21 @@ jobs:
           
           # Create checksums
           cd dist
-          sha256sum fractum-${{ steps.get_version.outputs.version }}-source.zip > checksums.txt
+          sha256sum fractum-${STEPS_GET_VERSION_OUTPUTS_VERSION}-source.zip > checksums.txt
+        env:
+          STEPS_GET_VERSION_OUTPUTS_VERSION: ${{ steps.get_version.outputs.version }}
           
       - name: Extract release notes from tag
         id: release_notes
         run: |
-          TAG="${{ github.event.inputs.tag }}"
+          TAG="${GITHUB_EVENT_INPUTS_TAG}"
           # Extract release notes from signed tag message
           NOTES=$(git tag -l --format='%(contents)' $TAG)
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631  # v2.2.2
@@ -155,6 +172,9 @@ jobs:
 
       - name: Update website release info
         run: |
-          echo "🚀 Released Fractum ${{ steps.get_version.outputs.version }}"
-          echo "Tag: ${{ steps.get_version.outputs.tag }}"
+          echo "🚀 Released Fractum ${STEPS_GET_VERSION_OUTPUTS_VERSION}"
+          echo "Tag: ${STEPS_GET_VERSION_OUTPUTS_TAG}"
           echo "Signature verified: ✅"
+        env:
+          STEPS_GET_VERSION_OUTPUTS_VERSION: ${{ steps.get_version.outputs.version }}
+          STEPS_GET_VERSION_OUTPUTS_TAG: ${{ steps.get_version.outputs.tag }}
