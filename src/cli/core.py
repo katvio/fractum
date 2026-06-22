@@ -7,7 +7,7 @@ from src.config import VERSION
 
 class CustomGroup(click.Group):
     """Custom Click Group that formats usage line as requested."""
-    
+
     def format_usage(self, ctx, formatter):
         """Override the usage format to show COMMAND <FILE> [OPTIONS]."""
         formatter.write_usage(ctx.info_name, "COMMAND <FILE> [OPTIONS]")
@@ -104,4 +104,4 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
 
 # Register commands
 cli.add_command(encrypt)
-cli.add_command(decrypt) 
+cli.add_command(decrypt)

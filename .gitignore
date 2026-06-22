@@ -17,5 +17,6 @@ _bmad/
 
 # Artefacts des outils de scan IA
 .vulnhuntr_checkpoint/
+vulnhuntr.log
 reports/
 strix_runs/

@@ -32,7 +32,12 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
 @click.option(
     "--shares", "-n", required=True, type=int, help="Total number of shares to generate"
 )
-@click.option("--label", "-l", default=None, help="Label to identify shares (default: input filename)")
+@click.option(
+    "--label",
+    "-l",
+    default=None,
+    help="Label to identify shares (default: input filename)",
+)
 @click.option(
     "--existing-shares",
     "-e",
@@ -117,7 +122,8 @@ def encrypt(
                                 with open(file_path, "r", encoding="utf-8") as f:
                                     share_info = json.load(f)
                                     if "share_index" in share_info and (
-                                        "share_key" in share_info or "share" in share_info
+                                        "share_key" in share_info
+                                        or "share" in share_info
                                     ):
                                         share_files.append(file_path)
                             except (
@@ -223,13 +229,15 @@ def encrypt(
                     "hash": hashlib.sha256(share).hexdigest(),
                 }
                 if full_metadata:
-                    share_info_dict.update({
-                        "label": label,
-                        "total_shares": shares,
-                        "share_set_id": share_set_id,
-                        "tool_integrity": tool_integrity,
-                        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-                    })
+                    share_info_dict.update(
+                        {
+                            "label": label,
+                            "total_shares": shares,
+                            "share_set_id": share_set_id,
+                            "tool_integrity": tool_integrity,
+                            "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                        }
+                    )
                 with open(share_file, "w") as f:
                     json.dump(share_info_dict, f, indent=2)
                 new_share_files.append(share_file)
@@ -272,7 +280,9 @@ def encrypt(
 
 def _extract_share_version(share_info: Dict[str, Any]) -> str:
     """Extract version from share_info, with fallback to current VERSION."""
-    if "tool_integrity" in share_info and "shares_tool_version" in share_info.get("tool_integrity", {}):
+    if "tool_integrity" in share_info and "shares_tool_version" in share_info.get(
+        "tool_integrity", {}
+    ):
         return share_info["tool_integrity"]["shares_tool_version"]
     if "shares_tool_version" in share_info:
         return share_info["shares_tool_version"]
@@ -331,7 +341,9 @@ def decrypt(
 
                 # Decrypt file
                 output_file = (
-                    input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
+                    input_file[:-4]
+                    if input_file.endswith(".enc")
+                    else input_file + ".dec"
                 )
                 if Path(output_file).exists():
                     raise click.ClickException(
@@ -580,7 +592,8 @@ def decrypt(
                             # Filter by extracted_share_set_id to avoid mixing shares from different sets (N5)
                             if extracted_share_set_id and set_ids:
                                 filtered = [
-                                    s for s, sid in zip(all_shares, set_ids)
+                                    s
+                                    for s, sid in zip(all_shares, set_ids)
                                     if sid == extracted_share_set_id
                                 ]
                                 share_data = filtered if filtered else all_shares
@@ -680,9 +693,7 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
     # (Shamir reconstruction with fewer shares than the original threshold silently
     # yields the wrong key). total_shares is not needed for reconstruction, so it
     # is no longer asked here.
-    threshold = click.prompt(
-        "Threshold (minimum number of shares needed)", type=int
-    )
+    threshold = click.prompt("Threshold (minimum number of shares needed)", type=int)
     if threshold < 2:
         raise ValueError("Invalid parameters. Threshold must be >= 2.")
 

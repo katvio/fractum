@@ -107,7 +107,8 @@ def interactive_encrypt() -> bool:
                                 with open(file_path, "r") as f:
                                     share_info = json.load(f)
                                     if "share_index" in share_info and (
-                                        "share_key" in share_info or "share" in share_info
+                                        "share_key" in share_info
+                                        or "share" in share_info
                                     ):
                                         share_files.append(file_path)
                             except (

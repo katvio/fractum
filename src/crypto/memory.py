@@ -102,6 +102,7 @@ class SecureMemory:
         try:
             import ctypes
             import ctypes.util
+
             lib = ctypes.util.find_library("c")
             if lib:
                 libc = ctypes.CDLL(lib, use_errno=True)
@@ -116,6 +117,7 @@ class SecureMemory:
         try:
             import ctypes
             import ctypes.util
+
             lib = ctypes.util.find_library("c")
             if lib:
                 libc = ctypes.CDLL(lib, use_errno=True)
