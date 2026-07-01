@@ -727,7 +727,7 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
             if share_index < 1 or share_index > 255:
                 click.echo("Invalid share index. Must be between 1 and 255.")
                 continue
-        except V
+        except ValueError:
             click.echo("Invalid share index. Please enter a number.")
             continue
 
