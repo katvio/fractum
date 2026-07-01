@@ -7,7 +7,7 @@ from src.config import VERSION
 
 class CustomGroup(click.Group):
     """Custom Click Group that formats usage line as requested."""
-    
+
     def format_usage(self, ctx, formatter):
         """Override the usage format to show COMMAND <FILE> [OPTIONS]."""
         formatter.write_usage(ctx.info_name, "COMMAND <FILE> [OPTIONS]")
@@ -46,6 +46,14 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
             --existing-shares, -e
             Directory containing existing shares to use for encryption
             (allows reusing shares from previous operations)
+
+            --full-metadata
+            Write label, total_shares and share_set_id to share files
+            (less private, useful for debugging)
+
+            --bundle-encrypted, -b
+            Bundle a copy of the .enc file inside every share ZIP
+            (default: .enc stays only next to the tool, not duplicated into each ZIP)
 
             --verbose, -v
             Enable verbose output for detailed operation information
@@ -104,4 +112,4 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
 
 # Register commands
 cli.add_command(encrypt)
-cli.add_command(decrypt) 
+cli.add_command(decrypt)

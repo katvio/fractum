@@ -2,6 +2,7 @@ import os
 import shutil
 import zipfile
 from pathlib import Path
+from typing import Optional
 
 
 class ShareArchiver:
@@ -17,15 +18,22 @@ class ShareArchiver:
         self.base_dir.mkdir(exist_ok=True)
 
     def create_share_archive(
-        self, share_file: str, encrypted_file: str, share_share_index: int, label: str
+        self,
+        share_file: str,
+        share_share_index: int,
+        label: str,
+        encrypted_file: Optional[str] = None,
     ) -> str:
         """Creates a ZIP archive for a share.
 
         Args:
             share_file (str): Path to share file
-            encrypted_file (str): Path to encrypted file
             share_share_index (int): Share share_index
             label (str): Share label
+            encrypted_file (str, optional): Path to the encrypted file. When given,
+                a copy is bundled into the archive so this share is self-contained.
+                Omitted by default so the ciphertext isn't duplicated into every
+                share holder's ZIP.
 
         Returns:
             str: Path to created ZIP archive
@@ -37,7 +45,8 @@ class ShareArchiver:
         try:
             # Copy necessary files
             shutil.copy(share_file, temp_dir)
-            shutil.copy(encrypted_file, temp_dir)
+            if encrypted_file:
+                shutil.copy(encrypted_file, temp_dir)
 
             # Copy project files if they exist
             files_to_copy = [

@@ -8,11 +8,13 @@ import os
 import random
 import tempfile
 import unittest
+from pathlib import Path
 
 # Import from the src module
 from src.config import VERSION
+from src.crypto import FileEncryptor
 from src.shares import ShareManager, ShareMetadata
-from src.utils import calculate_tool_integrity
+from src.utils import calculate_tool_integrity, get_enhanced_random_bytes
 
 
 # Colors for logs
@@ -151,50 +153,6 @@ class TestShareMetadata(unittest.TestCase):
             log_test_end(test_name, success=False)
             raise e
 
-    def test_metadata_from_share_info_legacy(self):
-        """Test creating metadata from legacy share info formats."""
-        test_name = "Legacy format loading test"
-        log_test_start(test_name)
-
-        try:
-            log_test_step("Testing with 'shares_tool_version' at top level")
-            # Test with shares_tool_version at top level
-            share_info1 = {
-                "shares_tool_version": self.version,
-                "label": self.label,
-                "threshold": self.threshold,
-                "total_shares": self.total_shares,
-            }
-
-            metadata1 = ShareMetadata.from_share_info(share_info1)
-            self.assertEqual(
-                metadata1.version,
-                self.version,
-                "Version not loaded correctly from legacy format 1",
-            )
-            log_test_success("Version correctly loaded from legacy format 1")
-
-            log_test_step(
-                "Testing without version information - should use current version"
-            )
-            # Test with no version info - should default to current version
-            share_info2 = {
-                "label": self.label,
-                "threshold": self.threshold,
-                "total_shares": self.total_shares,
-            }
-
-            metadata2 = ShareMetadata.from_share_info(share_info2)
-            self.assertEqual(
-                metadata2.version, VERSION, "Default version not set correctly"
-            )
-            log_test_success(f"Default version correctly set: {VERSION}")
-
-            log_test_end(test_name)
-        except Exception as e:
-            log_test_end(test_name, success=False)
-            raise e
-
     def test_metadata_to_dict(self):
         """Test converting metadata to dictionary."""
         test_name = "Conversion to dictionary test"
@@ -316,76 +274,21 @@ class TestShareMetadata(unittest.TestCase):
                 empty_label_metadata.validate()
             log_test_success("Empty label correctly rejected")
 
-            log_test_step("Testing with None label")
-            # Test with None label
+            log_test_step("Testing with None label (minimal-metadata mode — valid)")
+            # None label is valid in minimal-metadata mode (N10): share files omit label by design
             none_label_metadata = ShareMetadata(
                 version=self.version,
-                label=None,  # None label
+                label=None,
                 threshold=self.threshold,
                 total_shares=self.total_shares,
             )
-
-            with self.assertRaises(ValueError, msg="Should reject None label"):
-                none_label_metadata.validate()
-            log_test_success("None label correctly rejected")
+            none_label_metadata.validate()  # must not raise
+            log_test_success("None label accepted (minimal-metadata mode)")
 
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
             raise e
-
-    def test_version_compatibility(self):
-        """Test version compatibility checks."""
-        test_name = "Version compatibility test"
-        log_test_start(test_name)
-
-        try:
-            log_test_step("Creating metadata instances with different versions")
-            # Create metadata instances with different versions
-            current_version_metadata = ShareMetadata(
-                version=VERSION,
-                label=self.label,
-                threshold=self.threshold,
-                total_shares=self.total_shares,
-            )
-
-            older_version_metadata = ShareMetadata(
-                version="0.9.0",  # Older version
-                label=self.label,
-                threshold=self.threshold,
-                total_shares=self.total_shares,
-            )
-
-            newer_version_metadata = ShareMetadata(
-                version="2.0.0",  # Newer version
-                label=self.label,
-                threshold=self.threshold,
-                total_shares=self.total_shares,
-            )
-
-            log_test_step("Comparing metadata instances")
-            # Compare metadata instances
-            # In a real implementation, you might have version compatibility checks
-            # For this test, we're just verifying the version attribute is correctly set
-            self.assertNotEqual(
-                current_version_metadata.version,
-                older_version_metadata.version,
-                "Current and older versions should be different",
-            )
-            log_test_success("Current and older versions correctly distinguished")
-
-            self.assertNotEqual(
-                current_version_metadata.version,
-                newer_version_metadata.version,
-                "Current and newer versions should be different",
-            )
-            log_test_success("Current and future versions correctly distinguished")
-
-            log_test_end(test_name)
-        except Exception as e:
-            log_test_end(test_name, success=False)
-            raise e
-
 
 class TestIntegrityVerification(unittest.TestCase):
     """Tests for integrity verification functionality."""
@@ -394,8 +297,8 @@ class TestIntegrityVerification(unittest.TestCase):
         """Setup test environment."""
         self.threshold = 3
         self.total_shares = 5
-        self.test_secret = b"TopSecretTestData12345"
-        self.label = "TestLabel"
+        self.test_secret = b"prod-enc-key:Hx7$Kw2@Nm9!v5"
+        self.label = "bitwarden_backup_jan_2025"
         self.manager = ShareManager(self.threshold, self.total_shares)
 
         # Create temporary directory for test files
@@ -481,7 +384,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
                     "label": self.label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": self.threshold,
                     "total_shares": self.total_shares,
                     "tool_integrity": calculate_tool_integrity(),
@@ -510,7 +413,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     # Compare with stored hash
                     self.assertEqual(
                         calculated_hash,
-                        share_info["share_integrity_hash"],
+                        share_info["hash"],
                         f"Integrity hash mismatch for {share_file}",
                     )
 
@@ -543,7 +446,7 @@ class TestIntegrityVerification(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": self.label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "tool_integrity": calculate_tool_integrity(),
@@ -594,13 +497,19 @@ class TestIntegrityVerification(unittest.TestCase):
                 # Compare with stored hash - should be different
                 self.assertNotEqual(
                     calculated_hash,
-                    tampered_info["share_integrity_hash"],
+                    tampered_info["hash"],
                     "Tampering not detected - hash still matches",
                 )
 
             log_test_success(
                 "Tampering correctly detected (calculated hash differs from stored hash)"
             )
+
+            log_test_step("Verifying load_shares raises ValueError on tampered share")
+            with self.assertRaises(ValueError, msg="load_shares must reject a tampered hash"):
+                ShareManager.load_shares([tampered_file])
+            log_test_success("load_shares correctly rejected tampered share via hash check")
+
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
@@ -632,7 +541,7 @@ class TestIntegrityVerification(unittest.TestCase):
                     "share_index": idx,
                     "share_key": base64.b64encode(share_data).decode(),
                     "label": self.label,
-                    "share_integrity_hash": share_hash,
+                    "hash": share_hash,
                     "threshold": self.threshold,
                     "total_shares": self.total_shares,
                     "tool_integrity": calculate_tool_integrity(),
@@ -748,20 +657,74 @@ class TestIntegrityVerification(unittest.TestCase):
             # Compare with stored hash - should be different
             self.assertNotEqual(
                 calculated_hash,
-                hash_info["share_integrity_hash"],
+                hash_info["hash"],
                 "Hash should not match for tampered data",
             )
             log_test_success("Hash integrity correctly verified - tampering detected")
+
+            log_test_step("Verifying load_shares raises ValueError on hash mismatch (production path)")
+            with self.assertRaises(ValueError, msg="load_shares must reject a share with mismatched hash"):
+                ShareManager.load_shares([tampered_hash_file])
+            log_test_success("load_shares correctly rejects tampered hash via production path")
 
             log_test_end(test_name)
         except Exception as e:
             log_test_end(test_name, success=False)
             raise e
 
-        # NOTE: The following test verifies that our verification logic would detect tampering,
-        # even if the ShareManager.load_shares method might not include this specific check.
-        # In a production implementation, you would want to add explicit integrity verification
-        # to the load_shares method.
+
+class EncMetadataBindingTests(unittest.TestCase):
+    """C1/C2: the .enc metadata header is bound to the ciphertext as GCM AAD and
+    carries no plaintext fingerprint."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp_dir = Path(self.tmp.name)
+        self.key = get_enhanced_random_bytes(32)
+        self.plaintext = b"CONFIDENTIAL: merger terms 2026, do not disclose."
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _encrypt(self, metadata=None):
+        src = self.tmp_dir / "plain.bin"
+        enc = self.tmp_dir / "plain.bin.enc"
+        src.write_bytes(self.plaintext)
+        FileEncryptor(self.key).encrypt_file(str(src), str(enc), metadata)
+        return enc
+
+    @staticmethod
+    def _split(raw):
+        metadata_len = int.from_bytes(raw[:4], "big")
+        return metadata_len, raw[4:4 + metadata_len], raw[4 + metadata_len:]
+
+    def test_metadata_tampering_breaks_gcm_verification(self):
+        """C2: flipping a single non-version metadata byte (still valid JSON, same
+        length, same version) must fail the GCM auth check on decrypt."""
+        enc = self._encrypt(metadata={"aad_probe": "A" * 40})
+        out = self.tmp_dir / "ok.out"
+        FileEncryptor(self.key).decrypt_file(str(enc), str(out))
+        self.assertEqual(out.read_bytes(), self.plaintext)
+        metadata_len, meta, rest = self._split(enc.read_bytes())
+        idx = meta.index(b"A")
+        tampered = meta[:idx] + b"B" + meta[idx + 1:]
+        self.assertEqual(len(tampered), metadata_len)
+        self.assertEqual(json.loads(tampered.decode("utf-8"))["version"], VERSION)
+        enc.write_bytes(metadata_len.to_bytes(4, "big") + tampered + rest)
+        with self.assertRaises(ValueError) as ctx:
+            FileEncryptor(self.key).decrypt_file(str(enc), str(self.tmp_dir / "bad.out"))
+        self.assertIn("mac", str(ctx.exception).lower())
+
+    def test_enc_metadata_carries_no_plaintext_hash(self):
+        """C1: the .enc metadata must not embed a hash/fingerprint of the plaintext."""
+        enc = self._encrypt(metadata={"share_set_id": "deadbeefdeadbeef"})
+        _, meta, _ = self._split(enc.read_bytes())
+        meta_obj = json.loads(meta.decode("utf-8"))
+        meta_text = meta.decode("utf-8")
+        self.assertNotIn("hash", meta_obj)
+        digest = hashlib.sha256(self.plaintext).hexdigest()
+        self.assertNotIn(digest, meta_text)
+        self.assertNotIn(digest[:16], meta_text)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-import string
 from typing import Any, List, Union
 
 from src.utils.integrity import get_enhanced_random_bytes
@@ -13,7 +12,6 @@ class SecureMemory:
             data: Data to securely clear, can be bytes, bytearray, str, list, or memoryview
         """
         import gc
-        import sys
 
         # Different overwrite patterns for multiple passes
         patterns = [
@@ -51,9 +49,6 @@ class SecureMemory:
             for pattern in patterns:
                 for i in range(len(data)):
                     data[i] = pattern
-                # Force Python to actually perform the memory writes
-                sys.stderr.write("")
-                sys.stderr.flush()
 
             # Final pass with zeros
             for i in range(len(data)):
@@ -68,9 +63,7 @@ class SecureMemory:
                 garbage = bytearray(data_len)
                 del garbage
 
-            # Force garbage collection multiple times
-            for _ in range(3):
-                gc.collect()
+            gc.collect()
 
         elif isinstance(data, list):
             # For lists containing sensitive data
@@ -104,35 +97,41 @@ class SecureMemory:
         return SecureContext(size)
 
     @staticmethod
-    def secure_string() -> str:
-        """Creates a secure string."""
-        # Use cryptographically secure random bytes instead of random.choices
-        random_bytes = get_enhanced_random_bytes(32)
-        # Convert to alphanumeric characters
-        charset = string.ascii_letters + string.digits
-        # Map bytes to characters (without bias)
-        result = ""
-        for byte in random_bytes:
-            # Ensure no modulo bias by rejecting values above the largest multiple of len(charset)
-            max_value = 256 - (256 % len(charset))
-            if byte < max_value:
-                result += charset[byte % len(charset)]
-                if len(result) >= 32:  # We want a 32-character result
-                    break
+    def _mlock(buf: bytearray) -> None:
+        """Pin buf to RAM to prevent swap. No-op on failure."""
+        try:
+            import ctypes
+            import ctypes.util
 
-        # If we don't have enough characters (unlikely), append more
-        while len(result) < 32:
-            more_bytes = get_enhanced_random_bytes(8)
-            for byte in more_bytes:
-                if byte < max_value and len(result) < 32:
-                    result += charset[byte % len(charset)]
+            lib = ctypes.util.find_library("c")
+            if lib:
+                libc = ctypes.CDLL(lib, use_errno=True)
+                addr = ctypes.addressof((ctypes.c_char * len(buf)).from_buffer(buf))
+                libc.mlock(ctypes.c_void_p(addr), ctypes.c_size_t(len(buf)))
+        except Exception:
+            pass
 
-        return result
+    @staticmethod
+    def _munlock(buf: bytearray) -> None:
+        """Unpin buf from RAM."""
+        try:
+            import ctypes
+            import ctypes.util
+
+            lib = ctypes.util.find_library("c")
+            if lib:
+                libc = ctypes.CDLL(lib, use_errno=True)
+                addr = ctypes.addressof((ctypes.c_char * len(buf)).from_buffer(buf))
+                libc.munlock(ctypes.c_void_p(addr), ctypes.c_size_t(len(buf)))
+        except Exception:
+            pass
 
     @staticmethod
     def secure_bytes(length: int = 32) -> bytearray:
         """Creates a secure bytearray."""
-        return bytearray(get_enhanced_random_bytes(length))
+        buf = bytearray(get_enhanced_random_bytes(length))
+        SecureMemory._mlock(buf)
+        return buf
 
 
 class SecureContext:
@@ -153,9 +152,10 @@ class SecureContext:
         random_bytes = get_enhanced_random_bytes(self.size)
         for i in range(min(len(random_bytes), self.size)):
             self.buffer[i] = random_bytes[i]
+        SecureMemory._mlock(self.buffer)
         return self.buffer
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit the context and securely clear the buffer."""
+        SecureMemory._munlock(self.buffer)
         SecureMemory.secure_clear(self.buffer)
-        # The buffer object itself will be garbage collected, but we've cleared its contents

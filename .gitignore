@@ -4,7 +4,19 @@ src.egg-info
 build
 env
 __pycache__
+.pytest_cache
+.ruff_cache
 .python-version
 .venv
-data
-shares/
+/data
+/shares/
+
+# Tooling local — ne pas committer
+.claude/
+_bmad/
+
+# Artefacts des outils de scan IA
+.vulnhuntr_checkpoint/
+vulnhuntr.log
+reports/
+strix_runs/

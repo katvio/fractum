@@ -1,4 +1,4 @@
-FROM python:3.12.11-slim
+FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
 
 WORKDIR /app
 
@@ -7,11 +7,21 @@ COPY src/ /app/src/
 COPY tests/ /app/tests/
 COPY packages/ /app/packages/
 
-# Install dependencies
-RUN pip install --no-cache-dir -e .
+# Install dependencies — verify offline packages if present (M6)
+RUN if [ -f packages/CHECKSUMS.sha256 ] && [ -f packages/CHECKSUMS.sha256.asc ]; then \
+      gpg --verify packages/CHECKSUMS.sha256.asc packages/CHECKSUMS.sha256 \
+        || { echo "ERROR: Invalid GPG signature on packages"; exit 1; }; \
+    fi; \
+    if [ -f packages/CHECKSUMS.sha256 ]; then \
+      (cd packages && sha256sum --check CHECKSUMS.sha256 --strict --quiet) \
+        || { echo "ERROR: Package hash mismatch"; exit 1; }; \
+      pip install --no-cache-dir --no-index --find-links=packages -e .; \
+    else \
+      pip install --no-cache-dir -e .; \
+    fi
 
 # Create data directory and shares directory with proper permissions
-RUN mkdir -p /data /app/shares && chmod 777 /data /app/shares
+RUN mkdir -p /data /app/shares && chmod 750 /data /app/shares
 
 # Create non-root user
 RUN adduser --disabled-password --gecos "" fractumuser

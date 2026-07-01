@@ -86,19 +86,8 @@ def interactive_encrypt() -> bool:
                         with open(file_path, "r") as f:
                             share_info = json.load(f)
                             # Check if this is a valid share file by looking for essential fields
-                            if all(
-                                key in share_info
-                                for key in [
-                                    "share_index",
-                                    (
-                                        "share_key"
-                                        if "share_key" in share_info
-                                        else "share"
-                                    ),
-                                    "label",
-                                    "threshold",
-                                    "total_shares",
-                                ]
+                            if "share_index" in share_info and (
+                                "share_key" in share_info or "share" in share_info
                             ):
                                 share_files.append(file_path)
                     except (json.JSONDecodeError, UnicodeDecodeError, IOError):
@@ -117,17 +106,9 @@ def interactive_encrypt() -> bool:
                             try:
                                 with open(file_path, "r") as f:
                                     share_info = json.load(f)
-                                    if all(
-                                        key in share_info
-                                        for key in [
-                                            "share_index",
-                                            (
-                                                "share_key"
-                                                if "share_key" in share_info
-                                                else "share"
-                                            ),
-                                            "label",
-                                        ]
+                                    if "share_index" in share_info and (
+                                        "share_key" in share_info
+                                        or "share" in share_info
                                     ):
                                         share_files.append(file_path)
                             except (
@@ -145,16 +126,19 @@ def interactive_encrypt() -> bool:
             # Read label from first share
             with open(share_files[0], "r") as f:
                 share_info = json.load(f)
-                existing_label = share_info["label"]
+                existing_label = share_info.get("label")
 
-            click.echo(f"\nExisting shares found with label: {existing_label}")
-            click.echo("You must use the same label for compatibility")
-            label = existing_label
-            click.echo(f"Label used: {label}")
+            if existing_label:
+                click.echo(f"\nExisting shares found with label: {existing_label}")
+                click.echo("You must use the same label for compatibility")
+                label = existing_label
+                click.echo(f"Label used: {label}")
+            else:
+                label = click.prompt("\nLabel for this share set")
 
             # Read parameters from existing shares
             threshold = share_info.get("threshold", 3)
-            total_shares = share_info.get("total_shares", 5)
+            total_shares = share_info.get("total_shares", len(share_files))
             click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
@@ -186,8 +170,17 @@ def interactive_encrypt() -> bool:
                 click.echo("Label cannot be empty")
                 return False
 
-        # Ask for verbose mode
+        # Ask for verbose mode and metadata format
         verbose = click.confirm("Do you want to enable verbose mode?", default=None)
+        full_metadata = click.confirm(
+            "Include full metadata in shares? (label, total shares, tool info)",
+            default=False,
+        )
+        bundle_encrypted = click.confirm(
+            "Bundle a copy of the encrypted (.enc) file inside every share ZIP? "
+            "(makes each share self-contained, but duplicates the ciphertext N times)",
+            default=False,
+        )
 
         # Confirm parameters
         click.echo("\nEncryption parameters:")
@@ -199,6 +192,8 @@ def interactive_encrypt() -> bool:
         if use_existing:
             click.echo(f"Shares directory: {existing_shares}")
         click.echo(f"Verbose mode: {'Enabled' if verbose else 'Disabled'}")
+        click.echo(f"Full metadata: {'Yes' if full_metadata else 'No (minimal)'}")
+        click.echo(f"Bundle .enc in shares: {'Yes' if bundle_encrypted else 'No'}")
 
         # Execute command via Click
         ctx = click.get_current_context()
@@ -210,6 +205,8 @@ def interactive_encrypt() -> bool:
             label=label,
             existing_shares=existing_shares,
             verbose=verbose,
+            full_metadata=full_metadata,
+            bundle_encrypted=bundle_encrypted,
         )
         return True
 
@@ -229,7 +226,7 @@ def interactive_decrypt() -> bool:
 
         # Ask if using files or manual entry
         use_manual = click.confirm(
-            "Do you want to enter the share keys manually? If not, you will be asked to provide the path to the folder containing the necessary share files?",
+            "Enter share keys manually? (No = provide a folder path)",
             default=None,
         )
 

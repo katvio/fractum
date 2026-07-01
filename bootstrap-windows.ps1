@@ -5,6 +5,31 @@
   Installs Python 3.12.11, creates .venv and installs fractum
 #>
 
+# Pinned Chocolatey installer — verify SHA-256 before upgrading
+# Update: (Get-FileHash -Uri "https://chocolatey.org/install.ps1" -Algorithm SHA256).Hash.ToLower()
+$ChocoInstallerUrl = "https://chocolatey.org/install.ps1"
+$ChocoInstallerSha256 = "44e045ed5350758616d664c5af631e7f2cd10165f5bf2bd82cbf3a0bb8f63462"
+
+function Install-Chocolatey {
+  $TempFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), [System.IO.Path]::GetRandomFileName() + ".ps1")
+  try {
+    Write-Host "→ Downloading Chocolatey installer..."
+    (New-Object System.Net.WebClient).DownloadFile($ChocoInstallerUrl, $TempFile)
+    Write-Host "→ Verifying SHA-256..."
+    $Hash = (Get-FileHash -Path $TempFile -Algorithm SHA256).Hash.ToLower()
+    if ($Hash -ne $ChocoInstallerSha256) {
+      Write-Error "SHA-256 mismatch! Expected: $ChocoInstallerSha256  Got: $Hash"
+      throw "Installer integrity check failed — aborting"
+    }
+    Write-Host "→ Running Chocolatey installer..."
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+    & powershell -File $TempFile
+  } finally {
+    Remove-Item -Path $TempFile -ErrorAction SilentlyContinue
+  }
+}
+
 # 0) Check Admin
 If (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
   Write-Error "Re-launch PowerShell as Administrator"
@@ -26,16 +51,12 @@ if (-not (Get-Command python3.12 -ErrorAction SilentlyContinue)) {
     # Fallback if exact version isn't available
     if (-not $?) {
       Write-Host "→ Exact version not available via winget, trying Chocolatey..."
-      Set-ExecutionPolicy Bypass -Scope Process -Force
-      [Net.ServicePointManager]::SecurityProtocol = 'Tls12'
-      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      Install-Chocolatey
       choco install python --version=3.12.11 -y
     }
   } else {
     Write-Host "→ Installing Chocolatey..."
-    Set-ExecutionPolicy Bypass -Scope Process -Force
-    [Net.ServicePointManager]::SecurityProtocol = 'Tls12'
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    Install-Chocolatey
     choco install python --version=3.12.11 -y
   }
 } else {

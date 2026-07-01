@@ -17,8 +17,6 @@ from pathlib import Path
 
 import psutil
 
-from Crypto.Cipher import AES
-
 # Import from the src module
 from src.config import VERSION
 from src.crypto import FileEncryptor
@@ -223,44 +221,16 @@ class CryptographicSecurityTests(unittest.TestCase):
                 key2 = get_enhanced_random_bytes(32)
 
                 log_test_step("Encrypting first file with first key")
-                # First encryption - with explicit metadata to make things easier to verify
                 encryptor1 = FileEncryptor(key1)
                 encrypted_file1 = os.path.join(temp_dir, "test1.enc")
-                metadata1 = {"test_metadata": "file1", "timestamp": int(time.time())}
-                # Encrypt with direct call to the function to ensure metadata is included properly
-                with open(test_file1, "rb") as f_in:
-                    data = f_in.read()
-                    data_hash = hashlib.sha256(data).hexdigest()
-
-                    with open(encrypted_file1, "wb") as f_out:
-                        encryptor1._write_metadata(f_out, data_hash, metadata1)
-                        cipher = AES.new(key1, AES.MODE_GCM)
-                        ciphertext, tag = cipher.encrypt_and_digest(data)
-                        f_out.write(cipher.nonce)
-                        f_out.write(tag)
-                        f_out.write(ciphertext)
+                metadata1 = {"test_metadata": "file1"}
+                encryptor1.encrypt_file(test_file1, encrypted_file1, metadata1)
 
                 log_test_step("Encrypting second file with second key")
-                # Second encryption - with different metadata
                 encryptor2 = FileEncryptor(key2)
                 encrypted_file2 = os.path.join(temp_dir, "test2.enc")
-                metadata2 = {
-                    "test_metadata": "file2",
-                    "timestamp": int(time.time())
-                    + 1,  # Make sure timestamp is different
-                }
-                # Encrypt with direct call to function
-                with open(test_file2, "rb") as f_in:
-                    data = f_in.read()
-                    data_hash = hashlib.sha256(data).hexdigest()
-
-                    with open(encrypted_file2, "wb") as f_out:
-                        encryptor2._write_metadata(f_out, data_hash, metadata2)
-                        cipher = AES.new(key2, AES.MODE_GCM)
-                        ciphertext, tag = cipher.encrypt_and_digest(data)
-                        f_out.write(cipher.nonce)
-                        f_out.write(tag)
-                        f_out.write(ciphertext)
+                metadata2 = {"test_metadata": "file2"}
+                encryptor2.encrypt_file(test_file2, encrypted_file2, metadata2)
 
                 # Verify files were created
                 self.assertTrue(
@@ -945,7 +915,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 metadata_len = int.from_bytes(original_content[:4], "big")
 
                 # Create metadata with invalid UTF-8 sequences
-                invalid_utf8 = b'{"version": "1.3.0", "invalid": "\xc3\x28\xaf\xed"}'
+                invalid_utf8 = b'{"version": "0.0.0-mock", "invalid": "\xc3\x28\xaf\xed"}'
 
                 # Write back with invalid UTF-8
                 dst.write(len(invalid_utf8).to_bytes(4, "big"))
@@ -1001,7 +971,10 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                             "incorrect key",
                             "nonce",
                             "version",
-                            "incompatible",  # Added keywords for version errors
+                            "incompatible",
+                            "mac",      # GCM authentication tag failure
+                            "corrupt",  # Corrupted metadata
+                            "truncat",  # Truncated file
                         ]
 
                         error_message = str(e).lower()

@@ -1,4 +1,4 @@
-FROM python:3.12.11-slim
+FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
 
 WORKDIR /app
 
@@ -15,7 +15,13 @@ RUN pip install --no-cache-dir -e ".[test]"
 RUN pip install --no-cache-dir pytest pytest-cov psutil
 
 # Create data and shares directories for testing
-RUN mkdir -p /data /app/shares && chmod 777 /data /app/shares
+RUN mkdir -p /data /app/shares && chmod 750 /data /app/shares
+
+# Create non-root user for test execution (M2)
+RUN adduser --disabled-password --gecos "" testuser && \
+    chown -R testuser:testuser /app /data
+
+USER testuser
 
 # Set entrypoint to run tests from tests directory
 WORKDIR /app/tests
