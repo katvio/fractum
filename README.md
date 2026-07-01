@@ -1,209 +1,123 @@
-# Fractum Tests - Documentation
+# Fractum
 
-This document describes the different test suites of the Fractum project and their purpose.
+**Split any sensitive file into encrypted shares** and reconstruct it only when enough shares are pooled → fully offline, no cloud, no single point of failure.
 
-## Test Environment Setup
+Designed for **long-term cold storage** of critical secrets: recovery credentials, exports of database & password managers, family photos, legal documents, crypto seed phrases.
 
-Before running tests, you need to set up the test environment:
+![Fractum splits a file into N encrypted shares, K of which reconstruct it](assets/images/encrypt-overview.png)
 
-### Bootstrap your environment:
+**When to use it:**
 
-Linux:
-`chmod +x bootstrap-linux.sh && ./bootstrap-linux.sh && source .venv/bin/activate`
+- Emergency recovery creds (admin passwords, break-glass access)
+- Backup encryption master keys
+- Root CA / PKI private keys
+- Legal & financial documents (wills, contracts, tax records)
+- Cryptocurrency (seed phrases, private keys, hardware wallet backups)
+- Family photos
 
-MacOS:
-`chmod +x bootstrap-macos.sh && ./bootstrap-macos.sh && source .venv/bin/activate`
+**Why distributed?**
 
-Windows:
+- Fewer than K shares reveal **nothing**: information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*
+- No single point of failure: distribute shares across people, locations, media. No $5 Wrench Attack
+- Works completely offline in air-gapped environments
 
-* `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
-* `.\bootstrap-windows.ps1`
-* `.\.venv\Scripts\Activate.ps1`
+## How it works
 
-### Activate venv and install psutil:
-```
-cd tests
-```
-```
-pip install psutil
-```
+Fractum encrypts your file with AES-256-GCM, then splits that key into N shares via **Shamir's Secret Sharing**. Any K shares reconstruct the key and decrypt the file; fewer than K learn nothing. No novel cryptography → only battle-tested primitives.
 
-### Running Tests
+📚 **[Full documentation](https://fractum.katvio.com/)**
 
-To run all tests:
+---
 
-```
-python run_tests.py
-```
+## Quick start — Docker (recommended)
 
-To run a specific test:
+Docker is the recommended way to run Fractum. The `--network=none` flag guarantees the container cannot exfiltrate your secrets over the network.
 
-```
-python test_fuzzing.py
-```
-## Running tests with Docker
+📚 **[Complete Docker guide](https://fractum.katvio.com/docker-usage/)**
 
-To run tests in Docker:
+**Setup:**
 
-### Build the Docker image for testing
-```
-cd fractum
-```
-```
-docker build -t fractum-test -f tests/Dockerfile.test .
-```
-### Run all tests with docker
-```
-docker run --rm fractum-test
+```bash
+git clone https://github.com/katvio/fractum.git
+cd fractum && git checkout tags/v1.3.0
+mkdir -p data shares
+docker build -t fractum-secure .
 ```
 
-## Overview of the test suites
+## Encrypt:
 
-### 0. 'run_tests.py' (to run all tests)
-The main test runner script that executes all test files in a single command:
+```bash
+docker run --rm -it \
+  --network=none \
+  -v "$(pwd)/data:/data" \
+  -v "$(pwd)/shares:/app/shares" \
+  fractum-secure encrypt /data/passwords-export.csv \
+  --threshold 3 --shares 5 --label "bitwarden-backup"
+```
 
-- Automatically discovers all test files matching the pattern `test_*.py`
-- Executes each test file in a deterministic order
-- Collects and aggregates test results
-- Provides a consolidated report showing:
-  - Number of test files executed
-  - Total tests run
-  - Success/failure statistics
-  - Execution time
-  - Detailed failure information if any tests fail
-- Returns appropriate exit code (0 for success, 1 for failure) for integration with CI/CD systems
-Usage: Simply run `python run_tests.py` from the tests directory to execute all tests.
+![Fractum splits a file into N encrypted shares, K of which reconstruct it](assets/images/encrypt-example.png)
 
 
-### 1. test_functional.py
-Tests that verify the main functionalities of the application:
+## Decrypt:
 
-**CLIEndToEndTests**:
+```bash
+docker run --rm -it \
+  --network=none \
+  -v "$(pwd)/data:/data" \
+  -v "$(pwd)/shares:/app/shares" \
+  fractum-secure decrypt /data/passwords-export.csv.enc \
+  --shares-dir /app/shares
+```
 
-- `test_archive_creation_extraction`: Verifies that share archives are correctly created and can be extracted.
-- `test_different_threshold_share_combinations`: Tests various threshold and share count combinations (2/3, 3/5, 5/10).
-- `test_encrypt_decrypt_small_file`: Verifies encryption and decryption of small text files.
-- `test_interactive_mode`: Tests interactive mode by simulating user inputs.
+![Decrypting with 3 of 5 shares to reconstruct passwords-export.csv](assets/images/decrypt-example.png)
 
-**CompatibilityTests**:
+📚 **[All CLI options](https://fractum.katvio.com/encrypting-files/)** · **[Decrypting guide](https://fractum.katvio.com/decrypting-files/)** · **[Manual install](https://fractum.katvio.com/manual-installation/)**
 
-- `test_cross_platform_compatibility`: Verifies that shares generated on different platforms (Windows/Linux/macOS) work together.
-- `test_file_format_compatibility`: Tests compatibility between different share file formats.
-- `test_version_compatibility`: Ensures that share versions remain compatible with future versions.
+---
 
-**ErrorHandlingTests**:
+## Commands
 
-- `test_corrupted_shares`: Verifies handling of corrupted shares.
-- `test_file_access_issues`: Tests reactions to file access problems (permissions).
-- `test_incorrect_keys`: Verifies behavior during decryption attempts with incorrect keys.
-- `test_insufficient_shares`: Tests behavior when an insufficient number of shares is provided.
+Inside the container (or after a manual install), the binary is `fractum`. Prefix with `docker run --rm -it --network=none -v "$(pwd)/data:/data" -v "$(pwd)/shares:/app/shares" fractum-secure` to run any of these in Docker.
 
-### 2. test_fuzzing.py
-Tests the application's robustness against malformed inputs:
+```bash
+fractum -i                  # interactive mode — guided menu, no flags needed
+fractum --version           # print the version
 
-**InputFuzzingTests**:
+# Encrypt: split FILE into N shares, K of which are needed to recover it
+fractum encrypt FILE -t <threshold> -n <shares> [OPTIONS]
+  -t, --threshold <int>      shares required to reconstruct (required)
+  -n, --shares <int>         total shares to generate (required)
+  -l, --label <str>          label identifying the share set (default: filename)
+  -e, --existing-shares DIR  reuse an existing share set instead of generating a new key
+  --full-metadata            embed label/total_shares/share_set_id in shares (less private, eases debugging)
+  -b, --bundle-encrypted     also copy the .enc file into every share ZIP (default: .enc stays out of the ZIPs)
+  -v, --verbose               verbose output
 
-- `test_encrypted_file_bit_flipping`: Modifies bits in encrypted files to verify corruption resistance.
-- `test_invalid_utf8_sequences`: Introduces invalid UTF-8 sequences in labels and metadata.
-- `test_malformed_json_shares`: Tests handling of malformed JSON files in shares.
+# Decrypt: reconstruct FILE.enc from K-of-N shares
+fractum decrypt FILE.enc [OPTIONS]
+  -s, --shares-dir DIR       directory with share .txt files and/or share ZIPs
+  -m, --manual-shares        type share index/value pairs by hand instead of reading files
+  -v, --verbose               verbose output
+```
 
-**BoundaryTests**:
+📚 **[All CLI options](https://fractum.katvio.com/encrypting-files/)** · **[Decrypting guide](https://fractum.katvio.com/decrypting-files/)** · **[Manual install](https://fractum.katvio.com/manual-installation/)**
 
-- `test_extreme_values`: Tests behavior with extreme threshold and share values.
-- `test_large_files`: Verifies handling of unusually large files.
-- `test_tiny_files`: Tests behavior with empty or very small files.
+---
 
-### 3. test_compatibility.py
-In-depth compatibility tests:
+## Security
 
-**VersionCompatibilityTests**:
+🔍 **[Security Architecture](https://fractum.katvio.com/security-architecture/)** · 🛡️ **[Security Best Practices](https://fractum.katvio.com/security-best-practices/)**
 
-- `test_version_forward_compatibility`: Verifies that older share formats remain usable with newer versions.
-- `test_version_metadata_handling`: Tests handling of different version formats in metadata.
-- `test_version_mismatch_detection`: Ensures version mismatches are properly detected and reported.
+---
 
-**PlatformCompatibilityTests**:
+## Contributing
 
-- `test_os_specific_paths`: Tests compatibility with different operating system path formats.
-- `test_platform_specific_features`: Ensures consistent behavior across different platforms.
-- `test_cross_platform_file_handling`: Verifies correct file handling across platforms.
+Submit a pull request or open an issue.
 
-### 4. test_metadata_integrity.py
-Verifies metadata integrity in files and shares:
+📚 **[Contributing Guide](https://fractum.katvio.com/contributing/)**
 
-**MetadataPersistenceTests**:
+## License
 
-- `test_metadata_persistence`: Checks correct persistence of version, threshold, and share count data.
-- `test_metadata_extraction`: Tests extraction of metadata from share files.
-- `test_metadata_validation`: Verifies validation of metadata fields.
+Fractum is licensed under a Custom Proprietary Software License that permits personal, non-commercial use. Commercial use is not permitted.
 
-**IntegrityTests**:
-
-- `test_integrity_hashes`: Verifies the correct implementation of integrity hashes.
-- `test_hash_verification`: Tests verification of file and share hashes.
-- `test_partial_corruption_recovery`: Tests recovery from partially corrupted metadata.
-
-### 5. test_performance.py
-Measures application performance:
-
-**ScalingTests**:
-
-- `test_file_size_scaling`: Tests speed with different file sizes.
-- `test_share_count_scaling`: Measures performance with varying numbers of shares.
-- `test_threshold_impact`: Evaluates the impact of threshold values on performance.
-
-**ResourceTests**:
-
-- `test_memory_usage`: Monitors memory usage during encryption/decryption.
-- `test_cpu_utilization`: Measures CPU usage during cryptographic operations.
-- `test_concurrent_operations`: Tests performance with multiple simultaneous operations.
-
-### 6. test_security.py
-Verifies critical security aspects:
-
-**MemorySecurityTests**:
-
-- `test_memory_isolation`: Tests memory isolation for sensitive data.
-- `test_secure_key_erasure`: Verifies secure erasure of keys from memory.
-- `test_memory_patterns`: Checks for sensitive patterns in memory dumps.
-
-**DataLeakageTests**:
-
-- `test_sensitive_data_leakage`: Detects leaks of sensitive data.
-- `test_encrypted_content_analysis`: Analyzes encrypted content for information leakage.
-- `test_crypto_randomness`: Verifies cryptographic randomness quality.
-
-### 7. 'test_core_crypto.py'
-Tests core cryptographic primitives:
-
-**ShamirImplementationTests**:
-
-- `test_shamir_algorithm`: Verifies correct implementation of Shamir's Secret Sharing algorithm.
-- `test_threshold_behavior`: Tests behavior at the exact threshold value.
-- `test_share_reconstruction`: Tests correct reconstruction of secrets from shares.
-
-**EncryptionTests**:
-
-- `test_aes_gcm_encryption`: Tests AES-GCM encryption/decryption.
-- `test_nonce_uniqueness`: Verifies uniqueness of encryption nonces.
-- `test_random_generation`: Verifies quality of random number generation.
-
-## Docker Test Notes
-
-Some tests may behave differently in Docker environments:
-
-- The `test_file_access_issues` test may fail due to differences in permission handling.
-- Memory tests might report different values due to containerization.
-- Performance tests should be interpreted relative to the Docker environment rather than absolute values.
-
-## Test Best Practices
-
-1. **Isolation**: All tests create temporary directories to avoid affecting user files.
-
-2. **Cleanup**: Temporary data is deleted after each test, even in case of failure.
-
-3. **Verbosity**: Verbose mode helps diagnose problems by displaying execution details.
-
-4. **Independence**: Each test is designed to run independently of others.
-
-5. **Reproducibility**: Tests use predefined seeds for random generation when necessary. 
+📄 **[View Full License](LICENSE)**
