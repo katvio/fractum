@@ -42,7 +42,7 @@ class ShareMetadata:
 
         return cls(
             version=version,
-            label=share_info["label"],
+            label=share_info.get("label"),
             threshold=share_info.get("threshold", 3),
             total_shares=share_info.get("total_shares", 5),
         )
@@ -65,5 +65,6 @@ class ShareMetadata:
             raise ValueError("Total shares must be greater than or equal to threshold")
         if self.total_shares > 255:
             raise ValueError("Total shares cannot exceed 255")
-        if not self.label:
-            raise ValueError("Label is required")
+        # Empty string label is invalid; None means minimal-metadata mode (no label written)
+        if self.label is not None and not self.label:
+            raise ValueError("Label cannot be an empty string")

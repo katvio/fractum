@@ -25,7 +25,7 @@ IS_WINDOWS = platform.system() == "Windows"
 # Force UTF-8 on Windows if possible
 if IS_WINDOWS:
     try:
-        # Essayer de configurer l'encodage UTF-8 pour stdout
+        # Try to configure UTF-8 encoding for stdout
         import sys
 
         sys.stdout.reconfigure(encoding="utf-8")
@@ -33,7 +33,7 @@ if IS_WINDOWS:
         pass
 
     try:
-        # Essayer de configurer l'environnement pour UTF-8
+        # Try to configure the environment for UTF-8
         os.environ["PYTHONIOENCODING"] = "utf-8"
     except Exception as e:
         pass
@@ -129,7 +129,7 @@ class InputFuzzingTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": self.label,
-                "share_integrity_hash": share_hash,
+                "hash": share_hash,
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "version": VERSION,
@@ -170,7 +170,7 @@ class InputFuzzingTests(unittest.TestCase):
             log_test_step(
                 f"Copying original file {original_share.name} to {fuzz_share.name}"
             )
-            # Read the original share file - utiliser mode binaire pour le bit flipping
+            # Read the original share file - use binary mode for bit flipping
             with open(original_share, "rb") as f:
                 content = bytearray(f.read())
 
@@ -182,7 +182,7 @@ class InputFuzzingTests(unittest.TestCase):
                 bit = random.randint(0, 7)
                 content[pos] ^= 1 << bit  # Flip a random bit
 
-            # Write the fuzzed content - utiliser mode binaire pour préserver les bits
+            # Write the fuzzed content - use binary mode to preserve the bits
             with open(fuzz_share, "wb") as f:
                 f.write(content)
 
@@ -286,7 +286,7 @@ class InputFuzzingTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": self.label,
-                "share_integrity_hash": hashlib.sha256(share_data).hexdigest(),
+                "hash": hashlib.sha256(share_data).hexdigest(),
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "version": VERSION,
@@ -318,19 +318,19 @@ class InputFuzzingTests(unittest.TestCase):
 
             malformed_variants.append(missing_brace_file)
 
-            # 3. Extra characters - maintenir les caractères spéciaux même sur Windows
+            # 3. Extra characters - keep special characters even on Windows
             extra_chars_file = self.shares_dir / "malformed_extra_chars.txt"
             with open(base_share_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
             try:
-                # Forcer l'encodage UTF-8 pour conserver les caractères spéciaux
+                # Force UTF-8 encoding to preserve special characters
                 with open(extra_chars_file, "w", encoding="utf-8") as f:
                     f.write(content + "extra garbage ÿøπΩ")
 
                 malformed_variants.append(extra_chars_file)
             except UnicodeEncodeError:
-                # Si l'erreur persiste malgré l'encodage UTF-8, utiliser des caractères ASCII
+                # If the error persists despite UTF-8 encoding, use ASCII characters
                 log_test_warning(
                     "Unable to write Unicode characters, using ASCII fallback"
                 )
@@ -416,12 +416,12 @@ class InputFuzzingTests(unittest.TestCase):
 
             # Create invalid UTF-8 sequence using raw bytes or use fallback
             if IS_WINDOWS:
-                # Sur Windows, utiliser des caractères valides mais inhabituels
+                # On Windows, use valid but unusual characters
                 log_test_step("Using special characters on Windows")
-                # Ces caractères doivent être dans la plage valide pour Windows
+                # These characters must be within the valid range for Windows
                 special_chars = "ñáéíóúüÑÁÉÍÓÚÜ"
             else:
-                # Sur les autres systèmes, essayer des séquences UTF-8 invalides
+                # On other systems, try invalid UTF-8 sequences
                 log_test_step("Using invalid UTF-8 sequence on non-Windows")
                 try:
                     # Attempt to decode, which should fail
@@ -439,7 +439,7 @@ class InputFuzzingTests(unittest.TestCase):
                 "share_index": idx,
                 "share_key": base64.b64encode(share_data).decode(),
                 "label": f"test_label_{special_chars}",
-                "share_integrity_hash": hashlib.sha256(share_data).hexdigest(),
+                "hash": hashlib.sha256(share_data).hexdigest(),
                 "threshold": self.threshold,
                 "total_shares": self.total_shares,
                 "version": f"{VERSION}_{special_chars}",
@@ -775,7 +775,7 @@ class ParameterFuzzingTests(unittest.TestCase):
                     f.write("Emoji: 😀🔒🚀💻🔑\n")
                 test_files.append(("Special characters", special_chars))
             else:
-                # Sur Windows, utiliser des caractères spéciaux supportés
+                # On Windows, use supported special characters
                 special_chars = self.test_dir / "special.txt"
                 with open(special_chars, "w", encoding="utf-8") as f:
                     f.write("Special chars for Windows: ñáéíóúü\n")

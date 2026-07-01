@@ -222,23 +222,19 @@ class PythonVersionTests(unittest.TestCase):
         log_test_start(test_name)
 
         try:
-            # Check if the current version is 3.12.11 as specified
-            is_target_version = (
-                current_version.major == 3
-                and current_version.minor == 12
-                and current_version.micro == 10
-            )
+            from src.config import REQUIRED_PYTHON_VERSION
+            is_supported = (
+                current_version.major,
+                current_version.minor,
+            ) >= REQUIRED_PYTHON_VERSION[:2]
 
-            if is_target_version:
-                log_test_success(f"Running on target version: Python {python_version}")
-            else:
-                log_test_warning(
-                    f"Running on Python {python_version}, not on target version 3.12.11"
+            if not is_supported:
+                self.skipTest(
+                    f"Python {python_version} is below minimum required "
+                    f"{'.'.join(str(v) for v in REQUIRED_PYTHON_VERSION)}"
                 )
-                # Skip this test if not running on the target version
-                if not is_target_version:
-                    log_test_skip("Test skipped because not on Python 3.12.11")
-                    self.skipTest("Not running on Python 3.12.11")
+
+            log_test_success(f"Running on supported Python {python_version}")
 
             log_test_step("Testing basic functionality")
             # Test basic functionality
@@ -285,7 +281,7 @@ class PythonVersionTests(unittest.TestCase):
                 self.assertEqual(
                     key,
                     reconstructed_key,
-                    "Key reconstruction should work on Python 3.12.11",
+                    f"Key reconstruction should work on Python {python_version}",
                 )
                 log_test_success(
                     f"Shamir's Secret Sharing works on Python {python_version}"
@@ -506,6 +502,34 @@ class MinimalDependencyTests(unittest.TestCase):
         except Exception as e:
             log_test_end(test_name, success=False)
             raise e
+
+
+class BootstrapScriptTests(unittest.TestCase):
+    """Verify that bootstrap scripts are syntactically valid."""
+
+    REPO_ROOT = Path(__file__).resolve().parent.parent
+
+    @unittest.skipIf(platform.system() == "Windows", "bash not available on Windows")
+    def test_linux_bootstrap_syntax(self):
+        """bootstrap-linux.sh must pass bash -n (no syntax errors)."""
+        import subprocess
+        script = self.REPO_ROOT / "bootstrap-linux.sh"
+        if not script.exists():
+            self.skipTest("bootstrap-linux.sh not found")
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0,
+                         f"bash -n reported errors:\n{result.stderr}")
+
+    @unittest.skipIf(platform.system() == "Windows", "bash not available on Windows")
+    def test_macos_bootstrap_syntax(self):
+        """bootstrap-macos.sh must pass bash -n (no syntax errors)."""
+        import subprocess
+        script = self.REPO_ROOT / "bootstrap-macos.sh"
+        if not script.exists():
+            self.skipTest("bootstrap-macos.sh not found")
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0,
+                         f"bash -n reported errors:\n{result.stderr}")
 
 
 if __name__ == "__main__":

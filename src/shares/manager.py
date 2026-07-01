@@ -65,7 +65,7 @@ class ShareManager:
         Raises:
             ValueError: If the secret is invalid
         """
-        if not isinstance(secret, bytes):
+        if not isinstance(secret, (bytes, bytearray)):
             raise ValueError("Secret must be in bytes")
         if not isinstance(label, str) or not label:
             raise ValueError("Label must be a non-empty string")
@@ -114,9 +114,14 @@ class ShareManager:
             )
 
         # share_index verification
-        indices = set(idx for idx, _ in shares)
-        if len(indices) != len(shares):
-            raise ValueError("Duplicate indices detected")
+        all_indices = [idx for idx, _ in shares]
+        seen = set()
+        duplicates = {idx for idx in all_indices if idx in seen or seen.add(idx)}
+        if duplicates:
+            raise ValueError(
+                f"Duplicate share indices detected: {sorted(duplicates)}. "
+                "Each share must be unique."
+            )
 
         try:
             # Split shares into two parts
@@ -130,34 +135,10 @@ class ShareManager:
             # Combine parts
             return secret_part1 + secret_part2
         except Exception as e:
-            raise ValueError(f"Error reconstructing secret: {str(e)}")
-
-    def verify_shares(self, shares: List[Tuple[int, bytes]]) -> bool:
-        """Verifies share validity without revealing the secret.
-
-        Args:
-            shares (List[Tuple[int, bytes]]): List of shares to verify
-
-        Returns:
-            bool: True if shares are valid, False otherwise
-        """
-        if not isinstance(shares, list):
-            return False
-        if len(shares) < self.threshold:
-            return False
-
-        try:
-            # share_index verification
-            indices = set(idx for idx, _ in shares)
-            if len(indices) != len(shares):
-                return False
-
-            # Test reconstruction with a subset
-            test_shares = shares[: self.threshold]
-            Shamir.combine(test_shares, ssss=False)
-            return True
-        except Exception as e:
-            return False
+            raise ValueError(
+                f"Secret reconstruction failed: {str(e)}. "
+                "Verify that all shares belong to the same encryption run and are not corrupted."
+            )
 
     @staticmethod
     def load_shares(
@@ -168,7 +149,7 @@ class ShareManager:
         metadata = None
 
         for share_file in share_files:
-            with open(share_file, "r") as f:
+            with open(share_file, "r", encoding="utf-8") as f:
                 share_info = json.load(f)
 
                 if metadata is None:
@@ -177,11 +158,19 @@ class ShareManager:
                     current_metadata = ShareMetadata.from_share_info(share_info)
                     if metadata.version != current_metadata.version:
                         raise ValueError(f"Incompatible version in {share_file}")
-                    if metadata.label != current_metadata.label:
+                    if (
+                        metadata.label
+                        and current_metadata.label
+                        and metadata.label != current_metadata.label
+                    ):
                         raise ValueError(f"Incompatible label in {share_file}")
                     if metadata.threshold != current_metadata.threshold:
                         raise ValueError(f"Incompatible threshold in {share_file}")
-                    if metadata.total_shares != current_metadata.total_shares:
+                    if (
+                        metadata.total_shares
+                        and current_metadata.total_shares
+                        and metadata.total_shares != current_metadata.total_shares
+                    ):
                         raise ValueError(f"Incompatible total shares in {share_file}")
 
                 # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
@@ -189,35 +178,20 @@ class ShareManager:
                 if not share_key:
                     raise ValueError(f"No share key found in {share_file}")
 
-                shares.append((share_info["share_index"], base64.b64decode(share_key)))
+                share_data = base64.b64decode(share_key)
+                expected_hash = share_info.get("hash")
+                if expected_hash:
+                    computed = hashlib.sha256(share_data).hexdigest()
+                    if computed != expected_hash:
+                        raise ValueError(
+                            f"Share {share_info.get('share_index', '?')} in {share_file} "
+                            "is corrupted (hash mismatch). Contact the share holder."
+                        )
+
+                shares.append((share_info["share_index"], share_data))
 
         # Ensure metadata is not None before returning
         if metadata is None:
             raise ValueError("No valid share files found")
 
         return shares, metadata
-
-    def save_share(self, share: Tuple[int, bytes], label: str) -> str:
-        """Saves a share to a file."""
-        idx, share_data = share
-        filename = f"share_{idx}.txt"
-
-        metadata = ShareMetadata(
-            version=self.version,
-            label=label,
-            threshold=self.threshold,
-            total_shares=self.total_shares,
-        )
-        metadata.validate()
-
-        share_info = {
-            **metadata.to_dict(),
-            "share_index": idx,
-            "share_key": base64.b64encode(share_data).decode(),
-            "hash": hashlib.sha256(share_data).hexdigest(),
-        }
-
-        with open(filename, "w") as f:
-            json.dump(share_info, f, indent=2)
-
-        return filename

@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -17,6 +18,7 @@ from src.crypto.encryption import FileEncryptor
 from src.crypto.memory import SecureMemory
 from src.shares.archiver import ShareArchiver
 from src.shares.manager import ShareManager
+from src.config import REQUIRED_PYTHON_VERSION, VERSION
 from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_bytes
 
 
@@ -30,7 +32,12 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
 @click.option(
     "--shares", "-n", required=True, type=int, help="Total number of shares to generate"
 )
-@click.option("--label", "-l", required=True, help="Label to identify shares")
+@click.option(
+    "--label",
+    "-l",
+    default=None,
+    help="Label to identify shares (default: input filename)",
+)
 @click.option(
     "--existing-shares",
     "-e",
@@ -38,6 +45,21 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
     help="Directory containing existing shares",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Verbose mode")
+@click.option(
+    "--full-metadata",
+    is_flag=True,
+    default=False,
+    help="Write label, total_shares and share_set_id to share files (less private, useful for debugging)",
+)
+@click.option(
+    "--bundle-encrypted",
+    "-b",
+    is_flag=True,
+    default=False,
+    help="Bundle a copy of the .enc file inside every share ZIP, making each share "
+    "self-contained. Default: the .enc file is kept only next to the tool, not "
+    "duplicated into every share's ZIP.",
+)
 def encrypt(
     input_file: str,
     threshold: int,
@@ -45,17 +67,25 @@ def encrypt(
     label: str,
     existing_shares: str,
     verbose: bool,
+    full_metadata: bool,
+    bundle_encrypted: bool,
 ) -> None:
     """Encrypts a file and generates shares."""
+    key = None
     try:
+        if label is None:
+            label = Path(input_file).stem
         # Replace spaces with underscores in label
         label = label.replace(" ", "_")
         if verbose:
             click.echo(f"Using label: {label} (spaces replaced with underscores)")
 
         # Check Python version
-        if sys.version_info < (3, 8):
-            raise ValueError("Python 3.8 or higher is required")
+        if sys.version_info < REQUIRED_PYTHON_VERSION:
+            raise ValueError(
+                f"Python {'.'.join(str(v) for v in REQUIRED_PYTHON_VERSION)} required, "
+                f"got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+            )
 
         # Create shares directory if it doesn't exist
         shares_dir = Path("shares")
@@ -65,9 +95,6 @@ def encrypt(
                 click.echo("Created shares directory")
         elif verbose:
             click.echo("Using existing shares directory")
-
-        # Calculate integrity hashes
-        tool_integrity = calculate_tool_integrity()
 
         if existing_shares:
             # Convert existing_shares to absolute path if necessary
@@ -80,22 +107,11 @@ def encrypt(
             for file_path in existing_shares_path.glob("*.*"):
                 if file_path.is_file():
                     try:
-                        with open(file_path, "r") as f:
+                        with open(file_path, "r", encoding="utf-8") as f:
                             share_info = json.load(f)
                             # Check if this is a valid share file by looking for essential fields
-                            if all(
-                                key in share_info
-                                for key in [
-                                    "share_index",
-                                    (
-                                        "share_key"
-                                        if "share_key" in share_info
-                                        else "share"
-                                    ),
-                                    "label",
-                                    "threshold",
-                                    "total_shares",
-                                ]
+                            if "share_index" in share_info and (
+                                "share_key" in share_info or "share" in share_info
                             ):
                                 share_files.append(file_path)
                     except (json.JSONDecodeError, UnicodeDecodeError, IOError):
@@ -113,19 +129,11 @@ def encrypt(
                     if potential_files:
                         for file_path in potential_files:
                             try:
-                                with open(file_path, "r") as f:
+                                with open(file_path, "r", encoding="utf-8") as f:
                                     share_info = json.load(f)
-                                    if all(
-                                        key in share_info
-                                        for key in [
-                                            "share_index",
-                                            (
-                                                "share_key"
-                                                if "share_key" in share_info
-                                                else "share"
-                                            ),
-                                            "label",
-                                        ]
+                                    if "share_index" in share_info and (
+                                        "share_key" in share_info
+                                        or "share" in share_info
                                     ):
                                         share_files.append(file_path)
                             except (
@@ -143,19 +151,23 @@ def encrypt(
             if verbose:
                 click.echo(f"Found {len(share_files)} valid share files")
 
-            # Read label from first share
-            with open(share_files[0], "r") as f:
+            # Read label from first share (may be absent in minimal-metadata shares)
+            with open(share_files[0], "r", encoding="utf-8") as f:
                 share_info = json.load(f)
-                existing_label = share_info["label"]
+                existing_label = share_info.get("label")
 
-            click.echo(f"\nExisting shares found with label: {existing_label}")
-            click.echo("You must use the same label for compatibility")
-            label = existing_label
-            click.echo(f"Label used: {label}")
+            if existing_label:
+                click.echo(f"\nExisting shares found with label: {existing_label}")
+                click.echo("You must use the same label for compatibility")
+                label = existing_label
+                click.echo(f"Label used: {label}")
+            else:
+                click.echo("\nExisting shares found (no label — minimal metadata mode)")
+                click.echo(f"Using provided label: {label}")
 
             # Read parameters from existing shares
-            threshold = share_info.get("threshold", 3)
-            total_shares = share_info.get("total_shares", 5)
+            threshold = share_info.get("threshold", threshold)
+            total_shares = share_info.get("total_shares", shares)
             click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
@@ -163,15 +175,15 @@ def encrypt(
             share_files_str = [str(f) for f in share_files]
             shares_data, metadata = ShareManager.load_shares(share_files_str)
 
-            # Verify metadata compatibility
-            if metadata.label != label:
+            # Verify metadata compatibility (only when label is present in both)
+            if metadata.label and metadata.label != label:
                 raise ValueError(
                     f"Share label mismatch: expected {label}, found {metadata.label}"
                 )
 
             # Use original parameters from metadata
             threshold = metadata.threshold
-            shares = metadata.total_shares
+            shares = metadata.total_shares or shares
 
             if verbose:
                 click.echo(
@@ -179,10 +191,12 @@ def encrypt(
                 )
 
             share_manager = ShareManager(threshold, shares)
-            key = share_manager.combine_shares(shares_data)
+            key = bytearray(share_manager.combine_shares(shares_data))
+            for _, share_bytes in shares_data:
+                SecureMemory.secure_clear(bytearray(share_bytes))
 
             # Get existing share_set_id
-            with open(share_files[0], "r") as f:
+            with open(share_files[0], "r", encoding="utf-8") as f:
                 share_info = json.load(f)
                 share_set_id = share_info.get("share_set_id", None)
 
@@ -193,7 +207,7 @@ def encrypt(
         else:
             # Generate new shares
             # Generate new key with enhanced entropy
-            key = get_enhanced_random_bytes(32)
+            key = bytearray(get_enhanced_random_bytes(32))
 
             # Generate a unique set identifier hash for this group of shares
             # Using enhanced entropy for share_set_id generation
@@ -214,25 +228,28 @@ def encrypt(
             archiver = ShareArchiver()
 
             # Save shares and create archives
+            tool_integrity = calculate_tool_integrity() if full_metadata else None
             new_share_files: List[str] = []
             for idx, share in share_data:
                 share_file = f"share_{idx}.txt"
-                with open(share_file, "w") as f:
-                    json.dump(
+                share_info_dict: Dict[str, Any] = {
+                    "share_index": idx,
+                    "share_key": base64.b64encode(share).decode(),
+                    "threshold": threshold,
+                    "hash": hashlib.sha256(share).hexdigest(),
+                }
+                if full_metadata:
+                    share_info_dict.update(
                         {
-                            "share_index": idx,
-                            "share_key": base64.b64encode(share).decode(),
                             "label": label,
-                            "share_integrity_hash": hashlib.sha256(share).hexdigest(),
-                            "threshold": threshold,
                             "total_shares": shares,
+                            "share_set_id": share_set_id,
                             "tool_integrity": tool_integrity,
                             "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-                            "share_set_id": share_set_id,  # Add the share set ID to identify related shares
-                        },
-                        f,
-                        indent=2,
+                        }
                     )
+                with open(share_file, "w") as f:
+                    json.dump(share_info_dict, f, indent=2)
                 new_share_files.append(share_file)
 
             if verbose:
@@ -242,34 +259,11 @@ def encrypt(
         output_file = f"{input_file}.enc"
         encryptor = FileEncryptor(key)
 
-        # Add share_set_id to metadata before encryption
         metadata_dict = {
-            "version": share_manager.version,
-            "timestamp": int(time.time()),
             "share_set_id": share_set_id if "share_set_id" in locals() else None,
         }
 
-        # Calculate data hash
-        with open(input_file, "rb") as f:
-            file_data = f.read()
-        data_hash = hashlib.sha256(file_data).hexdigest()
-
-        # Encrypt the file with metadata
-        with open(input_file, "rb") as f_in, open(output_file, "wb") as f_out:
-            # Write metadata
-            encryptor._write_metadata(f_out, data_hash, metadata_dict)
-
-            # Read the input file
-            data = f_in.read()
-
-            # Encrypt the data
-            cipher = AES.new(key, AES.MODE_GCM)
-            ciphertext, tag = cipher.encrypt_and_digest(data)
-
-            # Write encryption data
-            f_out.write(cipher.nonce)
-            f_out.write(tag)
-            f_out.write(ciphertext)
+        encryptor.encrypt_file(input_file, output_file, metadata_dict)
 
         if verbose:
             click.echo(f"Encrypted file: {output_file}")
@@ -278,7 +272,10 @@ def encrypt(
         if not existing_shares:
             for idx, share_file in enumerate(new_share_files, 1):
                 archive_path = archiver.create_share_archive(
-                    share_file, output_file, idx, label
+                    share_file,
+                    idx,
+                    label,
+                    encrypted_file=output_file if bundle_encrypted else None,
                 )
                 if verbose:
                     click.echo(f"Created archive: {Path(archive_path).absolute()}")
@@ -286,12 +283,25 @@ def encrypt(
                 # Remove temporary share file
                 os.remove(share_file)
 
-        # Secure cleanup
-        SecureMemory.secure_clear(key)
-
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
+    finally:
+        if key is not None:
+            SecureMemory.secure_clear(key)
+
+
+def _extract_share_version(share_info: Dict[str, Any]) -> str:
+    """Extract version from share_info, with fallback to current VERSION."""
+    if "tool_integrity" in share_info and "shares_tool_version" in share_info.get(
+        "tool_integrity", {}
+    ):
+        return share_info["tool_integrity"]["shares_tool_version"]
+    if "shares_tool_version" in share_info:
+        return share_info["shares_tool_version"]
+    if "version" in share_info:
+        return share_info["version"]
+    return VERSION
 
 
 @click.command()
@@ -333,25 +343,31 @@ def decrypt(
                     f"Using shares with parameters: threshold={metadata['threshold']}, total_shares={metadata['total_shares']}"
                 )
 
-            # Reconstruct key
+            # Reconstruct key and decrypt
             share_manager = ShareManager(
                 metadata["threshold"], metadata["total_shares"]
             )
-            key = share_manager.combine_shares(shares_data)
+            with SecureMemory.secure_context(32) as key:
+                key[:] = share_manager.combine_shares(shares_data)
+                for _, share_bytes in shares_data:
+                    SecureMemory.secure_clear(bytearray(share_bytes))
 
-            # Decrypt file
-            output_file = (
-                input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
-            )
-            encryptor = FileEncryptor(key)
-            encryptor.decrypt_file(input_file, output_file)
+                # Decrypt file
+                output_file = (
+                    input_file[:-4]
+                    if input_file.endswith(".enc")
+                    else input_file + ".dec"
+                )
+                if Path(output_file).exists():
+                    raise click.ClickException(
+                        f"Output file already exists: {output_file}\n"
+                        "Delete or rename it before decrypting."
+                    )
+                encryptor = FileEncryptor(key)
+                encryptor.decrypt_file(input_file, output_file)
 
-            # Get absolute path of the decrypted file
             output_path = Path(output_file).absolute()
             click.echo(f"File successfully decrypted: {output_path}")
-
-            # Secure cleanup
-            SecureMemory.secure_clear(key)
             return
 
         # Original code for file-based shares
@@ -367,9 +383,7 @@ def decrypt(
         # Extract share_set_id from metadata
         extracted_share_set_id = None
         with open(input_file, "rb") as f:
-            # Read metadata
-            encryptor = FileEncryptor(SecureMemory.secure_bytes(32))
-            metadata = encryptor._read_metadata(f)
+            metadata = FileEncryptor._read_metadata(f)
             extracted_share_set_id = metadata.get("share_set_id")
 
             if verbose:
@@ -401,16 +415,11 @@ def decrypt(
                 file_path.is_file() and not file_path.suffix == ".zip"
             ):  # Skip ZIP files which we already handled
                 try:
-                    with open(file_path, "r") as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         share_info = json.load(f)
                         # Check if this is a valid share file by looking for essential fields
-                        if all(
-                            key in share_info
-                            for key in [
-                                "share_index",
-                                "share_key" if "share_key" in share_info else "share",
-                                "label",
-                            ]
+                        if "share_index" in share_info and (
+                            "share_key" in share_info or "share" in share_info
                         ):
                             content_share_files.append(file_path)
                 except (json.JSONDecodeError, UnicodeDecodeError, IOError) as e:
@@ -441,12 +450,12 @@ def decrypt(
 
         # Process each file and group by set_id and label
         for share_file in share_files:
-            if str(share_file).endswith(".zip"):
-                # Extract archive to temporary directory
-                temp_dir = Path(f"temp_share_{share_file.stem}")
-                temp_dir.mkdir(exist_ok=True)
-
+            temp_dir = None
+            is_zip = str(share_file).endswith(".zip")
+            if is_zip:
+                # Extract archive to a secure temporary directory
                 try:
+                    temp_dir = Path(tempfile.mkdtemp(prefix="fractum_share_"))
                     with zipfile.ZipFile(share_file, "r") as zipf:
                         zipf.extractall(temp_dir)
 
@@ -455,42 +464,48 @@ def decrypt(
                     if not share_files_in_zip:
                         if verbose:
                             click.echo(f"No share file found in archive {share_file}")
+                        shutil.rmtree(temp_dir, ignore_errors=True)
                         continue
 
                     share_file = share_files_in_zip[0]
                 except Exception as e:
-                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    if temp_dir:
+                        shutil.rmtree(temp_dir, ignore_errors=True)
                     if verbose:
-                        click.echo(f"Error extracting archive {share_file}: {str(e)}")
+                        click.echo(f"Error extracting archive: {str(e)}")
                     continue
 
             try:
-                with open(share_file, "r") as f:
+                with open(share_file, "r", encoding="utf-8") as f:
                     share_info = json.load(f)
-                    label = share_info["label"]
+                    label = share_info.get("label", "_unlabeled")
                     share_set_id = share_info.get("share_set_id", None)
+
+                    # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
+                    share_key = share_info.get("share_key", share_info.get("share"))
+
+                    if not share_key:
+                        if verbose:
+                            click.echo(f"No share key found in {share_file}")
+                        continue
+
+                    share_data = base64.b64decode(share_key)
+
+                    # Hash integrity check — raises immediately (not swallowed) so the
+                    # user knows exactly which share is corrupted.
+                    expected_hash = share_info.get("hash")
+                    if expected_hash:
+                        computed = hashlib.sha256(share_data).hexdigest()
+                        if computed != expected_hash:
+                            raise ValueError(
+                                f"Share {share_info.get('share_index', '?')} in {share_file} "
+                                "is corrupted (hash mismatch). Contact the share holder."
+                            )
 
                     # If share has a set_id, store by set_id
                     if share_set_id:
                         if share_set_id not in shares_by_set_id:
-                            # Look for version in different places to maintain compatibility with old files
-                            version = None
-                            if (
-                                "tool_integrity" in share_info
-                                and "shares_tool_version"
-                                in share_info["tool_integrity"]
-                            ):
-                                version = share_info["tool_integrity"][
-                                    "shares_tool_version"
-                                ]
-                            elif "shares_tool_version" in share_info:
-                                version = share_info["shares_tool_version"]
-                            elif "version" in share_info:
-                                version = share_info["version"]
-                            else:
-                                from src.config import VERSION
-
-                                version = VERSION
+                            version = _extract_share_version(share_info)
 
                             shares_by_set_id[share_set_id] = {
                                 "shares": [],
@@ -502,37 +517,17 @@ def decrypt(
                                 },
                             }
 
-                        # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
-                        share_key = share_info.get("share_key", share_info.get("share"))
-                        if not share_key:
-                            raise ValueError(f"No share key found in {share_file}")
-
                         shares_by_set_id[share_set_id]["shares"].append(
-                            (share_info["share_index"], base64.b64decode(share_key))
+                            (share_info["share_index"], share_data)
                         )
 
                     # Also store by label for backward compatibility
                     if label not in shares_by_label:
-                        # Look for version in different places to maintain compatibility with old files
-                        version = None
-                        if (
-                            "tool_integrity" in share_info
-                            and "shares_tool_version" in share_info["tool_integrity"]
-                        ):
-                            version = share_info["tool_integrity"][
-                                "shares_tool_version"
-                            ]
-                        elif "shares_tool_version" in share_info:
-                            version = share_info["shares_tool_version"]
-                        elif "version" in share_info:
-                            version = share_info["version"]
-                        else:
-                            from src.config import VERSION
-
-                            version = VERSION
+                        version = _extract_share_version(share_info)
 
                         shares_by_label[label] = {
                             "shares": [],
+                            "share_set_ids": [],  # parallel list — tracks set_id per share for N5 filtering
                             "metadata": {
                                 "version": version,
                                 "label": label,
@@ -541,23 +536,22 @@ def decrypt(
                             },
                         }
 
-                    # Support both 'share_key' (new) and 'share' (legacy) for backward compatibility
-                    share_key = share_info.get("share_key", share_info.get("share"))
-                    if not share_key:
-                        if verbose:
-                            click.echo(f"No share key found in {share_file}")
-                        continue
-
                     shares_by_label[label]["shares"].append(
-                        (share_info["share_index"], base64.b64decode(share_key))
+                        (share_info["share_index"], share_data)
                     )
+                    shares_by_label[label]["share_set_ids"].append(share_set_id)
+            except ValueError:
+                # Validation errors (hash mismatch, missing key) must propagate so
+                # the user gets an actionable message naming the corrupted share.
+                raise
             except Exception as e:
+                # Parse errors (bad JSON, encoding issues) → skip this file silently.
                 if verbose:
                     click.echo(f"Error processing {share_file}: {str(e)}")
                 continue
 
             # Clean up temporary directory if it was an archive
-            if str(share_file).endswith(".zip"):
+            if is_zip and temp_dir:
                 shutil.rmtree(temp_dir, ignore_errors=True)
 
         if verbose:
@@ -600,63 +594,63 @@ def decrypt(
             if input_label is None:
                 # If no exact match, try all available labels until one works
                 if shares_by_label:
-                    # Try each label until one works
                     for label in shares_by_label:
                         try:
                             if verbose:
                                 click.echo(f"Trying shares with label: {label}")
 
-                            share_data = shares_by_label[label]["shares"]
+                            all_shares = shares_by_label[label]["shares"]
+                            set_ids = shares_by_label[label].get("share_set_ids", [])
+
+                            # Filter by extracted_share_set_id to avoid mixing shares from different sets (N5)
+                            if extracted_share_set_id and set_ids:
+                                filtered = [
+                                    s
+                                    for s, sid in zip(all_shares, set_ids)
+                                    if sid == extracted_share_set_id
+                                ]
+                                share_data = filtered if filtered else all_shares
+                            else:
+                                share_data = all_shares
+
                             metadata = shares_by_label[label]["metadata"]
 
-                            # Try to reconstruct key
                             share_manager = ShareManager(
                                 metadata["threshold"], metadata["total_shares"]
                             )
-                            key = share_manager.combine_shares(share_data)
+                            key = bytearray(share_manager.combine_shares(share_data))
+                            for _, share_bytes in share_data:
+                                SecureMemory.secure_clear(bytearray(share_bytes))
 
-                            # Try to decrypt with this key
-                            output_file = (
-                                input_file[:-4]
-                                if input_file.endswith(".enc")
-                                else input_file + ".dec"
-                            )
-                            encryptor = FileEncryptor(key)
-
-                            # Try to decrypt a small portion of the file to verify the key
+                            # Verify key against the full ciphertext with correct AAD
                             with open(input_file, "rb") as f:
-                                # Skip metadata
-                                metadata_len = int.from_bytes(f.read(4), "big")
-                                f.read(metadata_len)
-
-                                # Read a small portion of the encrypted data
+                                probe_meta_len = int.from_bytes(f.read(4), "big")
+                                probe_meta_bytes = f.read(probe_meta_len)
                                 nonce = f.read(16)
                                 tag = f.read(16)
-                                ciphertext = f.read(32)  # Just read a small portion
+                                ciphertext = f.read()
 
-                            # Try to decrypt this small portion
                             cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+                            cipher.update(probe_meta_bytes)
                             try:
                                 cipher.decrypt_and_verify(ciphertext, tag)
-                                # If we get here, the key is correct
                                 if verbose:
                                     click.echo(
                                         f"Successfully verified key with label: {label}"
                                     )
                                 break
                             except ValueError:
-                                # Key is incorrect, try next label
                                 if verbose:
                                     click.echo(
                                         f"Key verification failed for label: {label}"
                                     )
+                                SecureMemory.secure_clear(key)
                                 continue
                         except Exception as e:
                             if verbose:
                                 click.echo(f"Error trying label {label}: {str(e)}")
                             continue
                     else:
-                        # If we get here, none of the labels worked
                         raise ValueError(
                             "No compatible shares found. None of the available shares could decrypt the file."
                         )
@@ -677,23 +671,27 @@ def decrypt(
 
         # Reconstruct key
         share_manager = ShareManager(threshold, total_shares)
-        key = share_manager.combine_shares(share_data)
-        if verbose:
-            click.echo("Key reconstructed from shares")
+        with SecureMemory.secure_context(32) as key:
+            key[:] = share_manager.combine_shares(share_data)
+            for _, share_bytes in share_data:
+                SecureMemory.secure_clear(bytearray(share_bytes))
+            if verbose:
+                click.echo("Key reconstructed from shares")
 
-        # File decryption
-        output_file = (
-            input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
-        )
-        encryptor = FileEncryptor(key)
-        encryptor.decrypt_file(input_file, output_file)
+            # File decryption
+            output_file = (
+                input_file[:-4] if input_file.endswith(".enc") else input_file + ".dec"
+            )
+            if Path(output_file).exists():
+                raise click.ClickException(
+                    f"Output file already exists: {output_file}\n"
+                    "Delete or rename it before decrypting."
+                )
+            encryptor = FileEncryptor(key)
+            encryptor.decrypt_file(input_file, output_file)
 
-        # Get absolute path of the decrypted file
         output_path = Path(output_file).absolute()
         click.echo(f"File successfully decrypted: {output_path}")
-
-        # Secure cleanup
-        SecureMemory.secure_clear(key)
 
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
@@ -703,26 +701,17 @@ def decrypt(
 def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
     """Collects shares manually from user input."""
     click.echo("\n=== Manual Share Entry ===")
-    
-    # Get threshold and total shares first, at the beginning
-    threshold = click.prompt(
-        "Threshold (minimum number of shares needed)", type=int
-    )
-    total_shares = click.prompt("Total shares", type=int)
 
-    if threshold < 2 or threshold > total_shares or total_shares > 255:
-        raise ValueError(
-            "Invalid parameters. Threshold must be >= 2, total_shares must be >= threshold and <= 255."
-        )
+    # Threshold is cryptographically required to reconstruct the secret correctly
+    # (Shamir reconstruction with fewer shares than the original threshold silently
+    # yields the wrong key). total_shares is not needed for reconstruction, so it
+    # is no longer asked here.
+    threshold = click.prompt("Threshold (minimum number of shares needed)", type=int)
+    if threshold < 2:
+        raise ValueError("Invalid parameters. Threshold must be >= 2.")
 
-    from src.config import VERSION
+    metadata: Dict[str, Any] = {"version": VERSION, "threshold": threshold}
 
-    metadata = {
-        "version": VERSION,
-        "threshold": threshold,
-        "total_shares": total_shares,
-    }
-    
     click.echo("\nEnter share details when prompted. Enter 'done' when finished.")
 
     shares = []
@@ -786,19 +775,18 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
         )
 
         # Check if we have enough shares
-        if len(shares) >= metadata["threshold"]:
+        if len(shares) >= threshold:
             if click.confirm(
                 "You have enough shares for reconstruction. Proceed with decryption?",
                 default=None,
             ):
                 break
 
-    # Final verification
     if len(shares) < 2:
-        click.echo("Warning: Not enough shares provided. Minimum 2 shares required.")
+        raise ValueError("Not enough shares provided. Minimum 2 shares required.")
 
-    # Ensure metadata is not None before returning
-    if metadata is None:
-        raise ValueError("No metadata collected")
+    # total_shares is only used for ShareManager's >= threshold validation,
+    # never for reconstruction — derive it instead of asking the user.
+    metadata["total_shares"] = len(shares)
 
     return shares, metadata
