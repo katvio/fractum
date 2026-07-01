@@ -102,14 +102,18 @@ jobs:
           zip -r dist/fractum-${STEPS_GET_VERSION_OUTPUTS_VERSION}-source.zip \
             src/ \
             packages/ \
+            tests/ \
             bootstrap-*.sh \
             bootstrap-*.ps1 \
             Dockerfile \
+            .dockerignore \
+            assets \
             setup.py \
             README.md \
             LICENSE \
             --exclude="*.pyc" \
             --exclude="__pycache__/*" \
+            --exclude="*.DS_Store" \
             --exclude=".git/*"
           
           # Create checksums

@@ -17,7 +17,9 @@ import os
 import sys
 import tempfile
 import unittest
+from collections import namedtuple
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
@@ -757,6 +759,63 @@ class TestVerboseMode(unittest.TestCase):
         output = result.output or ""
         self.assertNotIn(key_hex, output, "Raw key hex must not appear in verbose output")
         self.assertNotIn(key_b64, output, "Raw key B64 must not appear in verbose output")
+
+
+# ── M4 key hygiene + runtime version guard ────────────────────────────────────
+
+class TestEncryptKeyHygiene(unittest.TestCase):
+    """M4 + runtime guard: the AES key is held in a bytearray and wiped after use,
+    and the CLI refuses to run on an interpreter older than the pinned version."""
+
+    def setUp(self):
+        self.runner = CliRunner()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp_dir = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_encrypt_wipes_key_bytearray_after_use(self):
+        from src.cli import commands as cmd
+        captured = {}
+        real_encryptor = cmd.FileEncryptor
+
+        def spy(key):
+            captured["snapshot"] = bytes(key)
+            captured["key"] = key
+            return real_encryptor(key)
+
+        with self.runner.isolated_filesystem():
+            Path("secret.bin").write_bytes(b"top secret payload to encrypt")
+            with patch.object(cmd, "FileEncryptor", side_effect=spy):
+                result = self.runner.invoke(
+                    encrypt, ["secret.bin", "-t", "2", "-n", "3", "-l", "wipe"],
+                    catch_exceptions=False)
+            self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIsInstance(captured.get("key"), bytearray)
+        self.assertEqual(len(captured["key"]), 32)
+        self.assertNotEqual(captured["snapshot"], b"\x00" * 32)
+        self.assertTrue(all(b == 0 for b in captured["key"]),
+                        "AES key bytearray must be zeroed after encryption (M4)")
+
+    def test_encrypt_fails_on_old_python_version(self):
+        from src.cli import commands as cmd
+        version_info = namedtuple(
+            "version_info", ["major", "minor", "micro", "releaselevel", "serial"])
+        fake_sys = MagicMock(wraps=sys)
+        fake_sys.version_info = version_info(3, 11, 0, "final", 0)
+        with self.runner.isolated_filesystem():
+            Path("secret.bin").write_bytes(b"data")
+            with patch.object(cmd, "sys", fake_sys):
+                result = self.runner.invoke(
+                    encrypt, ["secret.bin", "-t", "2", "-n", "3", "-l", "oldpy"])
+        self.assertNotEqual(result.exit_code, 0)
+        output = result.output
+        try:
+            output += result.stderr or ""
+        except Exception:
+            pass
+        self.assertIn("required", output.lower())
 
 
 if __name__ == "__main__":

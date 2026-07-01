@@ -915,7 +915,7 @@ class EdgeCaseSecurityTests(unittest.TestCase):
                 metadata_len = int.from_bytes(original_content[:4], "big")
 
                 # Create metadata with invalid UTF-8 sequences
-                invalid_utf8 = b'{"version": "1.3.0", "invalid": "\xc3\x28\xaf\xed"}'
+                invalid_utf8 = b'{"version": "0.0.0-mock", "invalid": "\xc3\x28\xaf\xed"}'
 
                 # Write back with invalid UTF-8
                 dst.write(len(invalid_utf8).to_bytes(4, "big"))

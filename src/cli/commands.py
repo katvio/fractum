@@ -51,6 +51,15 @@ from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_by
     default=False,
     help="Write label, total_shares and share_set_id to share files (less private, useful for debugging)",
 )
+@click.option(
+    "--bundle-encrypted",
+    "-b",
+    is_flag=True,
+    default=False,
+    help="Bundle a copy of the .enc file inside every share ZIP, making each share "
+    "self-contained. Default: the .enc file is kept only next to the tool, not "
+    "duplicated into every share's ZIP.",
+)
 def encrypt(
     input_file: str,
     threshold: int,
@@ -59,6 +68,7 @@ def encrypt(
     existing_shares: str,
     verbose: bool,
     full_metadata: bool,
+    bundle_encrypted: bool,
 ) -> None:
     """Encrypts a file and generates shares."""
     key = None
@@ -262,7 +272,10 @@ def encrypt(
         if not existing_shares:
             for idx, share_file in enumerate(new_share_files, 1):
                 archive_path = archiver.create_share_archive(
-                    share_file, output_file, idx, label
+                    share_file,
+                    idx,
+                    label,
+                    encrypted_file=output_file if bundle_encrypted else None,
                 )
                 if verbose:
                     click.echo(f"Created archive: {Path(archive_path).absolute()}")
@@ -714,7 +727,7 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
             if share_index < 1 or share_index > 255:
                 click.echo("Invalid share index. Must be between 1 and 255.")
                 continue
-        except ValueError:
+        except V
             click.echo("Invalid share index. Please enter a number.")
             continue
 

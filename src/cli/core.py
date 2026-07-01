@@ -47,6 +47,14 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
             Directory containing existing shares to use for encryption
             (allows reusing shares from previous operations)
 
+            --full-metadata
+            Write label, total_shares and share_set_id to share files
+            (less private, useful for debugging)
+
+            --bundle-encrypted, -b
+            Bundle a copy of the .enc file inside every share ZIP
+            (default: .enc stays only next to the tool, not duplicated into each ZIP)
+
             --verbose, -v
             Enable verbose output for detailed operation information
 

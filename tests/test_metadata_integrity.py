@@ -8,11 +8,13 @@ import os
 import random
 import tempfile
 import unittest
+from pathlib import Path
 
 # Import from the src module
 from src.config import VERSION
+from src.crypto import FileEncryptor
 from src.shares import ShareManager, ShareMetadata
-from src.utils import calculate_tool_integrity
+from src.utils import calculate_tool_integrity, get_enhanced_random_bytes
 
 
 # Colors for logs
@@ -669,6 +671,60 @@ class TestIntegrityVerification(unittest.TestCase):
         except Exception as e:
             log_test_end(test_name, success=False)
             raise e
+
+
+class EncMetadataBindingTests(unittest.TestCase):
+    """C1/C2: the .enc metadata header is bound to the ciphertext as GCM AAD and
+    carries no plaintext fingerprint."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp_dir = Path(self.tmp.name)
+        self.key = get_enhanced_random_bytes(32)
+        self.plaintext = b"CONFIDENTIAL: merger terms 2026, do not disclose."
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _encrypt(self, metadata=None):
+        src = self.tmp_dir / "plain.bin"
+        enc = self.tmp_dir / "plain.bin.enc"
+        src.write_bytes(self.plaintext)
+        FileEncryptor(self.key).encrypt_file(str(src), str(enc), metadata)
+        return enc
+
+    @staticmethod
+    def _split(raw):
+        metadata_len = int.from_bytes(raw[:4], "big")
+        return metadata_len, raw[4:4 + metadata_len], raw[4 + metadata_len:]
+
+    def test_metadata_tampering_breaks_gcm_verification(self):
+        """C2: flipping a single non-version metadata byte (still valid JSON, same
+        length, same version) must fail the GCM auth check on decrypt."""
+        enc = self._encrypt(metadata={"aad_probe": "A" * 40})
+        out = self.tmp_dir / "ok.out"
+        FileEncryptor(self.key).decrypt_file(str(enc), str(out))
+        self.assertEqual(out.read_bytes(), self.plaintext)
+        metadata_len, meta, rest = self._split(enc.read_bytes())
+        idx = meta.index(b"A")
+        tampered = meta[:idx] + b"B" + meta[idx + 1:]
+        self.assertEqual(len(tampered), metadata_len)
+        self.assertEqual(json.loads(tampered.decode("utf-8"))["version"], VERSION)
+        enc.write_bytes(metadata_len.to_bytes(4, "big") + tampered + rest)
+        with self.assertRaises(ValueError) as ctx:
+            FileEncryptor(self.key).decrypt_file(str(enc), str(self.tmp_dir / "bad.out"))
+        self.assertIn("mac", str(ctx.exception).lower())
+
+    def test_enc_metadata_carries_no_plaintext_hash(self):
+        """C1: the .enc metadata must not embed a hash/fingerprint of the plaintext."""
+        enc = self._encrypt(metadata={"share_set_id": "deadbeefdeadbeef"})
+        _, meta, _ = self._split(enc.read_bytes())
+        meta_obj = json.loads(meta.decode("utf-8"))
+        meta_text = meta.decode("utf-8")
+        self.assertNotIn("hash", meta_obj)
+        digest = hashlib.sha256(self.plaintext).hexdigest()
+        self.assertNotIn(digest, meta_text)
+        self.assertNotIn(digest[:16], meta_text)
 
 
 if __name__ == "__main__":

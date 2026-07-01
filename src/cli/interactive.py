@@ -176,6 +176,11 @@ def interactive_encrypt() -> bool:
             "Include full metadata in shares? (label, total shares, tool info)",
             default=False,
         )
+        bundle_encrypted = click.confirm(
+            "Bundle a copy of the encrypted (.enc) file inside every share ZIP? "
+            "(makes each share self-contained, but duplicates the ciphertext N times)",
+            default=False,
+        )
 
         # Confirm parameters
         click.echo("\nEncryption parameters:")
@@ -188,6 +193,7 @@ def interactive_encrypt() -> bool:
             click.echo(f"Shares directory: {existing_shares}")
         click.echo(f"Verbose mode: {'Enabled' if verbose else 'Disabled'}")
         click.echo(f"Full metadata: {'Yes' if full_metadata else 'No (minimal)'}")
+        click.echo(f"Bundle .enc in shares: {'Yes' if bundle_encrypted else 'No'}")
 
         # Execute command via Click
         ctx = click.get_current_context()
@@ -200,6 +206,7 @@ def interactive_encrypt() -> bool:
             existing_shares=existing_shares,
             verbose=verbose,
             full_metadata=full_metadata,
+            bundle_encrypted=bundle_encrypted,
         )
         return True
 
