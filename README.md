@@ -39,7 +39,7 @@ Docker is the recommended way to run Fractum. The `--network=none` flag guarante
 
 ```bash
 git clone https://github.com/katvio/fractum.git
-cd fractum && git checkout tags/v1.3.0
+cd fractum && git checkout tags/v1.4.1
 mkdir -p data shares
 docker build -t fractum-secure .
 ```
