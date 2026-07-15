@@ -1,6 +1,6 @@
-# packages/CHECKSUMS.sha256 has not been GPG-signed yet.
+# PLACEHOLDER — packages/CHECKSUMS.sha256 has not been GPG-signed yet.
 #
-# Pour générer une signature .asc :
+# To generate the signature (run on a machine with the Katvio signing key):
 #
 #   gpg --detach-sign --armor --local-user D009F6290DCFDAB6 packages/CHECKSUMS.sha256
 #   # Produces: packages/CHECKSUMS.sha256.asc
