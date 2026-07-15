@@ -21,6 +21,30 @@ from src.shares.manager import ShareManager
 from src.config import REQUIRED_PYTHON_VERSION, VERSION
 from src.utils.integrity import calculate_tool_integrity, get_enhanced_random_bytes
 
+# Share archives bundle small text (share file, source, docs) plus optionally one
+# arbitrarily-large user file (--bundle-encrypted), so the cap must stay generous —
+# it exists to catch zip bombs, not to bound legitimate large attachments.
+MAX_ZIP_UNCOMPRESSED_SIZE = 10 * 1024**3  # 10 GiB
+MAX_ZIP_COMPRESSION_RATIO = 200  # legit text/source rarely exceeds ~10:1
+
+
+def _validate_zip_before_extract(zip_path: "Path", zipf: zipfile.ZipFile) -> None:
+    """Guards against zip bombs: rejects archives with runaway uncompressed size or
+    per-entry compression ratios before any bytes are written to disk."""
+    total_uncompressed = 0
+    for info in zipf.infolist():
+        total_uncompressed += info.file_size
+        if info.compress_size > 0 and info.file_size / info.compress_size > MAX_ZIP_COMPRESSION_RATIO:
+            raise ValueError(
+                f"refusing to extract {zip_path.name}: entry '{info.filename}' has a "
+                f"suspicious compression ratio ({info.file_size / info.compress_size:.0f}:1) — possible zip bomb"
+            )
+        if total_uncompressed > MAX_ZIP_UNCOMPRESSED_SIZE:
+            raise ValueError(
+                f"refusing to extract {zip_path.name}: uncompressed size exceeds "
+                f"{MAX_ZIP_UNCOMPRESSED_SIZE} bytes — possible zip bomb"
+            )
+
 
 @click.command()
 @click.argument(
@@ -79,6 +103,12 @@ def encrypt(
         label = label.replace(" ", "_")
         if verbose:
             click.echo(f"Using label: {label} (spaces replaced with underscores)")
+            if not full_metadata:
+                click.echo(
+                    "Note: the label is not written into the shares in minimal-metadata "
+                    "mode (default) — it's for local/console reference only. Pass "
+                    "--full-metadata if you need the label to survive into the share files."
+                )
 
         # Check Python version
         if sys.version_info < REQUIRED_PYTHON_VERSION:
@@ -457,6 +487,7 @@ def decrypt(
                 try:
                     temp_dir = Path(tempfile.mkdtemp(prefix="fractum_share_"))
                     with zipfile.ZipFile(share_file, "r") as zipf:
+                        _validate_zip_before_extract(Path(share_file), zipf)
                         zipf.extractall(temp_dir)
 
                     # Look for share file
@@ -564,6 +595,12 @@ def decrypt(
                 click.echo(
                     f"  - {label}: {len(shares_by_label[label]['shares'])} shares (threshold: {shares_by_label[label]['metadata']['threshold']})"
                 )
+            if "_unlabeled" in shares_by_label:
+                click.echo(
+                    "  Note: '_unlabeled' is expected for shares created without "
+                    "--full-metadata (minimal-metadata mode) — it does not indicate "
+                    "missing or corrupted data."
+                )
 
         # First attempt to find shares by share_set_id extracted from metadata
         if extracted_share_set_id and extracted_share_set_id in shares_by_set_id:
@@ -582,6 +619,12 @@ def decrypt(
                 for label in shares_by_label:
                     click.echo(
                         f"  - {label}: {len(shares_by_label[label]['shares'])} shares (threshold: {shares_by_label[label]['metadata']['threshold']})"
+                    )
+                if "_unlabeled" in shares_by_label:
+                    click.echo(
+                        "  Note: '_unlabeled' is expected for shares created without "
+                        "--full-metadata (minimal-metadata mode) — it does not indicate "
+                        "missing or corrupted data."
                     )
 
             # Try to find matching shares for the input file by label
