@@ -118,6 +118,8 @@ Submit a pull request or open an issue.
 
 ## License
 
-Fractum is licensed under a Custom Proprietary Software License that permits personal, non-commercial use. Commercial use is not permitted.
+Fractum is **Apache-2.0**. You may use it, modify it, redistribute it and use it commercially, without asking anyone.
 
-📄 **[View Full License](LICENSE)**
+The name is separate: Apache-2.0 grants no trademark rights (section 6), so "Fractum", the logos and the associated marks stay with S.A.S.U. KATVIO. Fork the code freely, give your fork its own name.
+
+📄 **[LICENSE](LICENSE)** · **[TRADEMARK.md](TRADEMARK.md)** · **[SECURITY.md](SECURITY.md)**
