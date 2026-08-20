@@ -111,6 +111,8 @@ jobs:
             setup.py \
             README.md \
             LICENSE \
+            TRADEMARK.md \
+            SECURITY.md \
             --exclude="*.pyc" \
             --exclude="__pycache__/*" \
             --exclude="*.DS_Store" \
