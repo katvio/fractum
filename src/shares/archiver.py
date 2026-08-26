@@ -53,6 +53,8 @@ class ShareArchiver:
                 ("README.md", "README.md"),
                 ("requirements.txt", "requirements.txt"),
                 ("LICENSE", "LICENSE"),
+                ("TRADEMARK.md", "TRADEMARK.md"),
+                ("SECURITY.md", "SECURITY.md"),
                 ("setup.py", "setup.py"),
                 (".dockerignore", ".dockerignore"),
                 ("Dockerfile", "Dockerfile"),
