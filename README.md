@@ -1,10 +1,10 @@
 # Fractum
 
-**Split any sensitive file into encrypted shares** and reconstruct it only when enough shares are pooled → fully offline, no cloud, no single point of failure.
+**Encrypt any sensitive file, then split its encryption key into shares** so the file only comes back when enough shares are pooled → fully offline, no cloud, no single point of failure.
 
 Designed for **long-term cold storage** of critical secrets: recovery credentials, exports of database & password managers, family photos, legal documents, crypto seed phrases.
 
-![Fractum splits a file into N encrypted shares, K of which reconstruct it](assets/images/encrypt-overview.png)
+![Fractum encrypts a file and splits its AES key into N shares, K of which recover the key](assets/images/encrypt-overview.png)
 
 **When to use it:**
 
@@ -55,7 +55,7 @@ docker run --rm -it \
   --threshold 3 --shares 5 --label "bitwarden-backup"
 ```
 
-![Fractum splits a file into N encrypted shares, K of which reconstruct it](assets/images/encrypt-example.png)
+![Fractum encrypts a file and splits its AES key into N shares, K of which recover the key](assets/images/encrypt-example.png)
 
 
 ## Decrypt:
@@ -83,7 +83,7 @@ Inside the container (or after a manual install), the binary is `fractum`. Prefi
 fractum -i                  # interactive mode — guided menu, no flags needed
 fractum --version           # print the version
 
-# Encrypt: split FILE into N shares, K of which are needed to recover it
+# Encrypt: encrypt FILE, split its key into N shares, K of which are needed to recover it
 fractum encrypt FILE -t <threshold> -n <shares> [OPTIONS]
   -t, --threshold <int>      shares required to reconstruct (required)
   -n, --shares <int>         total shares to generate (required)
