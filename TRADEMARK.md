@@ -36,9 +36,11 @@ French Civil Code) against genuinely misleading uses, not as a licence condition
 IMPORTANT NOTICE: The Apache License (see LICENSE) governs the use of the Fractum source code.
 Trademark rights are separate and are NOT covered by this license.
 
-TRADEMARK OWNERSHIP:
-The "Fractum" name, logos, and related trademarks are owned by S.A.S.U. KATVIO
-(a French company) and are protected separately from this software license.
+NAME AND BRAND:
+The "Fractum" name, logos and related marks originate with S.A.S.U. KATVIO
+(a French company). They are not registered as trademarks, so no exclusive
+statutory right is claimed over them; they are simply outside the scope of the
+Apache grant, which covers the code and not the name.
 
 WHAT THE APACHE LICENSE COVERS:
 ✅ Source code, documentation, and software components
@@ -143,8 +145,10 @@ WHAT THE APACHE LICENSE DOES NOT COVER:
    ❌ "Fractum Lite", "Open Fractum", "Free Fractum"
    ❌ Any name suggesting official association
 
-   3.4 ATTRIBUTION REQUIREMENTS:
-   All forks and derivatives must include prominent attribution such as:
+   3.4 ATTRIBUTION WE ASK FOR:
+   Apache-2.0 section 4 already sets out what redistribution requires, and nothing
+   here adds a condition to it. Beyond that, we ask forks and derivatives to carry
+   a visible note such as:
    
    "This software is based on Fractum, an open source project by S.A.S.U. KATVIO.
    Original project: https://github.com/katvio/fractum
@@ -152,41 +156,44 @@ WHAT THE APACHE LICENSE DOES NOT COVER:
 
 4. COMMERCIAL LICENSING AND PARTNERSHIPS
 
-   4.1 COMMERCIAL TRADEMARK LICENSING:
-   If you wish to use the "Fractum" name or trademarks in commercial contexts:
-   • Contact S.A.S.U. KATVIO for licensing arrangements
-   • Commercial licenses may be available for appropriate use cases
+   4.1 USING THE NAME COMMERCIALLY:
+   If you wish to build a commercial offering around the "Fractum" name, talk to us
+   first. There is no trademark to license, so this is a conversation rather than a
+   formality:
+   • Contact S.A.S.U. KATVIO and tell us what you have in mind
    • Partnership opportunities may be considered for qualified organizations
-   • Revenue sharing or other commercial arrangements may be negotiated
+   • Co-branding or other commercial arrangements may be negotiated
 
    4.2 COMMERCIAL SERVICES:
-   Acceptable without trademark license:
+   Fine without asking us:
    ✅ Offering support for "Fractum-based systems"
    ✅ Providing consulting on "Fractum implementation"
    ✅ Training on "how to use Fractum software"
    ✅ Integration services for "Fractum-compatible solutions"
 
-   Requires trademark license:
+   We ask you to check with us first, because these read as official:
    🚫 "Fractum Support Services"
    🚫 "Official Fractum Training"
    🚫 "Fractum Consulting"
    🚫 "Certified Fractum Solutions"
 
-5. ENFORCEMENT AND VIOLATION REPORTING
+5. MISLEADING USES AND HOW TO REPORT THEM
 
-   5.1 ENFORCEMENT APPROACH:
-   S.A.S.U. KATVIO takes a collaborative approach to trademark protection:
+   5.1 OUR APPROACH:
+   S.A.S.U. KATVIO takes a collaborative approach to the brand:
    • We prefer education and cooperation over litigation
    • Most issues can be resolved through friendly communication
-   • We provide reasonable time for compliance with trademark guidelines
-   • We consider the intent and scale of trademark usage
+   • We provide reasonable time to adjust a name or a page
+   • We consider the intent and scale of the usage
+   • Absent a registered trademark, our only real recourse against a genuinely
+     misleading use is unfair competition (art. 1240 of the French Civil Code)
 
-   5.2 REPORTING VIOLATIONS:
-   If you discover potential trademark violations:
+   5.2 REPORTING A MISLEADING USE:
+   If you come across something that passes itself off as official Fractum:
    • Report to: contact@katvio.com
-   • Include: URLs, descriptions, and evidence of unauthorized use
-   • We investigate all reports and respond appropriately
-   • Community help in protecting the trademark is appreciated
+   • Include: URLs, descriptions, and what makes the use misleading
+   • We look into all reports and respond appropriately
+   • Community help in keeping the name unambiguous is appreciated
 
    5.3 COMPLIANCE ASSISTANCE:
    If you're unsure about trademark usage:
@@ -264,11 +271,11 @@ development inquiries, please contact us with:
 
 COMMUNITY SUPPORT:
 We welcome community growth and development within these guidelines. When in 
-doubt, please ask! We prefer to provide guidance rather than enforce violations.
+doubt, please ask! We would much rather give guidance than argue about a name.
 
 RESPONSE TIME:
-We aim to respond to trademark inquiries within 5-10 business days. Complex 
-commercial licensing requests may require additional time for proper evaluation.
+We aim to respond to brand inquiries within 5-10 business days. Complex 
+commercial proposals may require additional time for proper evaluation.
 
 ================================================================================
 
@@ -325,8 +332,10 @@ subject to French jurisdiction and applicable French and European Union law.
 
 ## Standing
 
-These terms are the ones that were previously distributed inside `LICENSE`,
-moved without changing their substance. Their drafting, their scope and their
-enforceability, in particular the reservation on commercial support offered
-under the Fractum name, have not been reviewed by counsel and should be before
-being relied upon in a dispute.
+These guidelines started out inside `LICENSE`, were moved here, and were then
+rewritten as requests rather than conditions once the decision was taken not to
+register the name as a trademark. Their drafting and their scope have not been
+reviewed by counsel and should be before being relied upon in a dispute. As they
+stand they are a statement of what we ask of the community, not a grant, not a
+restriction on the Apache-2.0 licence, and not the assertion of an exclusive
+right.
