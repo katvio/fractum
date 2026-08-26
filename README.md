@@ -1,10 +1,10 @@
 # Fractum
 
-**Split any sensitive file into encrypted shares** and reconstruct it only when enough shares are pooled → fully offline, no cloud, no single point of failure.
+**Encrypt any sensitive file, then split its encryption key into shares** so the file only comes back when enough shares are pooled → fully offline, no cloud, no single point of failure.
 
 Designed for **long-term cold storage** of critical secrets: recovery credentials, exports of database & password managers, family photos, legal documents, crypto seed phrases.
 
-![Fractum splits a file into N encrypted shares, K of which reconstruct it](assets/images/encrypt-overview.png)
+![Fractum encrypts a file and splits its AES key into N shares, K of which recover the key](assets/images/encrypt-overview.png)
 
 **When to use it:**
 
@@ -17,7 +17,7 @@ Designed for **long-term cold storage** of critical secrets: recovery credential
 
 **Why distributed?**
 
-- Fewer than K shares reveal **nothing**: information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*
+- Fewer than K shares reveal **nothing**: the key-split has information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*; the file itself stays sealed under AES-256-GCM
 - No single point of failure: distribute shares across people, locations, media. No $5 Wrench Attack
 - Works completely offline in air-gapped environments
 
@@ -39,7 +39,7 @@ Docker is the recommended way to run Fractum. The `--network=none` flag guarante
 
 ```bash
 git clone https://github.com/katvio/fractum.git
-cd fractum && git checkout tags/v1.4.1
+cd fractum && git checkout tags/v1.4.2
 mkdir -p data shares
 docker build -t fractum-secure .
 ```
@@ -55,7 +55,7 @@ docker run --rm -it \
   --threshold 3 --shares 5 --label "bitwarden-backup"
 ```
 
-![Fractum splits a file into N encrypted shares, K of which reconstruct it](assets/images/encrypt-example.png)
+![Fractum encrypts a file and splits its AES key into N shares, K of which recover the key](assets/images/encrypt-example.png)
 
 
 ## Decrypt:
@@ -83,7 +83,7 @@ Inside the container (or after a manual install), the binary is `fractum`. Prefi
 fractum -i                  # interactive mode — guided menu, no flags needed
 fractum --version           # print the version
 
-# Encrypt: split FILE into N shares, K of which are needed to recover it
+# Encrypt: encrypt FILE, split its key into N shares, K of which are needed to recover it
 fractum encrypt FILE -t <threshold> -n <shares> [OPTIONS]
   -t, --threshold <int>      shares required to reconstruct (required)
   -n, --shares <int>         total shares to generate (required)
@@ -118,6 +118,8 @@ Submit a pull request or open an issue.
 
 ## License
 
-Fractum is licensed under a Custom Proprietary Software License that permits personal, non-commercial use. Commercial use is not permitted.
+Fractum is **Apache-2.0**. You may use it, modify it, redistribute it and use it commercially, without asking anyone.
 
-📄 **[View Full License](LICENSE)**
+The name is separate: Apache-2.0 grants no trademark rights (section 6), so "Fractum", the logos and the associated marks stay with S.A.S.U. KATVIO. Fork the code freely, give your fork its own name.
+
+📄 **[LICENSE](LICENSE)** · **[TRADEMARK.md](TRADEMARK.md)** · **[SECURITY.md](SECURITY.md)**
