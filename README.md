@@ -17,7 +17,7 @@ Designed for **long-term cold storage** of critical secrets: recovery credential
 
 **Why distributed?**
 
-- Fewer than K shares reveal **nothing**: information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*
+- Fewer than K shares reveal **nothing**: the key-split has information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*; the file itself stays sealed under AES-256-GCM
 - No single point of failure: distribute shares across people, locations, media. No $5 Wrench Attack
 - Works completely offline in air-gapped environments
 

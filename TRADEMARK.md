@@ -14,24 +14,39 @@ grant in [`LICENSE`](LICENSE) is unchanged and unconditional. What follows
 concerns only the use of the name "Fractum", the logos and the associated marks,
 which Apache-2.0 explicitly does not grant (section 6).
 
+## Legal status of this policy (please read)
+
+The "Fractum" name is **not a registered trademark** at this time. This document is
+therefore a good-faith **request** about how we would like the name, logos and brand to
+be used. It is **not** the assertion of an exclusive statutory trademark right, and it
+does not by itself create obligations beyond what the applicable law already provides.
+
+Nothing in this policy restricts uses that the law allows — in particular **nominative
+or referential use**: naming the project to describe it, review it, compare it, teach it,
+or state compatibility (art. L.713-6 of the French Intellectual Property Code; art. 14 of
+Regulation (EU) 2017/1001; nominative fair use under US law). Wherever this document says
+"please ask", "we ask you to", or lists a use as one to clear with us, read it as a
+courtesy request grounded — at most — in unfair-competition principles (art. 1240 of the
+French Civil Code) against genuinely misleading uses, not as a licence condition.
+
 ---
 
 ## Scope
 
-IMPORTANT NOTICE: This Apache License governs the use of the Fractum source code.
+IMPORTANT NOTICE: The Apache License (see LICENSE) governs the use of the Fractum source code.
 Trademark rights are separate and are NOT covered by this license.
 
 TRADEMARK OWNERSHIP:
 The "Fractum" name, logos, and related trademarks are owned by S.A.S.U. KATVIO
 (a French company) and are protected separately from this software license.
 
-WHAT THIS LICENSE COVERS:
+WHAT THE APACHE LICENSE COVERS:
 ✅ Source code, documentation, and software components
 ✅ Patent rights related to the software implementation  
 ✅ Right to use, modify, distribute, and create derivative works
 ✅ Commercial use of the underlying software technology
 
-WHAT THIS LICENSE DOES NOT COVER:
+WHAT THE APACHE LICENSE DOES NOT COVER:
 🚫 The "Fractum" name and trademark
 🚫 Official logos, branding, and design marks
 🚫 Right to distribute software using the "Fractum" name
@@ -80,7 +95,7 @@ WHAT THIS LICENSE DOES NOT COVER:
    ✅ Educational and training purposes
    ✅ Non-commercial community projects
 
-2. RESTRICTED USES (WRITTEN PERMISSION REQUIRED)
+2. USES WE ASK YOU TO CLEAR WITH US FIRST
 
    2.1 PRODUCT AND SERVICE NAMING:
    🚫 Software products with "Fractum" in the name
@@ -182,12 +197,12 @@ WHAT THIS LICENSE DOES NOT COVER:
 
 6. DOMAIN NAMES AND ONLINE PRESENCE
 
-   6.1 DOMAIN NAME RESTRICTIONS:
+   6.1 DOMAIN NAMES WE ASK YOU TO AVOID (to prevent confusion):
    🚫 Registering domains containing "fractum" as the primary term
    🚫 Using confusingly similar domain variations
    🚫 Creating websites that could be confused with official Fractum sites
    
-   Examples of restricted domains:
+   Examples we would consider confusing:
    ❌ fractum.org, fractum.net, fractumpro.com
    ❌ fractum-enterprise.com, myfractum.com
    ❌ fractum-support.com, fractum-downloads.com
@@ -199,16 +214,15 @@ WHAT THIS LICENSE DOES NOT COVER:
 
 7. INTERNATIONAL CONSIDERATIONS
 
-   7.1 GLOBAL TRADEMARK PROTECTION:
-   • S.A.S.U. KATVIO may seek trademark protection in multiple jurisdictions
-   • These guidelines apply worldwide, not just in France
-   • Local trademark laws may provide additional protections
-   • International users should respect trademark rights globally
+   7.1 TERRITORIALITY:
+   • Trademark rights are territorial, and "Fractum" is not currently registered in any jurisdiction
+   • S.A.S.U. KATVIO may seek registration later (e.g. INPI, EUIPO, or the Madrid system)
+   • Absent registration, these guidelines are a request, not an enforceable exclusive right
+   • We simply ask users everywhere to avoid genuinely misleading uses of the name
 
    7.2 LANGUAGE VARIATIONS:
-   • Trademark protection may extend to translations of "Fractum"
-   • Similar-sounding names in other languages may be restricted
-   • Contact us if you're unsure about international variations
+   • We ask that translations or near-identical variants not be used to imply an official or affiliated status
+   • Contact us if you are unsure about a specific case
 
 8. UPDATES AND MODIFICATIONS
 
@@ -232,7 +246,10 @@ WHAT THIS LICENSE DOES NOT COVER:
 TRADEMARK CONTACT:
 For all trademark-related matters, licensing requests, and permission inquiries:
 
-S.A.S.U. KATVIO
+S.A.S.U. KATVIO — société par actions simplifiée à associé unique
+RCS Aix-en-Provence 880 502 372 · SIREN 880 502 372
+Registered office: 393 chemin des Vauds, 13530 Trets, France
+Share capital: €10 · VAT: FR24 880 502 372
 Email: contact@katvio.com
 Website: https://katvio.com
 Subject Line: "Fractum Trademark Inquiry"
@@ -263,7 +280,11 @@ THIRD-PARTY COMPONENTS:
 This software includes or may include third-party libraries and components
 subject to their own licenses and terms:
 
-• PyCryptodome: BSD-2-Clause OR Apache-2.0 License
+• PyCryptodome 3.23.0: BSD-2-Clause AND Public Domain (Unlicense)
+• click 8.1.8: BSD-3-Clause License
+• packaging 26.2: Apache-2.0 OR BSD-2-Clause License
+• setuptools 83.0.0: MIT License
+• wheel 0.47.0: MIT License
 • Python Standard Library: Python Software Foundation License
 
 ---
@@ -274,9 +295,10 @@ CRYPTOGRAPHIC SOFTWARE NOTICE:
 This software contains cryptographic functionality. Use of this software may 
 be subject to export/import regulations in your jurisdiction. Users are 
 responsible for compliance with applicable laws including:
-• U.S. Export Administration Regulations (EAR)
-• EU Dual-Use Regulation
-• Other applicable export control laws
+• EU Dual-Use Regulation (Regulation (EU) 2021/821) — primary regime for a French publisher
+• U.S. Export Administration Regulations (EAR) — only by exception (re-export of US-origin content, US persons)
+• Other applicable national/EU export control laws
+• Note: as freely available open source using only standard published primitives (AES-256-GCM, Shamir), Fractum benefits from the "public domain" / "publicly available" decontrol notes of these regimes
 
 SECURITY DISCLAIMER:
 While this software implements industry-standard cryptographic algorithms and 
