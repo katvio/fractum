@@ -17,7 +17,7 @@ Designed for **long-term cold storage** of critical secrets: recovery credential
 
 **Why distributed?**
 
-- Fewer than K shares reveal **nothing**: information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*
+- Fewer than K shares reveal **nothing**: the key-split has information-theoretic security *(same as Trezor SLIP-39, ICANN DNSSEC ceremonies)*; the file itself stays sealed under AES-256-GCM
 - No single point of failure: distribute shares across people, locations, media. No $5 Wrench Attack
 - Works completely offline in air-gapped environments
 
@@ -118,6 +118,8 @@ Submit a pull request or open an issue.
 
 ## License
 
-Fractum is licensed under a Custom Proprietary Software License that permits personal, non-commercial use. Commercial use is not permitted.
+Fractum is **Apache-2.0**. You may use it, modify it, redistribute it and use it commercially, without asking anyone.
 
-📄 **[View Full License](LICENSE)**
+The name is separate: Apache-2.0 grants no trademark rights (section 6), so "Fractum", the logos and the associated marks stay with S.A.S.U. KATVIO. Fork the code freely, give your fork its own name.
+
+📄 **[LICENSE](LICENSE)** · **[TRADEMARK.md](TRADEMARK.md)** · **[SECURITY.md](SECURITY.md)**

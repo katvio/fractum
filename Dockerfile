@@ -2,7 +2,7 @@ FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb
 
 WORKDIR /app
 
-COPY setup.py README.md LICENSE bootstrap-linux.sh bootstrap-macos.sh bootstrap-windows.ps1 Dockerfile .dockerignore /app/
+COPY setup.py README.md LICENSE TRADEMARK.md SECURITY.md bootstrap-linux.sh bootstrap-macos.sh bootstrap-windows.ps1 Dockerfile .dockerignore /app/
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 COPY packages/ /app/packages/
