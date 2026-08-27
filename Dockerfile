@@ -6,11 +6,22 @@ COPY setup.py README.md LICENSE TRADEMARK.md SECURITY.md bootstrap-linux.sh boot
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 COPY packages/ /app/packages/
+COPY fractum-signing-key.asc /app/fractum-signing-key.asc
 
 # Install dependencies — verify offline packages if present (M6)
+# La verification GPG etait inoperante depuis la v1.4.1 : le fichier .asc a ete
+# ajoute le 2026-07-15, ce qui a active cette branche pour la premiere fois,
+# alors que l'image de base ne contient pas gpg et que la cle publique n'etait
+# nulle part. L'image n'etait donc plus constructible du tout. On installe
+# gnupg, on importe la cle du depot, et on verifie pour de bon.
 RUN if [ -f packages/CHECKSUMS.sha256 ] && [ -f packages/CHECKSUMS.sha256.asc ]; then \
-      gpg --verify packages/CHECKSUMS.sha256.asc packages/CHECKSUMS.sha256 \
+      apt-get update && apt-get install -y --no-install-recommends gnupg; \
+      gpg --batch --quiet --import /app/fractum-signing-key.asc \
+        || { echo "ERROR: cannot import the Fractum signing key"; exit 1; }; \
+      gpg --batch --verify packages/CHECKSUMS.sha256.asc packages/CHECKSUMS.sha256 \
         || { echo "ERROR: Invalid GPG signature on packages"; exit 1; }; \
+      apt-get purge -y gnupg && apt-get autoremove -y \
+        && rm -rf /var/lib/apt/lists/* /root/.gnupg; \
     fi; \
     if [ -f packages/CHECKSUMS.sha256 ]; then \
       (cd packages && sha256sum --check CHECKSUMS.sha256 --strict --quiet) \

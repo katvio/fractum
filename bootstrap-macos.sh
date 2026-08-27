@@ -10,13 +10,35 @@ HOMEBREW_INSTALLER_SHA256="2863708cb516c5d0bcdfff97dc13bffb61db93f7acc6ae559a559
 # Verify offline packages before installation (M6)
 verify_packages() {
   local pkg_dir="${1:-packages}"
+  local key_file="${2:-fractum-signing-key.asc}"
   echo "→ Verifying package integrity..."
 
+  # La signature ne se verifiait jamais : le script appelait gpg sans jamais
+  # importer la cle publique, donc gpg sortait en « No public key » et le
+  # script abandonnait l'installation. La cle est desormais dans le depot.
+  #
+  # Si gpg est absent, on continue au lieu d'abandonner, et on le dit. Cet
+  # outil est fait pour tourner sur une machine coupee du reseau, ou installer
+  # gnupg peut etre impossible ; refuser l'installation la ferait echouer
+  # precisement dans le cas d'usage qu'elle vise. Les sommes SHA-256 restent
+  # verifiees juste apres, dans tous les cas.
   if [ -f "${pkg_dir}/CHECKSUMS.sha256.asc" ]; then
-    echo "→ Verifying GPG signature on packages (key D009F6290DCFDAB6)..."
-    gpg --verify "${pkg_dir}/CHECKSUMS.sha256.asc" "${pkg_dir}/CHECKSUMS.sha256" \
-      || { echo "ERROR: Invalid GPG signature on packages — installation aborted"; exit 1; }
-    echo "  ✓ GPG signature valid"
+    if command -v gpg >/dev/null 2>&1; then
+      echo "→ Verifying GPG signature on packages (key D009F6290DCFDAB6)..."
+      if [ -f "${key_file}" ]; then
+        gpg --batch --quiet --import "${key_file}" \
+          || { echo "ERROR: cannot import ${key_file} — installation aborted"; exit 1; }
+      else
+        echo "  WARNING: ${key_file} not found — relying on a key already in your keyring"
+      fi
+      gpg --batch --verify "${pkg_dir}/CHECKSUMS.sha256.asc" "${pkg_dir}/CHECKSUMS.sha256" \
+        || { echo "ERROR: Invalid GPG signature on packages — installation aborted"; exit 1; }
+      echo "  ✓ GPG signature valid"
+    else
+      echo "  WARNING: gpg not installed — the signature on CHECKSUMS.sha256 was NOT checked."
+      echo "           Only the SHA-256 hashes below are verified. Install gnupg and re-run"
+      echo "           this script to check who signed them."
+    fi
   else
     echo "  WARNING: ${pkg_dir}/CHECKSUMS.sha256.asc not found — skipping GPG verification"
     echo "           For production use, obtain the .asc from a trusted Katvio release."
