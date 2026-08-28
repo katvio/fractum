@@ -580,10 +580,18 @@ def decrypt(
                 if verbose:
                     click.echo(f"Error processing {share_file}: {str(e)}")
                 continue
+            finally:
+                # Quoi qu'il arrive, l'archive extraite ne reste pas sur le
+                # disque : elle contient la valeur de la part, et le fichier
+                # chiffre lui-meme si --bundle-encrypted a ete utilise.
+                if is_zip and temp_dir:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
 
-            # Clean up temporary directory if it was an archive
-            if is_zip and temp_dir:
-                shutil.rmtree(temp_dir, ignore_errors=True)
+            # Nettoyage deplace dans le finally ci-dessous : place ici, il etait
+            # saute par le `raise` d une part invalide comme par le `continue`
+            # d une part illisible, et le dossier restait sur le disque avec la
+            # valeur de la part extraite, et le fichier chiffre si l archive
+            # avait ete creee avec --bundle-encrypted.
 
         if verbose:
             if shares_by_set_id:

@@ -8,6 +8,17 @@ class SecureMemory:
     def secure_clear(data: Union[bytes, bytearray, str, List[Any], memoryview]) -> None:
         """Securely clears sensitive data from memory with multiple overwrite patterns.
 
+        ATTENTION, piege connu. Sur un `bytes` ou un `str`, qui sont immuables,
+        cette methode ne peut qu'effacer une copie : l'original reste en
+        memoire. Les appels de commands.py passent volontairement par
+        `bytearray(share_bytes)`, donc ils n'effacent rien de reel aujourd'hui.
+
+        Ne pas « corriger » cela en decodant les parts en bytearray sans revoir
+        leur duree de vie : essaye le 2026-08-26, l'effacement devient effectif
+        et casse 14 tests avec « MAC check failed », parce que les parts sont
+        relues apres avoir ete effacees. Le correctif demande de deplacer
+        l'effacement apres le dernier usage, pas de changer le type.
+
         Args:
             data: Data to securely clear, can be bytes, bytearray, str, list, or memoryview
         """
