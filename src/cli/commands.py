@@ -279,6 +279,10 @@ def encrypt(
                         }
                     )
                 with open(share_file, "w") as f:
+                    # The file holds the share value in the clear. Restrict it at
+                    # creation, before anything is written to it, rather than
+                    # letting the process umask decide.
+                    os.chmod(share_file, 0o600)
                     json.dump(share_info_dict, f, indent=2)
                 new_share_files.append(share_file)
 
@@ -300,18 +304,25 @@ def encrypt(
 
         # Create archives for each share
         if not existing_shares:
-            for idx, share_file in enumerate(new_share_files, 1):
-                archive_path = archiver.create_share_archive(
-                    share_file,
-                    idx,
-                    label,
-                    encrypted_file=output_file if bundle_encrypted else None,
-                )
-                if verbose:
-                    click.echo(f"Created archive: {Path(archive_path).absolute()}")
-
-                # Remove temporary share file
-                os.remove(share_file)
+            try:
+                for idx, share_file in enumerate(new_share_files, 1):
+                    archive_path = archiver.create_share_archive(
+                        share_file,
+                        idx,
+                        label,
+                        encrypted_file=output_file if bundle_encrypted else None,
+                    )
+                    if verbose:
+                        click.echo(f"Created archive: {Path(archive_path).absolute()}")
+            finally:
+                # Whatever happens, the plaintext share files must not survive.
+                # With the removal inside the loop body, any archiving error left
+                # every one of them on disk, above the reconstruction threshold.
+                for share_file in new_share_files:
+                    try:
+                        os.remove(share_file)
+                    except OSError:
+                        pass
 
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
