@@ -256,5 +256,63 @@ class TestSharesDirectoryIsNeverReused(unittest.TestCase):
                 )
 
 
+class TestThresholdAboveFiveInDefaultMode(unittest.TestCase):
+    """Default (minimal-metadata) shares carry no total_shares. The readers fell
+    back to a fixed 5, so any threshold above 5 could not be decrypted, nor
+    reused with --existing-shares, by the tool that wrote it."""
+
+    def setUp(self):
+        self.runner = CliRunner()
+        self.tmp = tempfile.mkdtemp()
+        self.previous_cwd = os.getcwd()
+        os.chdir(self.tmp)
+
+    def tearDown(self):
+        os.chdir(self.previous_cwd)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _round_trip(self, threshold: int, shares: int):
+        Path("vault.txt").write_bytes(b"high threshold payload " + os.urandom(16))
+        original = Path("vault.txt").read_bytes()
+        result = self.runner.invoke(
+            encrypt, ["vault.txt", "-t", str(threshold), "-n", str(shares)]
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        os.remove("vault.txt")
+        result = self.runner.invoke(decrypt, ["vault.txt.enc", "--shares-dir", "shares"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertEqual(Path("vault.txt").read_bytes(), original)
+
+    def test_six_of_nine_decrypts(self):
+        self._round_trip(6, 9)
+
+    def test_eight_of_ten_decrypts(self):
+        self._round_trip(8, 10)
+
+    def test_five_of_nine_still_decrypts(self):
+        """5 worked before because it equalled the old fallback."""
+        self._round_trip(5, 9)
+
+    def test_six_of_ten_set_can_be_reused(self):
+        import zipfile
+
+        Path("first.txt").write_text("first", encoding="utf-8")
+        result = self.runner.invoke(encrypt, ["first.txt", "-t", "6", "-n", "10"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        Path("existing").mkdir()
+        for archive in Path("shares").glob("*.zip"):
+            with zipfile.ZipFile(archive) as z:
+                for name in z.namelist():
+                    if name.startswith("share_") and name.endswith(".txt"):
+                        z.extract(name, "existing")
+        Path("second.txt").write_text("second", encoding="utf-8")
+        result = self.runner.invoke(
+            encrypt,
+            ["second.txt", "-t", "6", "-n", "10", "--existing-shares", "existing"],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertTrue(Path("second.txt.enc").is_file())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

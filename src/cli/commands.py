@@ -574,7 +574,14 @@ def decrypt(
                                     "version": version,
                                     "label": label,
                                     "threshold": share_info.get("threshold", 3),
-                                    "total_shares": share_info.get("total_shares", 5),
+                                    # Minimal shares carry no total_shares. A fixed
+                                    # 5 made ShareManager reject any threshold above
+                                    # 5, and decrypt then reported the shares as
+                                    # incompatible. Reconstruction never reads the
+                                    # total, it only has to be >= the threshold.
+                                    "total_shares": share_info.get(
+                                        "total_shares", share_info.get("threshold", 3)
+                                    ),
                                 },
                             }
 
@@ -593,7 +600,10 @@ def decrypt(
                                 "version": version,
                                 "label": label,
                                 "threshold": share_info.get("threshold", 3),
-                                "total_shares": share_info.get("total_shares", 5),
+                                # Same fallback as above, same reason.
+                                "total_shares": share_info.get(
+                                    "total_shares", share_info.get("threshold", 3)
+                                ),
                             },
                         }
 
