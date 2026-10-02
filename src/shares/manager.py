@@ -94,14 +94,14 @@ class ShareManager:
 
         return combined_shares
 
-    def combine_shares(self, shares: List[Tuple[int, bytes]]) -> bytes:
+    def combine_shares(self, shares: List[Tuple[int, bytes]]) -> bytearray:
         """Reconstructs the secret from shares.
 
         Args:
             shares (List[Tuple[int, bytes]]): List of shares to combine
 
         Returns:
-            bytes: The reconstructed secret
+            bytearray: The reconstructed secret, in a wipeable buffer
 
         Raises:
             ValueError: If there are insufficient shares or invalid shares
@@ -132,8 +132,10 @@ class ShareManager:
             secret_part1 = Shamir.combine(shares1[: self.threshold], ssss=False)
             secret_part2 = Shamir.combine(shares2[: self.threshold], ssss=False)
 
-            # Combine parts
-            return secret_part1 + secret_part2
+            # Combine parts. bytearray, not bytes: returning bytes handed every
+            # caller an unwipeable copy of the AES key, which is exactly what
+            # secure_clear() now refuses to accept.
+            return bytearray(secret_part1 + secret_part2)
         except Exception as e:
             raise ValueError(
                 f"Secret reconstruction failed: {str(e)}. "
@@ -178,7 +180,9 @@ class ShareManager:
                 if not share_key:
                     raise ValueError(f"No share key found in {share_file}")
 
-                share_data = base64.b64decode(share_key)
+                # bytearray, not bytes: the caller wipes these buffers once the
+                # key is reconstructed, and only a mutable buffer can be wiped.
+                share_data = bytearray(base64.b64decode(share_key))
                 expected_hash = share_info.get("hash")
                 if expected_hash:
                     computed = hashlib.sha256(share_data).hexdigest()

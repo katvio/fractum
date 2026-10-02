@@ -514,13 +514,21 @@ class SideChannelSecurityTests(unittest.TestCase):
 
                     # Verify reconstruction worked
                     self.assertEqual(
-                        reconstructed[:secret_size],
+                        bytes(reconstructed[:secret_size]),
                         secret,
                         "Secret reconstruction failed",
                     )
 
-                    # Securely clear secrets
-                    SecureMemory.secure_clear(secret)
+                    # Securely clear secrets. secure_clear() refuses bytes now:
+                    # wiping an immutable object was a silent no-op, so the
+                    # secret has to be held in a buffer that can be written to.
+                    effacable = bytearray(secret)
+                    SecureMemory.secure_clear(effacable)
+                    self.assertEqual(
+                        bytes(effacable),
+                        bytes(len(effacable)),
+                        "the buffer was not actually wiped",
+                    )
                     SecureMemory.secure_clear(reconstructed)
 
                 # Force garbage collection again
