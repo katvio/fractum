@@ -249,6 +249,7 @@ class TestPlaintextShareFileLifetime(_EncryptedFixture):
         plaintext share on disk, which is the same shape as FSB-2026-02-A
     """
 
+    @unittest.skipIf(WINDOWS, "POSIX permission bits are meaningless on Windows")
     def test_plaintext_share_file_is_owner_only_while_it_exists(self):
         """The share file holds share_key in the clear. It must never be 0644."""
         import src.shares.archiver as archiver_mod
