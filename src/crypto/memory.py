@@ -3,10 +3,63 @@ from typing import Any, List, Union
 from src.utils.integrity import get_enhanced_random_bytes
 
 
+def disable_core_dumps() -> bool:
+    """Stop the OS writing a core file if the process crashes.
+
+    Measured before this existed: RLIMIT_CORE was (-1, -1), unlimited, for the whole
+    time the process held the AES key. A crash at that moment writes the key to disk
+    in a file that survives the process, and mlock does not help — it prevents
+    swapping, not dumping.
+
+    Two mechanisms, because either alone leaves a gap: RLIMIT_CORE stops the kernel
+    writing a core file, and PR_SET_DUMPABLE additionally stops a ptrace attach from
+    a process running as the same user, which is how a reader would get at the
+    memory without a crash at all.
+
+    Returns True when the core limit is confirmed at zero. Callers print a warning
+    on False rather than aborting: refusing to run would be worse than running with
+    a documented weakness on a platform that has no such control.
+    """
+    ok = False
+    try:
+        import resource
+
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        ok = resource.getrlimit(resource.RLIMIT_CORE)[0] == 0
+    except (ImportError, ValueError, OSError):
+        # No resource module (Windows) or a hard limit that cannot be lowered.
+        ok = False
+
+    try:
+        import ctypes
+        import ctypes.util
+
+        lib = ctypes.util.find_library("c")
+        if lib:
+            libc = ctypes.CDLL(lib, use_errno=True)
+            PR_SET_DUMPABLE = 4
+            libc.prctl(PR_SET_DUMPABLE, 0, 0, 0, 0)
+    except Exception:
+        # Linux-only; absent elsewhere, and RLIMIT_CORE above carries the main job.
+        pass
+
+    return ok
+
+
 class SecureMemory:
     @staticmethod
-    def secure_clear(data: Union[bytes, bytearray, str, List[Any], memoryview]) -> None:
-        """Securely clears sensitive data from memory with multiple overwrite patterns.
+    def secure_clear(data: Union[bytearray, str, List[Any], memoryview]) -> None:
+        """Overwrites a mutable buffer in place, several passes then zeros.
+
+        Only mutable buffers can actually be cleared. Passing ``bytes`` used to be
+        accepted: it copied the value into a bytearray, wiped the copy, and left
+        the caller's object untouched, so the call looked correct and did nothing.
+        It now raises, because a silent no-op on key material is worse than a
+        crash. Hold secrets in a ``bytearray`` from the point they are created.
+
+        ``str`` and ``list`` are still accepted for the non-secret bookkeeping the
+        CLI passes in, but neither can be wiped: Python strings are immutable, so
+        that path only drops the reference.
 
         ATTENTION, piege connu. Sur un `bytes` ou un `str`, qui sont immuables,
         cette methode ne peut qu'effacer une copie : l'original reste en
@@ -20,9 +73,26 @@ class SecureMemory:
         l'effacement apres le dernier usage, pas de changer le type.
 
         Args:
-            data: Data to securely clear, can be bytes, bytearray, str, list, or memoryview
+            data: Buffer to clear. A bytearray, or a writable memoryview, is the
+                only case where the original is really overwritten.
+
+        Raises:
+            TypeError: If data is ``bytes`` or a read-only memoryview, which
+                cannot be cleared.
         """
         import gc
+
+        if isinstance(data, bytes):
+            raise TypeError(
+                "secure_clear() cannot clear bytes: they are immutable, so wiping "
+                "them is a no-op that silently leaves the secret in memory. Hold "
+                "the value in a bytearray instead."
+            )
+        if isinstance(data, memoryview) and data.readonly:
+            raise TypeError(
+                "secure_clear() cannot clear a read-only memoryview: wiping it is "
+                "a no-op. Pass a writable buffer instead."
+            )
 
         # Different overwrite patterns for multiple passes
         patterns = [
@@ -50,12 +120,7 @@ class SecureMemory:
                 garbage = "X" * data_len
                 del garbage
 
-        elif isinstance(data, (bytes, memoryview)):
-            # Convert immutable bytes to bytearray for clearing
-            byte_data = bytearray(data)
-            SecureMemory.secure_clear(byte_data)
-
-        elif isinstance(data, bytearray):
+        elif isinstance(data, (bytearray, memoryview)):
             # Multiple overwrite passes with different patterns
             for pattern in patterns:
                 for i in range(len(data)):
@@ -79,7 +144,15 @@ class SecureMemory:
         elif isinstance(data, list):
             # For lists containing sensitive data
             for i in range(len(data)):
-                if isinstance(data[i], (bytes, bytearray, str, list, memoryview)):
+                if isinstance(data[i], bytes) or (
+                    isinstance(data[i], memoryview) and data[i].readonly
+                ):
+                    # Immutable element: it cannot be overwritten, so the most that
+                    # can be done is drop the list's reference to it. Raising here
+                    # would abort the whole list and leave the mutable elements
+                    # after it untouched, which is strictly worse.
+                    data[i] = None
+                elif isinstance(data[i], (bytearray, str, list, memoryview)):
                     # Recursively clear complex elements
                     SecureMemory.secure_clear(data[i])
                 else:
