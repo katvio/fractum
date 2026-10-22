@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from typing import Any, Dict, Optional, Union
 
@@ -85,6 +86,7 @@ class FileEncryptor:
             ciphertext, tag = cipher.encrypt_and_digest(data)
 
             with open(output_path, "wb") as f:
+                os.chmod(output_path, 0o600)
                 f.write(len(metadata_bytes).to_bytes(4, "big"))
                 f.write(metadata_bytes)
                 f.write(cipher.nonce)
@@ -140,6 +142,9 @@ class FileEncryptor:
                 raise ValueError("Decrypted data is empty")
 
             with open(output_path, "wb") as f:
+                # Le fichier reconstitue est le secret lui-meme : il ne doit pas
+                # heriter d un umask permissif.
+                os.chmod(output_path, 0o600)
                 f.write(data)
 
         except (ValueError, IOError) as e:

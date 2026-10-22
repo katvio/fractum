@@ -2,6 +2,7 @@ import click
 
 from src.cli.commands import decrypt, encrypt
 from src.cli.interactive import interactive_mode
+from src.crypto.memory import disable_core_dumps
 from src.config import VERSION
 
 
@@ -98,6 +99,17 @@ def cli(ctx: click.Context, interactive: bool, version: bool) -> None:
         # Decrypt by manually entering share values
         fractum decrypt secret.txt.enc -m
     """
+    # Before any command touches key material. A crash while the key is in memory
+    # would otherwise write it to a core file that outlives the process; measured
+    # unlimited (RLIMIT_CORE -1) before this call existed. Evaluated on every run,
+    # including --version, so there is no path that skips it.
+    if not disable_core_dumps():
+        click.echo(
+            "Warning: core dumps could not be disabled on this platform. A crash "
+            "while a key is in memory may write it to disk.",
+            err=True,
+        )
+
     if version:
         click.echo(f"fractum version {VERSION}")
         ctx.exit()

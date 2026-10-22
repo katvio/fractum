@@ -1,0 +1,6 @@
+# Signed and checksummed files must keep their exact bytes. Git for Windows
+# converts text files to CRLF on checkout by default, and a CRLF copy of
+# packages/CHECKSUMS.sha256 fails the detached GPG signature (signed in binary
+# mode) and breaks the sha256sum lines.
+packages/** -text
+*.asc -text

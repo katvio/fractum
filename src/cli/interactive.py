@@ -138,7 +138,10 @@ def interactive_encrypt() -> bool:
 
             # Read parameters from existing shares
             threshold = share_info.get("threshold", 3)
-            total_shares = share_info.get("total_shares", len(share_files))
+            # The threshold travels with the share; the number of files in the
+            # directory does not. Counting files announced a 3-of-1 set when only
+            # one share of a 3-of-5 was present, which the sharing layer refused.
+            total_shares = share_info.get("total_shares", threshold)
             click.echo("Existing shares parameters:")
             click.echo(f"- Threshold: {threshold}")
             click.echo(f"- Total shares: {total_shares}")
