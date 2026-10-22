@@ -117,14 +117,31 @@ def encrypt(
                 f"got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
             )
 
-        # Create shares directory if it doesn't exist
-        shares_dir = Path("shares")
-        if not shares_dir.exists():
-            shares_dir.mkdir()
-            if verbose:
-                click.echo("Created shares directory")
-        elif verbose:
-            click.echo("Using existing shares directory")
+        # One directory per share set, always under shares/.
+        #
+        # Writing a second run into a non-empty shares/ mixed two sets in one
+        # place, and nothing in the file names said which run a share belonged
+        # to. Decrypt then failed with "No compatible shares found" while the
+        # right shares sat in the same directory.
+        #
+        # The next set goes to shares/set-2/, set-3/... and not to a sibling
+        # shares-2/: with Docker, shares/ is the mounted volume, so it always
+        # exists, and a sibling directory would be written inside the container
+        # and deleted with it. An empty shares/ (a fresh mount) is used as is.
+        # Decrypt only reads the top level of --shares-dir, so the sets stay apart.
+        shares_root = Path("shares")
+        shares_dir = shares_root
+        if shares_root.is_dir() and any(
+            not entry.name.startswith(".") for entry in shares_root.iterdir()
+        ):
+            number = 2
+            while (shares_root / f"set-{number}").exists():
+                number += 1
+            shares_dir = shares_root / f"set-{number}"
+            click.echo(f"shares/ is not empty, writing this share set to {shares_dir}/")
+        shares_dir.mkdir(parents=True, exist_ok=shares_dir == shares_root)
+        if verbose:
+            click.echo(f"Using {shares_dir} directory")
 
         if existing_shares:
             # Convert existing_shares to absolute path if necessary
@@ -221,9 +238,9 @@ def encrypt(
                 )
 
             share_manager = ShareManager(threshold, shares)
-            key = bytearray(share_manager.combine_shares(shares_data))
+            key = share_manager.combine_shares(shares_data)
             for _, share_bytes in shares_data:
-                SecureMemory.secure_clear(bytearray(share_bytes))
+                SecureMemory.secure_clear(share_bytes)
 
             # Get existing share_set_id
             with open(share_files[0], "r", encoding="utf-8") as f:
@@ -254,8 +271,8 @@ def encrypt(
             share_manager = ShareManager(threshold, shares)
             share_data = share_manager.generate_shares(key, label)
 
-            # Create archive manager
-            archiver = ShareArchiver()
+            # Create archive manager, pointed at this run's directory
+            archiver = ShareArchiver(str(shares_dir))
 
             # Save shares and create archives
             tool_integrity = calculate_tool_integrity() if full_metadata else None
@@ -279,6 +296,10 @@ def encrypt(
                         }
                     )
                 with open(share_file, "w") as f:
+                    # The file holds the share value in the clear. Restrict it at
+                    # creation, before anything is written to it, rather than
+                    # letting the process umask decide.
+                    os.chmod(share_file, 0o600)
                     json.dump(share_info_dict, f, indent=2)
                 new_share_files.append(share_file)
 
@@ -300,18 +321,25 @@ def encrypt(
 
         # Create archives for each share
         if not existing_shares:
-            for idx, share_file in enumerate(new_share_files, 1):
-                archive_path = archiver.create_share_archive(
-                    share_file,
-                    idx,
-                    label,
-                    encrypted_file=output_file if bundle_encrypted else None,
-                )
-                if verbose:
-                    click.echo(f"Created archive: {Path(archive_path).absolute()}")
-
-                # Remove temporary share file
-                os.remove(share_file)
+            try:
+                for idx, share_file in enumerate(new_share_files, 1):
+                    archive_path = archiver.create_share_archive(
+                        share_file,
+                        idx,
+                        label,
+                        encrypted_file=output_file if bundle_encrypted else None,
+                    )
+                    if verbose:
+                        click.echo(f"Created archive: {Path(archive_path).absolute()}")
+            finally:
+                # Whatever happens, the plaintext share files must not survive.
+                # With the removal inside the loop body, any archiving error left
+                # every one of them on disk, above the reconstruction threshold.
+                for share_file in new_share_files:
+                    try:
+                        os.remove(share_file)
+                    except OSError:
+                        pass
 
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
@@ -380,7 +408,7 @@ def decrypt(
             with SecureMemory.secure_context(32) as key:
                 key[:] = share_manager.combine_shares(shares_data)
                 for _, share_bytes in shares_data:
-                    SecureMemory.secure_clear(bytearray(share_bytes))
+                    SecureMemory.secure_clear(share_bytes)
 
                 # Decrypt file
                 output_file = (
@@ -520,7 +548,9 @@ def decrypt(
                             click.echo(f"No share key found in {share_file}")
                         continue
 
-                    share_data = base64.b64decode(share_key)
+                    # bytearray, not bytes: this buffer is wiped once the key is
+                    # reconstructed, and only a mutable buffer can be wiped.
+                    share_data = bytearray(base64.b64decode(share_key))
 
                     # Hash integrity check — raises immediately (not swallowed) so the
                     # user knows exactly which share is corrupted.
@@ -544,7 +574,14 @@ def decrypt(
                                     "version": version,
                                     "label": label,
                                     "threshold": share_info.get("threshold", 3),
-                                    "total_shares": share_info.get("total_shares", 5),
+                                    # Minimal shares carry no total_shares. A fixed
+                                    # 5 made ShareManager reject any threshold above
+                                    # 5, and decrypt then reported the shares as
+                                    # incompatible. Reconstruction never reads the
+                                    # total, it only has to be >= the threshold.
+                                    "total_shares": share_info.get(
+                                        "total_shares", share_info.get("threshold", 3)
+                                    ),
                                 },
                             }
 
@@ -563,7 +600,10 @@ def decrypt(
                                 "version": version,
                                 "label": label,
                                 "threshold": share_info.get("threshold", 3),
-                                "total_shares": share_info.get("total_shares", 5),
+                                # Same fallback as above, same reason.
+                                "total_shares": share_info.get(
+                                    "total_shares", share_info.get("threshold", 3)
+                                ),
                             },
                         }
 
@@ -580,10 +620,18 @@ def decrypt(
                 if verbose:
                     click.echo(f"Error processing {share_file}: {str(e)}")
                 continue
+            finally:
+                # Quoi qu'il arrive, l'archive extraite ne reste pas sur le
+                # disque : elle contient la valeur de la part, et le fichier
+                # chiffre lui-meme si --bundle-encrypted a ete utilise.
+                if is_zip and temp_dir:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
 
-            # Clean up temporary directory if it was an archive
-            if is_zip and temp_dir:
-                shutil.rmtree(temp_dir, ignore_errors=True)
+            # Nettoyage deplace dans le finally ci-dessous : place ici, il etait
+            # saute par le `raise` d une part invalide comme par le `continue`
+            # d une part illisible, et le dossier restait sur le disque avec la
+            # valeur de la part extraite, et le fichier chiffre si l archive
+            # avait ete creee avec --bundle-encrypted.
 
         if verbose:
             if shares_by_set_id:
@@ -661,9 +709,7 @@ def decrypt(
                             share_manager = ShareManager(
                                 metadata["threshold"], metadata["total_shares"]
                             )
-                            key = bytearray(share_manager.combine_shares(share_data))
-                            for _, share_bytes in share_data:
-                                SecureMemory.secure_clear(bytearray(share_bytes))
+                            key = share_manager.combine_shares(share_data)
 
                             # Verify key against the full ciphertext with correct AAD
                             with open(input_file, "rb") as f:
@@ -717,7 +763,7 @@ def decrypt(
         with SecureMemory.secure_context(32) as key:
             key[:] = share_manager.combine_shares(share_data)
             for _, share_bytes in share_data:
-                SecureMemory.secure_clear(bytearray(share_bytes))
+                SecureMemory.secure_clear(share_bytes)
             if verbose:
                 click.echo("Key reconstructed from shares")
 
@@ -781,7 +827,7 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
         try:
             # Try Base64 first
             try:
-                share_data = base64.b64decode(share_value)
+                share_data = bytearray(base64.b64decode(share_value))
 
                 # Verify this is actually valid Base64 by checking the length
                 # The decoded data should be 32 bytes for our shares
@@ -797,7 +843,7 @@ def collect_manual_shares() -> Tuple[List[Tuple[int, bytes]], Dict[str, Any]]:
                 # Check if it looks like a hex string (only hex chars)
                 if all(c in "0123456789abcdefABCDEF" for c in hex_value):
                     # Convert from hex to bytes
-                    share_data = bytes.fromhex(hex_value)
+                    share_data = bytearray(bytes.fromhex(hex_value))
 
                     # Check length - should be 32 bytes
                     if len(share_data) != 32:
