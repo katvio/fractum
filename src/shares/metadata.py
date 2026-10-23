@@ -40,11 +40,18 @@ class ShareMetadata:
         else:
             version = VERSION
 
+        threshold = share_info.get("threshold", 3)
         return cls(
             version=version,
             label=share_info.get("label"),
-            threshold=share_info.get("threshold", 3),
-            total_shares=share_info.get("total_shares", 5),
+            threshold=threshold,
+            # Falls back to the threshold, not to a fixed 5. Minimal-metadata
+            # shares never carry total_shares, so the old default made validate()
+            # reject every scheme with a threshold above 5: a 6-of-9 backup could
+            # not be read back by the tool that wrote it, and reusing such a set
+            # failed too. The field is only used to satisfy the total >= threshold
+            # check; reconstruction never reads it.
+            total_shares=share_info.get("total_shares", threshold),
         )
 
     def to_dict(self) -> Dict[str, Any]:

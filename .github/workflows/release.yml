@@ -111,6 +111,7 @@ jobs:
             setup.py \
             README.md \
             LICENSE \
+            fractum-signing-key.asc \
             TRADEMARK.md \
             SECURITY.md \
             --exclude="*.pyc" \

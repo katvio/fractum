@@ -116,6 +116,9 @@ class ShareArchiver:
                 counter += 1
 
             with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                # L archive porte une part du secret : droits restreints des sa
+                # creation, avant meme d y ecrire quoi que ce soit.
+                os.chmod(archive_path, 0o600)
                 for root, _, files in os.walk(temp_dir):
                     for file in files:
                         file_path = Path(root) / file
