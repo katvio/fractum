@@ -32,6 +32,26 @@ against systems you do not own.
 Fixes land on the latest released minor version. Older versions receive nothing,
 so an upgrade is part of any remediation.
 
+## Verifying a release
+
+Each release carries three separate checks. They answer different questions,
+so a careful user runs all three.
+
+| Check | What it proves | Command |
+|---|---|---|
+| GPG signature on the tag | A holder of the Katvio release key (`D009F6290DCFDAB6`) published this tag | `git tag -v vX.Y.Z` |
+| SLSA build provenance | The source ZIP was built by `.github/workflows/release.yml` in `katvio/fractum`, from the tag's commit | `gh attestation verify fractum-X.Y.Z-source.zip --repo katvio/fractum --signer-workflow katvio/fractum/.github/workflows/release.yml --source-ref refs/tags/vX.Y.Z` |
+| SBOM attestation | The list of wheels shipped in `packages/`, with the SHA-256 of each file, is the one the release workflow recorded | `gh attestation verify fractum-X.Y.Z-source.zip --repo katvio/fractum --predicate-type https://cyclonedx.org/bom` |
+
+The SBOM itself (`fractum-X.Y.Z-sbom.cdx.json`, CycloneDX 1.6) is attached to
+the release, and `checksums.txt` covers both the ZIP and the SBOM. The two
+attestations are signed through Sigstore with a short-lived certificate tied to
+the workflow run; verifying them needs GitHub CLI 2.49 or later and a network
+connection, so run them before the files reach the offline machine.
+
+Releases up to and including 1.4.2 carry the GPG signature and the checksum
+only.
+
 ## What this software does and does not claim
 
 Fractum encrypts a file with AES-256-GCM and splits the encryption key into
