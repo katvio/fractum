@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write           # Sigstore certificate for the attestations
+      attestations: write       # store the attestations on the repository
+      artifact-metadata: write  # artifact storage record created by actions/attest
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -29,6 +32,20 @@ jobs:
             exit 1
           fi
           echo "✅ Tag format is valid: $TAG"
+        env:
+          GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
+
+      # The provenance attestation records the ref and commit the workflow was
+      # dispatched on. Dispatched from main, it would state that the release was
+      # built from main's head, not from the tag.
+      - name: Require dispatch from the tag being released
+        run: |
+          if [[ "${GITHUB_REF}" != "refs/tags/${GITHUB_EVENT_INPUTS_TAG}" ]]; then
+            echo "❌ Run this workflow with 'Use workflow from' set to tag ${GITHUB_EVENT_INPUTS_TAG} (current ref: ${GITHUB_REF})"
+            echo "   gh workflow run release.yml --ref ${GITHUB_EVENT_INPUTS_TAG} -f tag=${GITHUB_EVENT_INPUTS_TAG}"
+            exit 1
+          fi
+          echo "✅ Dispatched from ${GITHUB_REF}"
         env:
           GITHUB_EVENT_INPUTS_TAG: ${{ github.event.inputs.tag }}
 
@@ -118,13 +135,101 @@ jobs:
             --exclude="__pycache__/*" \
             --exclude="*.DS_Store" \
             --exclude=".git/*"
-          
-          # Create checksums
-          cd dist
-          sha256sum fractum-${STEPS_GET_VERSION_OUTPUTS_VERSION}-source.zip > checksums.txt
         env:
           STEPS_GET_VERSION_OUTPUTS_VERSION: ${{ steps.get_version.outputs.version }}
-          
+
+      # The zip ships its dependencies as wheel files in packages/. SBOM scanners
+      # such as syft catalog installed packages and report nothing for loose
+      # wheels, so the SBOM is built from the wheels themselves, with the SHA-256
+      # of each file. The script is inline because the job runs on the checked-out
+      # tag, where a script file added after that tag would not exist.
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess, uuid
+
+          version = os.environ["VERSION"]
+          tag = os.environ["TAG"]
+          zip_path = pathlib.Path(f"dist/fractum-{version}-source.zip")
+
+          def sha256(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          zip_digest = sha256(zip_path)
+          # Tag commit date, so that rebuilding the same tag gives the same SBOM.
+          timestamp = subprocess.run(
+              ["git", "log", "-1", "--format=%cI", tag],
+              check=True, capture_output=True, text=True,
+          ).stdout.strip()
+
+          components = []
+          for wheel in sorted(pathlib.Path("packages").glob("*.whl")):
+              # PEP 427: {name}-{version}(-{build})?-{python}-{abi}-{platform}.whl
+              name, wheel_version = wheel.name.split("-")[:2]
+              name = re.sub(r"[-_.]+", "-", name).lower()
+              components.append({
+                  "type": "library",
+                  "bom-ref": f"wheel:{wheel.name}",
+                  "name": name,
+                  "version": wheel_version,
+                  "purl": f"pkg:pypi/{name}@{wheel_version}?file_name={wheel.name}",
+                  "hashes": [{"alg": "SHA-256", "content": sha256(wheel)}],
+              })
+
+          bom = {
+              "bomFormat": "CycloneDX",
+              "specVersion": "1.6",
+              "serialNumber": f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, 'sha256:' + zip_digest)}",
+              "version": 1,
+              "metadata": {
+                  "timestamp": timestamp,
+                  "component": {
+                      "type": "application",
+                      "bom-ref": "fractum",
+                      "name": "fractum",
+                      "version": version,
+                      "purl": f"pkg:github/katvio/fractum@{tag}",
+                      "hashes": [{"alg": "SHA-256", "content": zip_digest}],
+                      "externalReferences": [
+                          {"type": "vcs", "url": "https://github.com/katvio/fractum"},
+                      ],
+                  },
+              },
+              "components": components,
+              "dependencies": [
+                  {"ref": "fractum", "dependsOn": [c["bom-ref"] for c in components]},
+              ],
+          }
+          out = pathlib.Path(f"dist/fractum-{version}-sbom.cdx.json")
+          out.write_text(json.dumps(bom, indent=2) + "\n")
+          print(f"SBOM: {out} ({len(components)} wheels)")
+          PY
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+          TAG: ${{ steps.get_version.outputs.tag }}
+
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum "fractum-${VERSION}-source.zip" "fractum-${VERSION}-sbom.cdx.json" > checksums.txt
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+
+      # SLSA build provenance: binds the zip and the SBOM to this workflow run,
+      # the tag's commit and the repository, signed through Sigstore.
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4.2.2
+        with:
+          subject-path: |
+            dist/fractum-${{ steps.get_version.outputs.version }}-source.zip
+            dist/fractum-${{ steps.get_version.outputs.version }}-sbom.cdx.json
+
+      - name: Attest SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4.2.2
+        with:
+          subject-path: dist/fractum-${{ steps.get_version.outputs.version }}-source.zip
+          sbom-path: dist/fractum-${{ steps.get_version.outputs.version }}-sbom.cdx.json
+
       - name: Extract release notes from tag
         id: release_notes
         run: |
@@ -161,7 +266,22 @@ jobs:
             # Verify package checksum
             sha256sum -c checksums.txt
             ```
-            
+
+            ### Verify Build Provenance and SBOM
+            The source ZIP carries a SLSA build provenance attestation and a CycloneDX SBOM attestation, both signed through Sigstore by this release workflow. Requires GitHub CLI 2.49 or later.
+            ```bash
+            # Provenance: built by katvio/fractum's release workflow from this tag
+            gh attestation verify fractum-${{ steps.get_version.outputs.version }}-source.zip \
+              --repo katvio/fractum \
+              --signer-workflow katvio/fractum/.github/workflows/release.yml \
+              --source-ref refs/tags/${{ steps.get_version.outputs.tag }}
+
+            # SBOM: the wheels shipped in packages/, with their SHA-256
+            gh attestation verify fractum-${{ steps.get_version.outputs.version }}-source.zip \
+              --repo katvio/fractum \
+              --predicate-type https://cyclonedx.org/bom
+            ```
+
             ## 📋 Release Notes
             ${{ steps.release_notes.outputs.notes }}
             
